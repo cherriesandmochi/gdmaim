@@ -64,11 +64,13 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_obfuscate_debug_only = cfg.get_value("debug", "obfuscate_debug_only", false)
 	
 	_convert_text_resources_to_binary = ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", false)
-	
 	if _convert_text_resources_to_binary:
-		#push_warning("GDMaim: the project setting 'editor/export/convert_text_resources_to_binary' being enabled might significantly affect the time it takes to export")
+		#push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' being enabled might significantly affect the time it takes to export")
 		#_build_cache_path()
-		push_warning("GDMaim: the project setting 'editor/export/convert_text_resources_to_binary' is enabled, but will be ignored during export")
+		push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' is enabled, but will be ignored during export.")
+	
+	if _id_seed == 0 and !_dynamic_id_seed:
+		push_warning("GDMaim - The ID generation seed is still set to the default value of 0. Please choose another one.")
 	
 	_prepare_obfuscation()
 
@@ -81,10 +83,10 @@ func _export_end() -> void:
 	for symbol in _global_symbols.symbols:
 		symbol_table += _global_symbols.symbols[symbol].name + "=" + symbol + "\n"
 	if _write_file_str(_export_path.get_basename() + "_symbols.txt", symbol_table):
-		print("GDMaim - a list of all identifiers and their generated names has been saved to '" + _export_path.get_basename() + "_symbols.txt'")
+		print("GDMaim - A list of all identifiers and their generated names has been saved to '" + _export_path.get_basename() + "_symbols.txt'")
 	else:
-		push_warning("GDMaim - failed to write symbol table to '" + _export_path.get_basename() + "_symbols.txt'!")
-	
+		push_warning("GDMaim - Failed to write symbol table to '" + _export_path.get_basename() + "_symbols.txt'!")
+
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
