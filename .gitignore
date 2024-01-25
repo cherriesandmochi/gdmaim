@@ -1,0 +1,6 @@
+.godot/
+*.import
+export.cfg
+project.godot
+export_presets.cfg
+test_scripts/

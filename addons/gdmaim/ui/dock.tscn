@@ -1,0 +1,491 @@
+[gd_scene load_steps=5 format=3 uid="uid://co43s08djflp5"]
+
+[ext_resource type="Script" path="res://addons/gdmaim/ui/dock.gd" id="1_se4hh"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2vjsg"]
+bg_color = Color(0.129412, 0.14902, 0.180392, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dqyw0"]
+content_margin_left = 7.0
+content_margin_bottom = 1.0
+bg_color = Color(0.298039, 0.321569, 0.368627, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bv73c"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+content_margin_bottom = 2.0
+bg_color = Color(0.113725, 0.133333, 0.160784, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="GDMaim" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2vjsg")
+script = ExtResource("1_se4hh")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Obfuscation" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
+text = "Obfuscation"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InlineConstants" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Inline Constants
+If true, replace constants with hardcoded values.
+Note: Only bool, int, float, Color, Vector(2/3/4)(i) and NodePath are supported."
+mouse_filter = 1
+text = "Inline Constants"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/InlineConstants"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="InlineEnums" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Inline Enums
+If true, replace enums with hardcoded values."
+mouse_filter = 1
+text = "Inline Enums"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/InlineEnums"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="ObfuscateExportVars" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Obfuscate Export Vars
+If true, obfuscate export variables.
+Note: Requires scenes and resources which modify custom export vars to be saved as '*.tscn' and '*.tres', respectively."
+mouse_filter = 1
+text = "Obfuscate Export Vars"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/ObfuscateExportVars"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="ObfuscateSignals" type="Label" parent="ScrollContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+tooltip_text = "Obfuscate Signals
+If true, obfuscate signals."
+mouse_filter = 1
+text = "Obfuscate Signals"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/ObfuscateSignals"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="PostProcess" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
+text = "Post Processing"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StripComments" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Strip Comments
+If true, remove all comments."
+mouse_filter = 1
+text = "Strip Comments"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/StripComments"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="StripEmptyLines" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Strip Empty Lines
+If true, remove all empty lines."
+mouse_filter = 1
+text = "Strip Empty Lines"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/StripEmptyLines"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="FeatureFilters" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Process Feature Filters
+If true, export template feature tags may be used to filter code."
+mouse_filter = 1
+text = "Process Feature Filters"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/FeatureFilters"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="IDGenerator" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
+text = "ID Generator"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IDPrefix" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "ID Prefix
+The prefix to use for all generated IDs."
+mouse_filter = 1
+text = "ID Prefix"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/IDPrefix"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+text = "__"
+
+[node name="IDCharacterList" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "ID Character List
+A list of characters which the obfuscator will pick from, when generating IDs."
+mouse_filter = 1
+text = "ID Character List"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/IDCharacterList"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+text = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
+[node name="IDTargetLength" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Target ID Length
+Sets the ID length, excluding prefix, which the obfuscator tries to target when generating IDs."
+mouse_filter = 1
+text = "Target ID Length"
+vertical_alignment = 1
+
+[node name="SpinBox" type="SpinBox" parent="ScrollContainer/VBoxContainer/IDTargetLength"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+min_value = 3.0
+max_value = 16.0
+value = 3.0
+
+[node name="GeneratorSeed" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Seed
+Sets the seed to use to generate IDs. A seed will always generate the same ID for a given name.
+Note: 'Use Dynamic Seed' overrides this setting."
+mouse_filter = 1
+text = "Seed"
+vertical_alignment = 1
+
+[node name="SpinBox" type="SpinBox" parent="ScrollContainer/VBoxContainer/GeneratorSeed"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+min_value = -2.14748e+09
+max_value = 2.14748e+09
+
+[node name="DynamicSeed" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Use Dynamic Seed
+If true, create an unique seed on every export.
+Note: Overrides 'Generator Seed'.
+Note: Not recommended as it might negatively affect delta updates."
+mouse_filter = 1
+text = "Use Dynamic Seed"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/DynamicSeed"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="Debug" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
+text = "Debug"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DebugScripts" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Debug Scripts
+Print debug information for all scripts that contain at least one of the comma-separated terms."
+mouse_filter = 1
+text = "Debug Scripts"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/DebugScripts"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="DebugResources" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Debug Resources
+Print debug information for all resources that contain at least one of the comma-separated terms."
+mouse_filter = 1
+text = "Debug Resources"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/DebugResources"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ObfuscateDebugOnly" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Obfuscate Debug Only
+If true, skip obfuscation of scripts and resources that are not defined in 'Debug Scripts' and 'Debug Resources'."
+mouse_filter = 1
+text = "Obfuscate Debug Only"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/ObfuscateDebugOnly"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/InlineConstants/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/InlineEnums/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/ObfuscateExportVars/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/ObfuscateSignals/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/StripComments/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/StripEmptyLines/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/FeatureFilters/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="text_changed" from="ScrollContainer/VBoxContainer/IDPrefix/LineEdit" to="." method="_on_line_edit_text_changed"]
+[connection signal="text_changed" from="ScrollContainer/VBoxContainer/IDCharacterList/LineEdit" to="." method="_on_line_edit_text_changed"]
+[connection signal="value_changed" from="ScrollContainer/VBoxContainer/IDTargetLength/SpinBox" to="." method="_on_spin_box_value_changed"]
+[connection signal="value_changed" from="ScrollContainer/VBoxContainer/GeneratorSeed/SpinBox" to="." method="_on_spin_box_value_changed"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/DynamicSeed/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="text_changed" from="ScrollContainer/VBoxContainer/DebugScripts/LineEdit" to="." method="_on_line_edit_text_changed"]
+[connection signal="text_changed" from="ScrollContainer/VBoxContainer/DebugResources/LineEdit" to="." method="_on_line_edit_text_changed"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/ObfuscateDebugOnly/CheckBox" to="." method="_on_check_box_toggled"]
