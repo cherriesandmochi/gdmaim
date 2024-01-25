@@ -1,5 +1,6 @@
 .godot/
 *.import
+*.txt
 export.cfg
 project.godot
 export_presets.cfg

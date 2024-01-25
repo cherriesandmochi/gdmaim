@@ -1,10 +1,4 @@
 extends EditorExportPlugin
-#TODO for loops: parse iterators and add them to local vars
-#TODO lambdas: parse params and add them to local vars
-#TODO multi line strings using '\'
-#TODO class_name obfuscation: the base is done, just need to 'properly'(yea right) update all symbols contained in named scripts
-#TODO filename obfuscation: would require manually renaming and linking .remap files as well...
-#TODO convert text resources to binary: requires obfuscation of binary files or a conversion tool
 
 
 const ScriptData := preload("script_data.gd")
@@ -16,6 +10,7 @@ var cfg : ConfigFile
 var _features : PackedStringArray
 var _enabled : bool
 var _convert_text_resources_to_binary : bool
+var _export_path : String
 var _scripts_last_modification : Dictionary
 var _autoloads : Dictionary
 var _built_in_symbols : Dictionary
@@ -47,6 +42,7 @@ func _get_name() -> String:
 
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
 	_features = features
+	_export_path = path
 	_enabled = !features.has("no_gdmaim")
 	if !_enabled:
 		return
@@ -80,7 +76,15 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 func _export_end() -> void:
 	if !_enabled:
 		return
-
+	
+	var symbol_table : String
+	for symbol in _global_symbols.symbols:
+		symbol_table += _global_symbols.symbols[symbol].name + "=" + symbol + "\n"
+	if _write_file_str(_export_path.get_basename() + "_symbols.txt", symbol_table):
+		print("GDMaim - a list of all identifiers and their generated names has been saved to '" + _export_path.get_basename() + "_symbols.txt'")
+	else:
+		push_warning("GDMaim - failed to write symbol table to '" + _export_path.get_basename() + "_symbols.txt'!")
+	
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
@@ -1187,11 +1191,13 @@ func _get_files(path : String, ext : String) -> PackedStringArray:
 	return files
 
 
-func _write_file_str(path : String, text : String) -> void:
+func _write_file_str(path : String, text : String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(text)
 		file.close()
+		return true
+	return false
 
 
 func _build_cache_path() -> void:
