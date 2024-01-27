@@ -342,6 +342,7 @@ func _parse_script(path : String) -> void:
 	var scope_path_root : String = scope_path + "."
 	var scope_path_identations : Array[int]
 	var prev_identation : int = 0
+	var identation_locked : bool = false
 	var scope_tree : Array
 	var cur_scope_tree_branch : Array = scope_tree
 	var cur_scope_tree_path : Array[int]
@@ -418,7 +419,7 @@ func _parse_script(path : String) -> void:
 			string_param_names = line.trim_prefix("##OBFUSCATE_STRING_PARAMETERS").replace(" ", "").split(",", false)
 			_script_log(str(line_idx+1) + " ##OBFUSCATE_STRING_PARAMETERS " + str(string_param_names))
 		
-		if tokens and tokens[0] != "#":
+		if !identation_locked and tokens and tokens[0] != "#":
 			var lower_scope : bool = false
 			for i in range(scope_path_identations.size() -1, -1, -1):
 				if identation <= scope_path_identations[i]:
@@ -483,8 +484,10 @@ func _parse_script(path : String) -> void:
 								_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name, type)
 							if !in_class:
 								script_data.add_member_symbol(token, SymbolTable.Symbol.new(new_symbol.name if new_symbol.name else token, type))
-						_script_log(str(line_idx+1) + (" var " if !local_scope else " local var ") + scope_path + "." + token + " : " + type)
-					
+						if !local_scope:
+							_script_log(str(line_idx+1) + " var " + scope_path + "." + token + " : " + type)
+						else:
+							_script_log(str(line_idx+1) + " local var " + scope_path + "." + token + "." + scope_id + " : " + type)
 					expr_type = ExpressionType.NONE
 				
 				ExpressionType.FUNC:
@@ -504,6 +507,7 @@ func _parse_script(path : String) -> void:
 						_script_log(str(line_idx+1) + " func " + scope_path)
 						
 						expr_type = ExpressionType.PARAMS
+						identation_locked = true
 					else:
 						#NOTE Lambda!
 						expr_type = ExpressionType.NONE
@@ -557,6 +561,7 @@ func _parse_script(path : String) -> void:
 								break
 							elif tokens[j] == "(":
 								expr_type = ExpressionType.PARAMS
+								identation_locked = true
 								break
 				
 				ExpressionType.ENUM:
@@ -654,6 +659,7 @@ func _parse_script(path : String) -> void:
 						param_idx = -1
 						string_param_names = PackedStringArray()
 						expr_type = ExpressionType.NONE
+						identation_locked = false
 					elif token == ":" or token == "=":
 						expr_type = ExpressionType.PARAMS_HINT
 						parentheses = 0
@@ -673,6 +679,7 @@ func _parse_script(path : String) -> void:
 							param_idx = -1
 							string_param_names = PackedStringArray()
 							expr_type = ExpressionType.NONE
+							identation_locked = false
 					elif token == "(":
 						parentheses += 1
 					elif token == "," and parentheses <= 0:
