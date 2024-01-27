@@ -347,7 +347,7 @@ func _parse_script(path : String) -> void:
 	var cur_scope_tree_branch : Array = scope_tree
 	var cur_scope_tree_path : Array[int]
 	var scope_id : String = ""
-	var local_scope : bool = false
+	var local_scope_stack : Array[int]
 	var in_class : bool = false
 	var lines : PackedStringArray = source_code.split("\n")
 	
@@ -427,7 +427,9 @@ func _parse_script(path : String) -> void:
 					lower_scope = true
 			if lower_scope:
 				scope_path = _set_scope_path_level(scope_path, scope_path_identations.size() + 1)
-				local_scope = false
+				for i in range(local_scope_stack.size() - 1, -1, -1):
+					if identation <= local_scope_stack[i]:
+						local_scope_stack.remove_at(i)
 			
 			if prev_identation != identation:
 				in_class = in_class and identation > 0
@@ -476,7 +478,7 @@ func _parse_script(path : String) -> void:
 						_script_log(str(line_idx+1) + " skipping export var " + token) 
 					else:
 						var type : String = _get_var_type(i, tokens)
-						if local_scope:
+						if local_scope_stack:
 							script_data.add_local_symbol(token, scope_path, scope_id, type)
 						else:
 							var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token, "", "")
@@ -484,7 +486,7 @@ func _parse_script(path : String) -> void:
 								_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name, type)
 							if !in_class:
 								script_data.add_member_symbol(token, SymbolTable.Symbol.new(new_symbol.name if new_symbol.name else token, type))
-						if !local_scope:
+						if !local_scope_stack:
 							_script_log(str(line_idx+1) + " var " + scope_path + "." + token + " : " + type)
 						else:
 							_script_log(str(line_idx+1) + " local var " + scope_path + "." + token + "." + scope_id + " : " + type)
@@ -495,14 +497,14 @@ func _parse_script(path : String) -> void:
 						var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token)
 						if new_symbol.name and (is_autoload or tokens[0] == "static"):
 							_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name).string_params = new_symbol.string_params
-						if !local_scope and !in_class:
+						if !local_scope_stack and !in_class:
 							script_data.add_member_symbol(token, new_symbol if new_symbol else SymbolTable.Symbol.new(token))
 						
 						string_params = new_symbol.string_params
 						
 						scope_path += "." + token
 						scope_path_identations.append(identation)
-						local_scope = true
+						local_scope_stack.append(identation)
 						
 						_script_log(str(line_idx+1) + " func " + scope_path)
 						
@@ -516,7 +518,7 @@ func _parse_script(path : String) -> void:
 					var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token)
 					if new_symbol.name:
 						_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name)
-					if !local_scope and !in_class:
+					if !local_scope_stack and !in_class:
 						script_data.add_member_symbol(token, new_symbol if new_symbol else SymbolTable.Symbol.new(token))
 					
 					scope_path += "." + token
@@ -544,14 +546,14 @@ func _parse_script(path : String) -> void:
 						var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token)
 						if new_symbol.name and is_autoload:
 							_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name)
-						if !local_scope and !in_class:
+						if !local_scope_stack and !in_class:
 							script_data.add_member_symbol(token, new_symbol if new_symbol else SymbolTable.Symbol.new(token))
 						
 						string_params = new_symbol.string_params
 						
 						scope_path += "." + token
 						scope_path_identations.append(identation)
-						local_scope = true
+						local_scope_stack.append(identation)
 						
 						_script_log(str(line_idx+1) + " signal " + scope_path)
 						
@@ -567,7 +569,7 @@ func _parse_script(path : String) -> void:
 				ExpressionType.ENUM:
 					var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token)
 					_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name if !_inline_enums or !_global_symbols.obfuscation_enabled else "int")
-					if !local_scope and !in_class:
+					if !local_scope_stack and !in_class:
 						#script_data.add_member_symbol(token, new_symbol if new_symbol else SymbolTable.Symbol.new(token if !_inline_enums else "int"))
 						script_data.add_member_symbol(token, new_symbol if !_inline_enums or !_global_symbols.obfuscation_enabled else SymbolTable.Symbol.new("int"))
 					
@@ -581,7 +583,7 @@ func _parse_script(path : String) -> void:
 					
 					scope_path += "." + token
 					scope_path_identations.append(identation)
-					local_scope = true
+					local_scope_stack.append(identation)
 					
 					_script_log(str(line_idx+1) + " enum " + scope_path + " -> " + enum_path)
 					
@@ -641,12 +643,12 @@ func _parse_script(path : String) -> void:
 								if depth < 0:
 									break
 					
-					if local_scope:
+					if local_scope_stack:
 						script_data.add_local_symbol(token, scope_path, scope_id, type, value)
 					else:
 						var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token, value, "")
 						_constants[scope_path + "." + token] = _global_symbols.add_symbol(scope_path + "." + token, value if value else scope_path + "." + new_symbol.name, type)
-						if !local_scope and !in_class:
+						if !in_class:
 							_constants[scope_path + "." + token].set_meta("member",
 								script_data.add_member_symbol(token, SymbolTable.Symbol.new(value if value else (new_symbol.name if new_symbol else token), type)))
 					
@@ -700,7 +702,7 @@ func _parse_script(path : String) -> void:
 		line_data.scope_path = scope_path
 		line_data.scope_id = scope_id
 		line_data.identation = identation
-		line_data.local_scope = local_scope
+		line_data.local_scope = !local_scope_stack.is_empty()
 		line_data.in_class = in_class
 
 
