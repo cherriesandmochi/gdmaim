@@ -182,9 +182,8 @@ func _prepare_obfuscation() -> void:
 		cfg.load("res://project.godot")
 		for autoload : String in (cfg.get_section_keys("autoload") if cfg.has_section("autoload") else []):
 			_autoloads[cfg.get_value("autoload", autoload).replace("*", "")] = autoload
-			if cfg.get_value("autoload", autoload).begins_with("*"):
+			if !_inject_autoload and cfg.get_value("autoload", autoload).begins_with("*"):
 				_inject_autoload = cfg.get_value("autoload", autoload).replace("*", "")
-				break
 		if !_inject_autoload:
 			push_warning("GDMaim - No valid autoload found! GDMaim will not be able to print the source map filename to the console on the exported build.")
 	
