@@ -184,6 +184,7 @@ func _prepare_obfuscation() -> void:
 			_autoloads[cfg.get_value("autoload", autoload).replace("*", "")] = autoload
 			if cfg.get_value("autoload", autoload).begins_with("*"):
 				_inject_autoload = cfg.get_value("autoload", autoload).replace("*", "")
+				break
 		if !_inject_autoload:
 			push_warning("GDMaim - No valid autoload found! GDMaim will not be able to print the source map filename to the console on the exported build.")
 	
