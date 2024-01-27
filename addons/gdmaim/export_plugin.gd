@@ -350,6 +350,7 @@ func _parse_script(path : String) -> void:
 	var scope_id : String = ""
 	var local_scope_stack : Array[int]
 	var in_class : bool = false
+	var lambda_idx : int = 0
 	var lines : PackedStringArray = source_code.split("\n")
 	
 	var script_data : ScriptData = ScriptData.new(hash(path + str(_id_seed)), _built_in_symbols)
@@ -494,26 +495,25 @@ func _parse_script(path : String) -> void:
 					expr_type = ExpressionType.NONE
 				
 				ExpressionType.FUNC:
-					if i == 1 or (i == 2 and tokens[0] == "static"):
+					if !token.begins_with("("):
 						var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token)
 						if new_symbol.name and (is_autoload or tokens[0] == "static"):
 							_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name).string_params = new_symbol.string_params
 						if !local_scope_stack and !in_class:
 							script_data.add_member_symbol(token, new_symbol if new_symbol else SymbolTable.Symbol.new(token))
-						
 						string_params = new_symbol.string_params
-						
 						scope_path += "." + token
-						scope_path_identations.append(identation)
-						local_scope_stack.append(identation)
-						
-						_script_log(str(line_idx+1) + " func " + scope_path)
-						
-						expr_type = ExpressionType.PARAMS
-						identation_locked = true
 					else:
-						#NOTE Lambda!
-						expr_type = ExpressionType.NONE
+						scope_path += "." + "@lambda" + str(lambda_idx)
+						lambda_idx += 1
+					
+					scope_path_identations.append(identation)
+					local_scope_stack.append(identation)
+					
+					_script_log(str(line_idx+1) + " func " + scope_path)
+					
+					expr_type = ExpressionType.PARAMS
+					identation_locked = true
 				
 				ExpressionType.CLASS:
 					var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token)
@@ -833,9 +833,13 @@ func _obfuscate_script(path : String) -> String:
 			
 			# First, search for token in local vars, if currently in a local scope
 			if line_data.local_scope and (i == 0 or line_data.tokens[i-1] != "."):
-				new_symbol = script_data.get_local_symbol(token, line_data.scope_path, line_data.scope_id)
+				var local_path : String = line_data.scope_path
+				new_symbol = script_data.get_local_symbol(token, local_path, line_data.scope_id)
+				if !new_symbol and local_path.contains(".@lambda"): # Handle special case for lambdas
+					local_path = local_path.substr(0, local_path.find(".@lambda"))
+					new_symbol = script_data.get_local_symbol(token, local_path, line_data.scope_id)
 				if new_symbol:
-					_script_log(str(script_data._idx+1) + " found local symbol >" + line_data.scope_path + "." + token + "." + line_data.scope_id + "< = " + new_symbol.name)
+					_script_log(str(script_data._idx+1) + " found local symbol >" + local_path + "." + token + "." + line_data.scope_id + "< = " + new_symbol.name)
 			
 			# Search for token in members and globals
 			if !new_symbol:
