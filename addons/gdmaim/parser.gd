@@ -47,7 +47,7 @@ func get_tokens() -> PackedStringArray:
 	tweens.clear()
 	var cur_tween : String
 	while !has_finished():
-		var token : String = read_until(" ;,\n\t(:.+-*/)[]{}'<=>|!#\"\\")
+		var token : String = read_until(" ;,\n\t(:.+-*/%)[]{}'<=>|!#\"\\")
 		if token:
 			tokens.append(token)
 			tweens.append(cur_tween)
