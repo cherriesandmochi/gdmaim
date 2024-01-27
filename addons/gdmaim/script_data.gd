@@ -8,20 +8,26 @@ var exporter : Object
 var path : String
 var base_script : String
 var autoload : bool = false
-var code : String
-var lines : Array[Line]
-var lines_str : PackedStringArray
 var local_symbols : SymbolTable
 var member_symbols : Dictionary
 var exclude_symbols : Dictionary
+var lines : Array[Line]
+var source_code : String
+var export_code : String
+var line_mapper := LineMapper.new()
+var debug_log : String
 
 var _idx : int = -1
 var _local_symbols_table : Dictionary
 
 
 func _init(seed : int, exclude_symbols : Dictionary) -> void:
-	local_symbols = SymbolTable.new(seed, true)
+	self.local_symbols = SymbolTable.new(seed, true)
 	self.exclude_symbols = exclude_symbols
+
+
+func log_line(text : String) -> void:
+	debug_log += text + "\n"
 
 
 func reload(script_cache : Dictionary) -> void:
@@ -60,6 +66,12 @@ func get_next_line() -> Line:
 	_idx += 1
 	if _idx < lines.size():
 		return lines[_idx]
+	return null
+
+
+func get_line_at_offset(offset : int) -> Line:
+	if _idx + offset >= 0 and _idx + offset < lines.size():
+		return lines[_idx + offset]
 	return null
 
 
@@ -163,8 +175,14 @@ func set_token_at(line : int, token : int, new : String) -> void:
 	lines[line].tokens[token] = new
 
 
+func generate_mappings() -> Array[Dictionary]:
+	return line_mapper.generate_mappings(lines.size())
+
+
 class Line:
+	var idx : int
 	var skip : bool
+	var source_text : String
 	var text : String
 	var tokens : PackedStringArray
 	var tokens_tween : PackedStringArray
@@ -190,3 +208,58 @@ class Param:
 		self.to_line = to_line
 		self.to_token = to_token
 		self.is_string = is_string
+
+
+class LineMapper:
+	var _lines : Array[Line]
+	var _mappings_in : Dictionary
+	var _mappings_out : Dictionary
+	
+	func generate_mappings(source_line_count : int) -> Array[Dictionary]:
+		_mappings_in.clear()
+		_mappings_out.clear()
+		for i in _lines.size():
+			var to : int = _lines[i].idx
+			_mappings_out[i] = to
+			_mappings_in[to] = i
+		var last_valid : int = 0
+		for i in source_line_count:
+			var from : int = _mappings_in.get(i, last_valid)
+			last_valid = from
+			_mappings_in[i] = from
+		return [_mappings_in, _mappings_out]
+	
+	func add_linked_line(line : Line, text : String) -> void:
+		_lines.append(line)
+		line.text = text
+	
+	func add_new_line(text : String) -> Line:
+		var line := Line.new()
+		line.idx = -1
+		line.text = text
+		_lines.append(line)
+		return line
+	
+	func remove_line(idx : int) -> void:
+		_lines.remove_at(idx)
+	
+	func move_line(from : int, to : int) -> void:
+		_lines.insert(to, _lines.pop_at(from))
+	
+	func edit_line(idx : int, new_code : String) -> void:
+		_lines[idx].text = new_code
+	
+	func get_lines() -> Array[Line]:
+		return _lines
+	
+	func get_line_count() -> int:
+		return _lines.size()
+	
+	func get_line(idx : int) -> Line:
+		return _lines[idx] if idx < _lines.size() else null
+	
+	func get_code() -> String:
+		var code : String
+		for line in _lines:
+			code += line.text + "\n"
+		return code.trim_suffix("\n")

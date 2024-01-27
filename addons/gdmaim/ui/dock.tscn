@@ -51,6 +51,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
+[node name="ViewSourceMap" type="Button" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "View Source Map"
+
 [node name="Obfuscation" type="Label" parent="ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
@@ -370,7 +374,7 @@ max_value = 2.14748e+09
 layout_mode = 2
 tooltip_text = "Use Dynamic Seed
 If true, create an unique seed on every export.
-Note: Overrides 'Generator Seed'.
+Note: Overrides 'Seed'.
 Note: Not recommended as it might negatively affect delta updates."
 mouse_filter = 1
 text = "Use Dynamic Seed"
@@ -396,7 +400,117 @@ theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
 theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
 text = "On"
 
+[node name="Source Mapping" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
+text = "Source Mapping"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SourceMapPath" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Output Path
+Source maps will get saved to this path upon export."
+mouse_filter = 1
+text = "Output Path"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/SourceMapPath"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="SourceMapMaxFiles" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Max Files
+Sets the maximum amount of source map files allowed."
+mouse_filter = 1
+text = "Max Files"
+vertical_alignment = 1
+
+[node name="SpinBox" type="SpinBox" parent="ScrollContainer/VBoxContainer/SourceMapMaxFiles"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+min_value = 1.0
+max_value = 1e+06
+value = 1.0
+
+[node name="SourceMapCompress" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Compress
+If true, source maps will be compressed upon export."
+mouse_filter = 1
+text = "Compress"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/SourceMapCompress"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="SourceMapInjectName" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Inject Name
+If true, upon export, injects a print statement of the associated source map's filename into the first enabled autoload. This does not affect your source code. Makes selecting the right source map very easy, when a player/user reports an error and shares their logfile."
+mouse_filter = 1
+text = "Inject Name"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/SourceMapInjectName"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
 [node name="Debug" type="Label" parent="ScrollContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
@@ -405,6 +519,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="DebugScripts" type="Label" parent="ScrollContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 tooltip_text = "Debug Scripts
 Print debug information for all scripts that contain at least one of the comma-separated terms."
@@ -426,6 +541,7 @@ grow_horizontal = 0
 grow_vertical = 2
 
 [node name="DebugResources" type="Label" parent="ScrollContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 tooltip_text = "Debug Resources
 Print debug information for all resources that contain at least one of the comma-separated terms."
@@ -447,6 +563,7 @@ grow_horizontal = 0
 grow_vertical = 2
 
 [node name="ObfuscateDebugOnly" type="Label" parent="ScrollContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 tooltip_text = "Obfuscate Debug Only
 If true, skip obfuscation of scripts and resources that are not defined in 'Debug Scripts' and 'Debug Resources'."
@@ -474,6 +591,7 @@ theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
 theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
 text = "On"
 
+[connection signal="pressed" from="ScrollContainer/VBoxContainer/ViewSourceMap" to="." method="_on_view_source_map_pressed"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/InlineConstants/CheckBox" to="." method="_on_check_box_toggled"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/InlineEnums/CheckBox" to="." method="_on_check_box_toggled"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/ObfuscateExportVars/CheckBox" to="." method="_on_check_box_toggled"]
@@ -486,6 +604,10 @@ text = "On"
 [connection signal="value_changed" from="ScrollContainer/VBoxContainer/IDTargetLength/SpinBox" to="." method="_on_spin_box_value_changed"]
 [connection signal="value_changed" from="ScrollContainer/VBoxContainer/GeneratorSeed/SpinBox" to="." method="_on_spin_box_value_changed"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/DynamicSeed/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="text_changed" from="ScrollContainer/VBoxContainer/SourceMapPath/LineEdit" to="." method="_on_line_edit_text_changed"]
+[connection signal="value_changed" from="ScrollContainer/VBoxContainer/SourceMapMaxFiles/SpinBox" to="." method="_on_spin_box_value_changed"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/SourceMapCompress/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/SourceMapInjectName/CheckBox" to="." method="_on_check_box_toggled"]
 [connection signal="text_changed" from="ScrollContainer/VBoxContainer/DebugScripts/LineEdit" to="." method="_on_line_edit_text_changed"]
 [connection signal="text_changed" from="ScrollContainer/VBoxContainer/DebugResources/LineEdit" to="." method="_on_line_edit_text_changed"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/ObfuscateDebugOnly/CheckBox" to="." method="_on_check_box_toggled"]

@@ -5,20 +5,25 @@ const ScriptData := preload("script_data.gd")
 const SymbolTable := preload("symbol_table.gd")
 const Parser := preload("parser.gd")
 
+const SOURCE_MAP_EXT : String = ".gd.map"
+
 var cfg : ConfigFile
 
 var _features : PackedStringArray
 var _enabled : bool
 var _convert_text_resources_to_binary : bool
 var _export_path : String
+var _source_map_filename : String
 var _scripts_last_modification : Dictionary
 var _autoloads : Dictionary
 var _built_in_symbols : Dictionary
 var _global_symbols : SymbolTable
 var _constants : Dictionary
 var _scripts_data : Dictionary
+var _current_script : ScriptData
 var _global_classes : Dictionary
 var _godot_data : Dictionary
+var _inject_autoload : String
 var _inline_constants : bool
 var _inline_enums : bool
 var _obfuscate_export_vars : bool
@@ -31,6 +36,10 @@ var _dynamic_id_seed : bool
 var _strip_comments : bool
 var _strip_empty_lines : bool
 var _feature_filters : bool
+var _source_map_path : String
+var _source_map_max_files : int
+var _source_map_compress : bool
+var _source_map_inject_name : bool
 var _debug_scripts : PackedStringArray
 var _debug_resources : PackedStringArray
 var _obfuscate_debug_only : bool
@@ -43,6 +52,7 @@ func _get_name() -> String:
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
 	_features = features
 	_export_path = path
+	_source_map_filename = _export_path.get_file().get_basename() + Time.get_datetime_string_from_system().replace(":", ".") + ".gd.map"
 	_enabled = !features.has("no_gdmaim")
 	if !_enabled:
 		return
@@ -59,6 +69,10 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_strip_comments = cfg.get_value("post_process", "strip_comments", false)
 	_strip_empty_lines = cfg.get_value("post_process", "strip_empty_lines", false)
 	_feature_filters = cfg.get_value("post_process", "feature_filters", false)
+	_source_map_path = cfg.get_value("source_mapping", "filepath", "")
+	_source_map_max_files = cfg.get_value("source_mapping", "max_files", 1)
+	_source_map_compress = cfg.get_value("source_mapping", "compress", false)
+	_source_map_inject_name = cfg.get_value("source_mapping", "inject_name", false)
 	_debug_scripts = cfg.get_value("debug", "debug_scripts", "").split(",", false)
 	_debug_resources = cfg.get_value("debug", "debug_resources", "").split(",", false)
 	_obfuscate_debug_only = cfg.get_value("debug", "obfuscate_debug_only", false)
@@ -66,7 +80,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_convert_text_resources_to_binary = ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", false)
 	if _convert_text_resources_to_binary:
 		#push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' being enabled might significantly affect the time it takes to export")
-		#_build_cache_path()
+		#_build_data_path(get_script().resource_path.get_base_dir() + "/cache")
 		push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' is enabled, but will be ignored during export.")
 	
 	if _id_seed == 0 and !_dynamic_id_seed:
@@ -79,13 +93,49 @@ func _export_end() -> void:
 	if !_enabled:
 		return
 	
-	var symbol_table : String
+	_build_data_path(_source_map_path)
+	var files : PackedStringArray
+	for filepath in DirAccess.get_files_at(_source_map_path):
+		if filepath.begins_with(_export_path.get_file().get_basename()) and filepath.length() == _source_map_filename.length():
+			files.append(filepath)
+	files.sort()
+	files.reverse()
+	for i in range(files.size() - 1, maxi(-1, _source_map_max_files - 2), -1):
+		DirAccess.remove_absolute(_source_map_path + "/" + files[i])
+	
+	var source_map : Dictionary = {
+		"version": "1.0",
+		"symbols": { "source": {}, "export": {}, },
+		"scripts": {},
+	}
 	for symbol in _global_symbols.symbols:
-		symbol_table += _global_symbols.symbols[symbol].name + "=" + symbol + "\n"
-	if _write_file_str(_export_path.get_basename() + "_symbols.txt", symbol_table):
-		print("GDMaim - A list of all identifiers and their generated names has been saved to '" + _export_path.get_basename() + "_symbols.txt'")
+		source_map["symbols"]["source"][symbol] = _global_symbols.symbols[symbol].name
+		source_map["symbols"]["export"][_global_symbols.symbols[symbol].name] = symbol
+	for script_data in _scripts_data.values():
+		var mappings : Array[Dictionary] = script_data.generate_mappings()
+		var data : Dictionary = {
+			"source_code": script_data.source_code,
+			"export_code": script_data.export_code,
+			"source_mappings": mappings[0],
+			"export_mappings": mappings[1],
+			"log": script_data.debug_log,
+		}
+		source_map["scripts"][script_data.path] = data
+	var full_source_map_path : String = _source_map_path + "/" + _source_map_filename
+	var file := FileAccess.open(full_source_map_path, FileAccess.WRITE)
+	if file:
+		var data : PackedByteArray = JSON.stringify(source_map, "\t").to_utf8_buffer()
+		if _source_map_compress:
+			file.store_8(FileAccess.COMPRESSION_GZIP)
+			file.store_64(data.size())
+			file.store_buffer(data.compress(FileAccess.COMPRESSION_GZIP))
+		else:
+			file.store_8(255)
+			file.store_buffer(data)
+		file.close()
+		print("GDMaim - A source map has been saved to '" + full_source_map_path + "'")
 	else:
-		push_warning("GDMaim - Failed to write symbol table to '" + _export_path.get_basename() + "_symbols.txt'!")
+		push_warning("GDMaim - Failed to write source map to '" + full_source_map_path + "'!")
 
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
@@ -126,10 +176,16 @@ func _prepare_obfuscation() -> void:
 	_autoloads.clear()
 	_built_in_symbols.clear()
 	
-	var cfg : ConfigFile = ConfigFile.new()
-	cfg.load("res://project.godot")
-	for autoload : String in cfg.get_section_keys("autoload"):
-		_autoloads[cfg.get_value("autoload", autoload).replace("*", "")] = autoload
+	_inject_autoload = ""
+	if _source_map_inject_name:
+		var cfg : ConfigFile = ConfigFile.new()
+		cfg.load("res://project.godot")
+		for autoload : String in (cfg.get_section_keys("autoload") if cfg.has_section("autoload") else []):
+			_autoloads[cfg.get_value("autoload", autoload).replace("*", "")] = autoload
+			if cfg.get_value("autoload", autoload).begins_with("*"):
+				_inject_autoload = cfg.get_value("autoload", autoload).replace("*", "")
+		if !_inject_autoload:
+			push_warning("GDMaim - No valid autoload found! GDMaim will not be able to print the source map filename to the console on the exported build.")
 	
 	# Gather built-in variant and global symbols
 	var builtins : Script = preload("builtins.gd")
@@ -216,7 +272,7 @@ func _evaluate_constant(constant : String, constants : Dictionary, results : Dic
 	expr.parse(expr_text, input_names)
 	var result = expr.execute(inputs, null, false, true)
 	if expr.has_execute_failed():
-		#print("ERROR while evaluating constant '", constant, "': ", expr.get_error_text())
+		_script_log("ERROR while evaluating constant '" + constant + "': " + expr.get_error_text())
 		results[constant] = expr_text
 		return expr_text
 	
@@ -236,7 +292,7 @@ func _evaluate_constant(constant : String, constants : Dictionary, results : Dic
 		_: pass
 	symbol.get_meta("member").name = symbol.name
 	
-	#print("EVALUATING CONSTANT >", constant, "< = ", expr_text, " = ", symbol.name)
+	_script_log("evaluated constant >" + constant + "< = " + expr_text + " = " + symbol.name)
 	
 	results[constant] = result
 	
@@ -269,9 +325,6 @@ func _get_class_symbols(class_ : String) -> PackedStringArray:
 
 
 func _parse_script(path : String) -> void:
-	if _is_debug_script(path):
-		print("\n---------- ", "PARSE SCRIPT ", path, " ----------\n")
-	
 	var script : Script = load(path)
 	var source_code : String = script.source_code
 	var methods : Dictionary
@@ -302,9 +355,12 @@ func _parse_script(path : String) -> void:
 	script_data.path = path
 	script_data.base_script = script.get_base_script().resource_path if script.get_base_script() else ""
 	script_data.autoload = is_autoload
-	script_data.code = source_code
-	script_data.lines_str = lines
+	script_data.source_code = source_code
 	_scripts_data[path] = script_data
+	
+	_current_script = script_data
+	_script_log("Export log for '" + path + "'\n")
+	_script_log("---------- " + " Parsing script " + path + " ----------")
 	
 	const ExpressionType : Dictionary = {
 		NONE = 0,
@@ -356,14 +412,10 @@ func _parse_script(path : String) -> void:
 			elif tokens[3] == "false":
 				_global_symbols.obfuscation_enabled = false
 			script_data.local_symbols.obfuscation_enabled = _global_symbols.obfuscation_enabled
-			
-			if _is_debug_script(path):
-				prints(line_idx+1, "##OBFUSCATE", _global_symbols.obfuscation_enabled)
+			_script_log(str(line_idx+1) + " ##OBFUSCATE " + str(_global_symbols.obfuscation_enabled))
 		elif line.begins_with("##OBFUSCATE_STRING_PARAMETERS"):
 			string_param_names = line.trim_prefix("##OBFUSCATE_STRING_PARAMETERS").replace(" ", "").split(",", false)
-			
-			if _is_debug_script(path):
-				prints(line_idx+1, "##OBFUSCATE_STRING_PARAMETERS", string_param_names)
+			_script_log(str(line_idx+1) + " ##OBFUSCATE_STRING_PARAMETERS " + str(string_param_names))
 		
 		if tokens and tokens[0] != "#":
 			var lower_scope : bool = false
@@ -392,8 +444,7 @@ func _parse_script(path : String) -> void:
 					cur_scope_tree_branch = cur_scope_tree_branch[cur_scope_tree_path[i]]
 					scope_id += str(cur_scope_tree_path[i]) + ("-" if i+1 < cur_scope_tree_path.size() else "")
 				
-				#if _is_debug_script(path):
-					#print(line_idx+1, " SCOPE ID ", scope_id)
+				_script_log(str(line_idx+1) + " SCOPE ID " + scope_id)
 				
 				prev_identation = identation
 		
@@ -420,9 +471,7 @@ func _parse_script(path : String) -> void:
 				ExpressionType.VAR:
 					if line.begins_with("@export") and !_obfuscate_export_vars:
 						_global_symbols.exclude_symbol(token)
-						
-						if _is_debug_script(path):
-							print(line_idx+1, " SKIP EXPORT VAR ", token) 
+						_script_log(str(line_idx+1) + " skipping export var " + token) 
 					else:
 						var type : String = _get_var_type(i, tokens)
 						if local_scope:
@@ -433,9 +482,7 @@ func _parse_script(path : String) -> void:
 								_global_symbols.add_symbol(scope_path + "." + token, scope_path + "." + new_symbol.name, type)
 							if !in_class:
 								script_data.add_member_symbol(token, SymbolTable.Symbol.new(new_symbol.name if new_symbol.name else token, type))
-						
-						if _is_debug_script(path):
-							print(line_idx+1, " VAR " if !local_scope else " LOCAL VAR ",  scope_path, ".", token, " : ", type)
+						_script_log(str(line_idx+1) + (" var " if !local_scope else " local var ") + scope_path + "." + token + " : " + type)
 					
 					expr_type = ExpressionType.NONE
 				
@@ -453,8 +500,7 @@ func _parse_script(path : String) -> void:
 						scope_path_identations.append(identation)
 						local_scope = true
 						
-						if _is_debug_script(path):
-							print(line_idx+1, " FUNC ", scope_path)
+						_script_log(str(line_idx+1) + " func " + scope_path)
 						
 						expr_type = ExpressionType.PARAMS
 					else:
@@ -472,8 +518,7 @@ func _parse_script(path : String) -> void:
 					scope_path_identations.append(identation)
 					in_class = true
 					
-					if _is_debug_script(path):
-						print(line_idx+1, " CLASS ", scope_path)
+					_script_log(str(line_idx+1) + " class " + scope_path)
 					
 					expr_type = ExpressionType.NONE
 				
@@ -485,8 +530,7 @@ func _parse_script(path : String) -> void:
 					scope_path_root = token + "."
 					expr_type = ExpressionType.NONE
 					
-					#if _is_debug_script(path):
-						#print(line_idx+1, " GLOBAL CLASS ", token)
+					_script_log(str(line_idx+1) + " global class " + token)
 				
 				ExpressionType.SIGNAL:
 					if !_obfuscate_signals:
@@ -504,8 +548,7 @@ func _parse_script(path : String) -> void:
 						scope_path_identations.append(identation)
 						local_scope = true
 						
-						if _is_debug_script(path):
-							print(line_idx+1, " SIGNAL ", scope_path)
+						_script_log(str(line_idx+1) + " signal " + scope_path)
 						
 						expr_type = ExpressionType.NONE
 						for j in range(i + 1, tokens.size()):
@@ -534,8 +577,7 @@ func _parse_script(path : String) -> void:
 					scope_path_identations.append(identation)
 					local_scope = true
 					
-					if _is_debug_script(path):
-						print(line_idx+1, " ENUM ", scope_path, " -> ", enum_path)
+					_script_log(str(line_idx+1) + " enum " + scope_path + " -> " + enum_path)
 					
 					expr_type = ExpressionType.ENUM_VALUES
 				
@@ -557,9 +599,7 @@ func _parse_script(path : String) -> void:
 								script_data.add_member_symbol(
 									scope_path.trim_prefix(scope_path_root) + "." + token,
 									SymbolTable.Symbol.new(str(cur_emum_idx) if _inline_enums else enum_path.trim_prefix(scope_path_root) + "." + name))
-							
-							if _is_debug_script(path):
-								print(line_idx+1, " ENUM VALUE ", scope_path + "." + token, " -> ", enum_path + "." + name)
+							_script_log(str(line_idx+1) + " enum value " + scope_path + "." + token + " -> " + enum_path + "." + name)
 				
 				ExpressionType.ENUM_VALUE_ASSIGNMENT:
 					if token == "}":
@@ -604,8 +644,7 @@ func _parse_script(path : String) -> void:
 							_constants[scope_path + "." + token].set_meta("member",
 								script_data.add_member_symbol(token, SymbolTable.Symbol.new(value if value else (new_symbol.name if new_symbol else token), type)))
 					
-					if _is_debug_script(path):
-						print(line_idx+1, " CONST ", scope_path + "." + token, " : ", type)
+					_script_log(str(line_idx+1) + " const " + scope_path + "." + token + " : " + type)
 					
 					expr_type = ExpressionType.NONE
 				
@@ -619,17 +658,12 @@ func _parse_script(path : String) -> void:
 						parentheses = 0
 					elif token != "(" and token != "," and token != "\\":
 						var type : String = _get_var_type(i, tokens)
-						var name : String = script_data.add_local_symbol(token, scope_path, "", type)
-						
+						var name : String = script_data.add_local_symbol(token, scope_path, "", type)	
 						param_idx += 1
 						if string_param_names.has(token):
 							string_params[param_idx] = token
-							
-							if _is_debug_script(path):
-								prints(line_idx+1, "SET STRING PARAM", token, param_idx)
-						
-						if _is_debug_script(path):
-							print(line_idx+1, " PARAM ", scope_path + "." + token, " : ", type)
+							_script_log(str(line_idx+1) + " binding string param " + token + " " + str(param_idx))
+						_script_log(str(line_idx+1) + " param " + scope_path + "." + token + " : " + type)
 				
 				ExpressionType.PARAMS_HINT:
 					if token == ")":
@@ -649,7 +683,9 @@ func _parse_script(path : String) -> void:
 			i += 1
 		
 		var line_data : ScriptData.Line = script_data.new_line()
+		line_data.idx = line_idx
 		line_data.skip = skipped_lines.get(line_idx, false)
+		line_data.source_text = line
 		line_data.text = line
 		line_data.tokens = tokens
 		line_data.tokens_tween = tokens_tween
@@ -661,16 +697,17 @@ func _parse_script(path : String) -> void:
 
 
 func _obfuscate_script(path : String) -> String:
-	if _is_debug_script(path):
-		print("\n---------- ", "OBFUSCATE SCRIPT ", path, " ----------\n")
-	elif _obfuscate_debug_only:
-		return _scripts_data[path].code
-	
-	var lines : PackedStringArray
+	#if _is_debug_script(path):
+		#print("\n---------- ", "OBFUSCATE SCRIPT ", path, " ----------\n")
+	#elif _obfuscate_debug_only:
+		#return _scripts_data[path].source_code
 	
 	# Insert obfuscated symbols
 	var obfuscate_declarations : bool = true
 	var script_data : ScriptData = _scripts_data[path]
+	_current_script = script_data
+	_script_log("---------- " + " Obfuscating script " + path + " ----------")
+	var line_mapper : ScriptData.LineMapper = script_data.line_mapper
 	script_data.reload(_scripts_data)
 	var line_data : ScriptData.Line = script_data.get_next_line()
 	while line_data:
@@ -681,10 +718,9 @@ func _obfuscate_script(path : String) -> String:
 				obfuscate_declarations = true
 			elif line_data.tokens[3] == "false":
 				obfuscate_declarations = false
-			lines.append(line_data.text)
+			line_mapper.add_linked_line(line_data, line_data.text)
 			line_data = script_data.get_next_line()
-			if _is_debug_script(path):
-				prints(script_data._idx-1, "##OBFUSCATE", obfuscate_declarations)
+			_script_log(str(script_data._idx-1) + " ##OBFUSCATE " + str(obfuscate_declarations))
 			continue
 		
 		var i : int = 0
@@ -700,9 +736,9 @@ func _obfuscate_script(path : String) -> String:
 			# Skip entire enum declaration if enum inlining is enabled
 			if _inline_enums and token == "enum" and obfuscate_declarations:
 				while line_data and !line_data.text.contains("}"):
-					line_code += "\n"
+					line_mapper.add_linked_line(line_data, "")
 					line_data = script_data.get_next_line()
-				line_code += "\n"
+				line_mapper.add_linked_line(line_data, "")
 				line_data = script_data.get_next_line() # A bit sloppy, but it's okay
 				i = 0
 				continue
@@ -740,19 +776,13 @@ func _obfuscate_script(path : String) -> String:
 					new_symbol = _global_symbols.get_symbol(str.trim_suffix(str_end))
 					if new_symbol:
 						line_code += new_symbol.name + str_end
-						
-						if _is_debug_script(path):
-							print(script_data._idx+1, " FOUND STRING SYMBOL >", str.trim_suffix(str_end), "< = ", new_symbol.name)
-						
+						_script_log(str(script_data._idx+1) + " found string symbol >" + str.trim_suffix(str_end) + "< = " + new_symbol.name)
 						continue
 					else:
 						var created_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(str.trim_suffix(str_end))
 						if created_symbol:
 							line_code += created_symbol.name + str_end
-							
-							if _is_debug_script(path):
-								print(script_data._idx+1, " CREATED STRING SYMBOL >", str.trim_suffix(str_end), "< = ", created_symbol.name)
-							
+							_script_log(str(script_data._idx+1) + " created string symbol >" + str.trim_suffix(str_end) + "< = " + created_symbol.name)
 							continue
 				
 				line_code += str
@@ -762,7 +792,6 @@ func _obfuscate_script(path : String) -> String:
 			# Skip node paths
 			if token.begins_with("$"):
 				var node_path : String = token
-				
 				i += 1
 				while i < line_data.tokens.size():
 					var section : String = line_data.tokens[i]
@@ -771,12 +800,8 @@ func _obfuscate_script(path : String) -> String:
 						break
 					i += 1
 				i += 1
-				
 				line_code += node_path
-				
-				if _is_debug_script(path):
-					prints(script_data._idx+1, "SKIPPING NODE PATH", ">" + node_path + "<")
-				
+				_script_log(str(script_data._idx+1) + " skipping node path >" + node_path + "<")
 				continue
 			
 			# Skip declarations if obfuscation is disabled
@@ -787,17 +812,14 @@ func _obfuscate_script(path : String) -> String:
 				i += 2
 				#if token == "func":
 					#pass #NOTE not yet sure if manually skipping all parameters is required
-				
-				if _is_debug_script(path):
-					print(script_data._idx+1, " SKIPPING " + token.to_upper() + " DECLARATION")
-				
+				_script_log(str(script_data._idx+1) + " skip " + token.to_upper() + " obfuscation")
 				continue
 			
 			# First, search for token in local vars, if currently in a local scope
 			if line_data.local_scope and (i == 0 or line_data.tokens[i-1] != "."):
 				new_symbol = script_data.get_local_symbol(token, line_data.scope_path, line_data.scope_id)
-				if new_symbol and _is_debug_script(path):
-					print(script_data._idx+1, " FOUND LOCAL SYMBOL >", line_data.scope_path + "." + token + "." + line_data.scope_id, "< = ", new_symbol.name)
+				if new_symbol:
+					_script_log(str(script_data._idx+1) + " found local symbol >" + line_data.scope_path + "." + token + "." + line_data.scope_id + "< = " + new_symbol.name)
 			
 			# Search for token in members and globals
 			if !new_symbol:
@@ -814,16 +836,14 @@ func _obfuscate_script(path : String) -> String:
 					if search_members:
 						new_symbol = script_data.get_member_symbol(token)
 						if new_symbol:
-							if _is_debug_script(path):
-								print(script_data._idx+1, " FOUND MEMBER SYMBOL >", token, "< = ", new_symbol.name, " : ", new_symbol.type)
+							_script_log(str(script_data._idx+1) + " found member symbol >" + token + "< = " + new_symbol.name + " : " + new_symbol.type)
 							break
 					
 					# Search globals
 					if !new_symbol:
 						new_symbol = _global_symbols.get_symbol(token)
 						if new_symbol:
-							if _is_debug_script(path):
-								print(script_data._idx+1, " FOUND SYMBOL >", token, "< = ", new_symbol.name)
+							_script_log(str(script_data._idx+1) + " found symbol >" + token + "< = " + new_symbol.name)
 							break
 					
 					segments.resize(segments.size() - 1)
@@ -842,14 +862,11 @@ func _obfuscate_script(path : String) -> String:
 					var param : ScriptData.Param = params[param_idx]
 					if !new_symbol.string_params.has(param_idx) or !param.is_string:
 						continue
-					
 					var pos : Array[int] = script_data.increment_token_position(param.from_line, param.from_token, 2)
 					var param_token : String = script_data.get_token_at(pos[0], pos[1])
 					var param_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(param_token)
 					script_data.set_token_at(pos[0], pos[1], param_symbol.name)
-					
-					if _is_debug_script(path):
-						prints(script_data._idx+1, "FOUND STRING PARAM", param.raw, str(param.from_line+1) + ":" + str(param.from_token), "-", str(param.to_line+1) + ":" + str(param.to_token), " = ", "")
+					_script_log(str(script_data._idx+1) + " found string param " + param.raw + " " + str(param.from_line+1) + ":" + str(param.from_token) + "-" + str(param.to_line+1) + ":" + str(param.to_token) + " = " + "")
 			
 			# Skip dictionary accesses
 			if new_symbol and new_symbol.type and new_symbol.type == "Dictionary":
@@ -862,23 +879,24 @@ func _obfuscate_script(path : String) -> String:
 		if line_data.tokens_tween.size() > line_data.tokens.size():
 			line_code += line_data.tokens_tween[-1]
 		
-		lines.append(line_code)
+		line_mapper.add_linked_line(line_data, line_code)
 		line_data = script_data.get_next_line()
 	
 	# Compile features
 	if _feature_filters:# and _scripts_last_modification.get(path, 0) != FileAccess.get_modified_time(path):
 		#_scripts_last_modification[path] = FileAccess.get_modified_time(path)
-		lines = _compile_script_features(path, _lines_to_code(lines)).split("\n")
+		#lines = _compile_script_features(path, _lines_to_code(lines)).split("\n")
+		pass
 	
 	# Strip comments
 	if _strip_comments:
-		for i in range(lines.size() - 1, -1, -1):
-			var line : String = lines[i]
-			if line.contains("#"):
+		for i in range(line_mapper.get_line_count() - 1, -1, -1):
+			var line : ScriptData.Line = line_mapper.get_line(i)
+			if line.text.contains("#"):
 				var cur_string_literal : String
 				var idx : int = 0
-				while idx < line.length():
-					var c : String = line[idx]
+				while idx < line.text.length():
+					var c : String = line.text[idx]
 					if c == "'" or c == '"':
 						if !cur_string_literal:
 							cur_string_literal = c
@@ -886,41 +904,46 @@ func _obfuscate_script(path : String) -> String:
 							cur_string_literal = ""
 					elif c == "#" and !cur_string_literal:
 						if idx > 0:
-							lines[i] = line.substr(0, idx)
+							line.text = line.text.substr(0, idx)
 							break
 						else:
 							if _strip_empty_lines:
-								lines.remove_at(i)
+								line_mapper.remove_line(i)
 							else:
-								lines[i] = "# ..."
+								line.text = "# ..."
 							break
 					idx += 1
 	
 	# Strip empty lines
 	if _strip_empty_lines:
-		for i in range(lines.size() - 1, -1, -1):
-			var line : String = lines[i]
-			if line.replace(" ", "").replace("\n", "").replace("\t", "").length() == 0:
-				lines.remove_at(i)
+		for i in range(line_mapper.get_line_count() - 1, -1, -1):
+			var line : ScriptData.Line = line_mapper.get_line(i)
+			if line.text.replace(" ", "").replace("\n", "").replace("\t", "").length() == 0:
+				line_mapper.remove_line(i)
 				continue
 	
-	var code : String
-	for line in lines:
-		code += line + "\n"
-	code = code.strip_edges(false, true) + "\n"
+	# Inject startup code into the first autoload
+	if path == _inject_autoload:
+		var injection_code : String = 'print("GDMaim - Source map \'' + _source_map_filename + '\'\\n");'
+		var did_inject : bool = false
+		for i in line_mapper.get_line_count():
+			var line : ScriptData.Line = line_mapper.get_line(i)
+			if line.text.begins_with("func ") and line.text.contains("_enter_tree") and i + 1 < line_mapper.get_line_count():
+				line_mapper.edit_line(i + 1, '\t' + injection_code + line_mapper.get_line(i + 1).text.trim_prefix("\t").trim_prefix("    "))
+				did_inject = true
+		if !did_inject:
+			line_mapper.add_new_line('func _enter_tree() -> void:\n\t' + injection_code)
 	
-	if _is_debug_script(path):
-		print("")
-		_print_source_code(code)
+	script_data.export_code = line_mapper.get_code()
 	
-	return code
+	return script_data.export_code
 
 
 func _obfuscate_resource(path : String, source_data : String) -> String:
 	if _is_debug_resource(path):
 		print("\n---------- OBFUSCATE RESOURCE ", path, " ----------\n")
-	elif _obfuscate_debug_only:
-		return source_data
+	#elif _obfuscate_debug_only:
+		#return source_data
 	
 	var data : String = ""
 	
@@ -1202,12 +1225,11 @@ func _write_file_str(path : String, text : String) -> bool:
 	return false
 
 
-func _build_cache_path() -> void:
-	var cache_dir : String = get_script().resource_path.get_base_dir() + "/cache"
-	if !DirAccess.dir_exists_absolute(cache_dir):
-		DirAccess.make_dir_recursive_absolute(cache_dir)
-	_write_file_str(cache_dir + "/.gdignore", "")
-	_write_file_str(get_script().resource_path.get_base_dir() + "/.gitignore", "cache/")
+func _build_data_path(path : String) -> void:
+	if !DirAccess.dir_exists_absolute(path):
+		DirAccess.make_dir_recursive_absolute(path)
+	_write_file_str(path + "/.gdignore", "")
+	_write_file_str(get_script().resource_path.get_base_dir() + "/.gitignore", "cache/\nsource_maps/")
 
 
 func _convert_text_to_binary_resource(extension : String, text_data : String) -> PackedByteArray:
@@ -1240,13 +1262,18 @@ func _generate_uuid(path : String) -> String:
 	return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (bytes as Array)
 
 
+func _script_log(text : String) -> void:
+	if _current_script:
+		_current_script.log_line(text)
+
+
 func _print_source_code(source_code : String) -> void:
 	var t : PackedStringArray = source_code.split("\n")
 	for i in t.size():
-		print(_pad_digits(i+1, 7, "-"), "|", t[i])
+		print(pad_digits(i+1, 7, "-"), "|", t[i])
 
 
-func _pad_digits(num : int, digits : int, char : String = " ") -> String:
+static func pad_digits(num : int, digits : int, char : String = " ") -> String:
 	var str : String
 	var n : int = num / 10
 	var d : int = 1

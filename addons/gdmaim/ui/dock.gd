@@ -3,6 +3,7 @@ extends Panel
 
 
 signal changed()
+signal source_map_viewer_requested()
 
 var cfg : ConfigFile
 
@@ -20,6 +21,10 @@ var _write_queued : bool = false
 @onready var strip_comments : CheckBox = $ScrollContainer/VBoxContainer/StripComments/CheckBox
 @onready var strip_empty_lines : CheckBox = $ScrollContainer/VBoxContainer/StripEmptyLines/CheckBox
 @onready var feature_filters : CheckBox = $ScrollContainer/VBoxContainer/FeatureFilters/CheckBox
+@onready var source_map_path : LineEdit = $ScrollContainer/VBoxContainer/SourceMapPath/LineEdit
+@onready var source_map_max_files : SpinBox = $ScrollContainer/VBoxContainer/SourceMapMaxFiles/SpinBox
+@onready var source_map_max_compress : CheckBox = $ScrollContainer/VBoxContainer/SourceMapCompress/CheckBox
+@onready var source_map_max_inject_name : CheckBox = $ScrollContainer/VBoxContainer/SourceMapInjectName/CheckBox
 @onready var debug_scripts : LineEdit = $ScrollContainer/VBoxContainer/DebugScripts/LineEdit
 @onready var debug_resources : LineEdit = $ScrollContainer/VBoxContainer/DebugResources/LineEdit
 @onready var obfuscate_debug_only : CheckBox = $ScrollContainer/VBoxContainer/ObfuscateDebugOnly/CheckBox
@@ -52,6 +57,10 @@ func _read_cfg() -> void:
 	strip_comments.button_pressed = cfg.get_value("post_process", "strip_comments", false)
 	strip_empty_lines.button_pressed = cfg.get_value("post_process", "strip_empty_lines", false)
 	feature_filters.button_pressed = cfg.get_value("post_process", "feature_filters", false)
+	source_map_path.text = cfg.get_value("source_mapping", "filepath", "")
+	source_map_max_files.value = cfg.get_value("source_mapping", "max_files", 1)
+	source_map_max_compress.button_pressed = cfg.get_value("source_mapping", "compress", false)
+	source_map_max_inject_name.button_pressed = cfg.get_value("source_mapping", "inject_name", false)
 	debug_scripts.text = cfg.get_value("debug", "debug_scripts", "")
 	debug_resources.text = cfg.get_value("debug", "debug_resources", "")
 	obfuscate_debug_only.button_pressed = cfg.get_value("debug", "obfuscate_debug_only", false)
@@ -72,12 +81,16 @@ func _write_cfg(force : bool = false) -> void:
 	cfg.set_value("obfuscator", "signals", signals.button_pressed)
 	cfg.set_value("id", "prefix", id_prefix.text)
 	cfg.set_value("id", "character_list", id_characters.text)
-	cfg.set_value("id", "target_length", id_target_length.value)
-	cfg.set_value("id", "seed", generator_seed.value)
+	cfg.set_value("id", "target_length", int(id_target_length.value))
+	cfg.set_value("id", "seed", int(generator_seed.value))
 	cfg.set_value("id", "dynamic_seed", dynamic_seed.button_pressed)
 	cfg.set_value("post_process", "strip_comments", strip_comments.button_pressed)
 	cfg.set_value("post_process", "strip_empty_lines", strip_empty_lines.button_pressed)
 	cfg.set_value("post_process", "feature_filters", feature_filters.button_pressed)
+	cfg.set_value("source_mapping", "filepath", source_map_path.text)
+	cfg.set_value("source_mapping", "max_files", int(source_map_max_files.value))
+	cfg.set_value("source_mapping", "compress", source_map_max_compress.button_pressed)
+	cfg.set_value("source_mapping", "inject_name", source_map_max_inject_name.button_pressed)
 	cfg.set_value("debug", "debug_scripts", debug_scripts.text)
 	cfg.set_value("debug", "debug_resources", debug_resources.text)
 	cfg.set_value("debug", "obfuscate_debug_only", obfuscate_debug_only.button_pressed)
@@ -97,3 +110,7 @@ func _on_line_edit_text_changed(new_text : String) -> void:
 
 func _on_spin_box_value_changed(value : float) -> void:
 	_write_cfg()
+
+
+func _on_view_source_map_pressed() -> void:
+	source_map_viewer_requested.emit()

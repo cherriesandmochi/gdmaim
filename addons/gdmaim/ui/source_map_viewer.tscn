@@ -1,0 +1,527 @@
+[gd_scene load_steps=15 format=3 uid="uid://dqknu058384tm"]
+
+[ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer.gd" id="1_xfxdk"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6bkrx"]
+bg_color = Color(0.113725, 0.298039, 0.333333, 1)
+expand_margin_left = 1.0
+expand_margin_top = 26.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bdbcx"]
+bg_color = Color(0.160784, 0.164706, 0.192157, 1)
+expand_margin_left = 1.0
+expand_margin_top = 26.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ahkt6"]
+bg_color = Color(0.0705882, 0.141176, 0.180392, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_aq0q2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xmd2u"]
+bg_color = Color(0.901961, 0.894118, 0.941176, 0.376471)
+
+[sub_resource type="SystemFont" id="SystemFont_g6j54"]
+font_names = PackedStringArray("Consolas")
+generate_mipmaps = true
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_syit6"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.113725, 0.133333, 0.160784, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_bcbti"]
+
+[sub_resource type="CodeHighlighter" id="CodeHighlighter_8eucx"]
+number_color = Color(0.631373, 1, 0.878431, 1)
+symbol_color = Color(0.670588, 0.788235, 1, 1)
+function_color = Color(0.4, 0.901961, 1, 1)
+member_variable_color = Color(0.737255, 0.878431, 1, 1)
+keyword_colors = {
+"Array": Color(0.258824, 1, 0.760784, 1),
+"Dictionary": Color(0.258824, 1, 0.760784, 1),
+"String": Color(0.258824, 1, 0.760784, 1),
+"Vector2": Color(0.258824, 1, 0.760784, 1),
+"Vector2i": Color(0.258824, 1, 0.760784, 1),
+"Vector3": Color(0.258824, 1, 0.760784, 1),
+"Vector3i": Color(0.258824, 1, 0.760784, 1),
+"Vector4": Color(0.258824, 1, 0.760784, 1),
+"Vector4i": Color(0.258824, 1, 0.760784, 1),
+"await": Color(1, 0.439216, 0.521569, 1),
+"bool": Color(0.258824, 1, 0.760784, 1),
+"break": Color(1, 0.54902, 0.8, 1),
+"case": Color(1, 0.54902, 0.8, 1),
+"class": Color(1, 0.439216, 0.521569, 1),
+"class_name": Color(1, 0.439216, 0.521569, 1),
+"const": Color(1, 0.439216, 0.521569, 1),
+"else": Color(1, 0.54902, 0.8, 1),
+"enum": Color(1, 0.439216, 0.521569, 1),
+"export": Color(1, 0.701961, 0.45098, 1),
+"export_range": Color(1, 0.701961, 0.45098, 1),
+"extends": Color(1, 0.439216, 0.521569, 1),
+"false": Color(1, 0.439216, 0.521569, 1),
+"float": Color(0.258824, 1, 0.760784, 1),
+"for": Color(1, 0.54902, 0.8, 1),
+"func": Color(1, 0.439216, 0.521569, 1),
+"if": Color(1, 0.54902, 0.8, 1),
+"in": Color(1, 0.54902, 0.8, 1),
+"int": Color(0.258824, 1, 0.760784, 1),
+"load": Color(1, 0.439216, 0.521569, 1),
+"match": Color(1, 0.54902, 0.8, 1),
+"onready": Color(1, 0.701961, 0.45098, 1),
+"pass": Color(1, 0.54902, 0.8, 1),
+"preload": Color(1, 0.439216, 0.521569, 1),
+"print": Color(1, 0.439216, 0.521569, 1),
+"prints": Color(1, 0.439216, 0.521569, 1),
+"return": Color(1, 0.54902, 0.8, 1),
+"rpc": Color(1, 0.701961, 0.45098, 1),
+"signal": Color(1, 0.439216, 0.521569, 1),
+"tool": Color(1, 0.701961, 0.45098, 1),
+"true": Color(1, 0.439216, 0.521569, 1),
+"var": Color(1, 0.439216, 0.521569, 1),
+"void": Color(0.258824, 1, 0.760784, 1),
+"while": Color(1, 0.54902, 0.8, 1)
+}
+color_regions = {
+"\" \"": Color(1, 0.929412, 0.631373, 1),
+"#": Color(0.803922, 0.811765, 0.823529, 0.501961),
+"##": Color(0.47451, 0.270588, 0.756863, 1),
+"' '": Color(1, 0.929412, 0.631373, 1)
+}
+
+[sub_resource type="CodeHighlighter" id="CodeHighlighter_tq3hv"]
+number_color = Color(0.631373, 1, 0.878431, 1)
+symbol_color = Color(0.670588, 0.788235, 1, 1)
+function_color = Color(0.4, 0.901961, 1, 1)
+member_variable_color = Color(0.737255, 0.878431, 1, 1)
+keyword_colors = {
+"Array": Color(0.258824, 1, 0.760784, 1),
+"Dictionary": Color(0.258824, 1, 0.760784, 1),
+"String": Color(0.258824, 1, 0.760784, 1),
+"Vector2": Color(0.258824, 1, 0.760784, 1),
+"Vector2i": Color(0.258824, 1, 0.760784, 1),
+"Vector3": Color(0.258824, 1, 0.760784, 1),
+"Vector3i": Color(0.258824, 1, 0.760784, 1),
+"Vector4": Color(0.258824, 1, 0.760784, 1),
+"Vector4i": Color(0.258824, 1, 0.760784, 1),
+"await": Color(1, 0.439216, 0.521569, 1),
+"bool": Color(0.258824, 1, 0.760784, 1),
+"break": Color(1, 0.54902, 0.8, 1),
+"case": Color(1, 0.54902, 0.8, 1),
+"class": Color(1, 0.439216, 0.521569, 1),
+"class_name": Color(1, 0.439216, 0.521569, 1),
+"const": Color(1, 0.439216, 0.521569, 1),
+"else": Color(1, 0.54902, 0.8, 1),
+"enum": Color(1, 0.439216, 0.521569, 1),
+"export": Color(1, 0.701961, 0.45098, 1),
+"export_range": Color(1, 0.701961, 0.45098, 1),
+"extends": Color(1, 0.439216, 0.521569, 1),
+"false": Color(1, 0.439216, 0.521569, 1),
+"float": Color(0.258824, 1, 0.760784, 1),
+"for": Color(1, 0.54902, 0.8, 1),
+"func": Color(1, 0.439216, 0.521569, 1),
+"if": Color(1, 0.54902, 0.8, 1),
+"in": Color(1, 0.54902, 0.8, 1),
+"int": Color(0.258824, 1, 0.760784, 1),
+"load": Color(1, 0.439216, 0.521569, 1),
+"match": Color(1, 0.54902, 0.8, 1),
+"onready": Color(1, 0.701961, 0.45098, 1),
+"pass": Color(1, 0.54902, 0.8, 1),
+"preload": Color(1, 0.439216, 0.521569, 1),
+"print": Color(1, 0.439216, 0.521569, 1),
+"prints": Color(1, 0.439216, 0.521569, 1),
+"return": Color(1, 0.54902, 0.8, 1),
+"rpc": Color(1, 0.701961, 0.45098, 1),
+"signal": Color(1, 0.439216, 0.521569, 1),
+"tool": Color(1, 0.701961, 0.45098, 1),
+"true": Color(1, 0.439216, 0.521569, 1),
+"var": Color(1, 0.439216, 0.521569, 1),
+"void": Color(0.258824, 1, 0.760784, 1),
+"while": Color(1, 0.54902, 0.8, 1)
+}
+color_regions = {
+"\" \"": Color(1, 0.929412, 0.631373, 1),
+"#": Color(0.803922, 0.811765, 0.823529, 0.501961),
+"##": Color(0.47451, 0.270588, 0.756863, 1),
+"' '": Color(1, 0.929412, 0.631373, 1)
+}
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_i2xq8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_54gcf"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0, 0, 0, 0.258824)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_e4wko"]
+
+[node name="SourceMapViewer" type="Window"]
+handle_input_locally = false
+title = "Source Map Viewer"
+initial_position = 1
+size = Vector2i(1800, 900)
+content_scale_size = Vector2i(100, 100)
+theme_override_styles/embedded_border = SubResource("StyleBoxFlat_6bkrx")
+theme_override_styles/embedded_unfocused_border = SubResource("StyleBoxFlat_bdbcx")
+script = ExtResource("1_xfxdk")
+
+[node name="BG" type="Panel" parent="."]
+modulate = Color(0.839216, 0.839216, 0.839216, 1)
+self_modulate = Color(0.603922, 0.603922, 0.603922, 1)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 25.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ahkt6")
+
+[node name="OpenFile" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 1.0
+offset_top = -11.5
+offset_right = 51.0
+offset_bottom = 11.5
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_aq0q2")
+theme_override_styles/hover = SubResource("StyleBoxFlat_xmd2u")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_xmd2u")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_aq0q2")
+text = "Open"
+
+[node name="CurrentFile" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -57.0
+offset_top = -11.5
+offset_right = 57.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "GDMaim2024-01-26T16.20.00.gd.map"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSplitContainer" type="HSplitContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 25.0
+offset_right = -5.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+split_offset = 200
+
+[node name="Control" type="Control" parent="HSplitContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="FileFilter" type="LineEdit" parent="HSplitContainer/Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 2.0
+offset_top = 5.0
+offset_right = -2.0
+offset_bottom = 35.0
+grow_horizontal = 2
+placeholder_text = "Filter files"
+
+[node name="FileTree" type="Tree" parent="HSplitContainer/Control"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 40.0
+offset_right = -2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HSplitContainer" type="HSplitContainer" parent="HSplitContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+split_offset = 1370
+
+[node name="VSplitContainer" type="VSplitContainer" parent="HSplitContainer/HSplitContainer"]
+layout_mode = 2
+split_offset = 650
+
+[node name="Code" type="HSplitContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer"]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+theme_override_constants/separation = 0
+split_offset = 680
+
+[node name="Source" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="VSplitContainer" type="VSplitContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+dragger_visibility = 2
+
+[node name="Header" type="Label" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer"]
+layout_mode = 2
+text = "Source Code"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Control" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer"]
+layout_mode = 2
+
+[node name="SourceCode" type="CodeEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/Control"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+theme_override_colors/current_line_color = Color(0.752941, 0, 0.0509804, 0.419608)
+theme_override_fonts/font = SubResource("SystemFont_g6j54")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_syit6")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_bcbti")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_syit6")
+text = "extends Node
+
+
+class Trace:
+	var level: int
+	var msg: String
+	var module: String = \"unknown\"
+	var function_name: String = \"unknown\"
+	var timestamp: String = (
+		Time.get_datetime_string_from_system()
+	)
+	var thread_id := 1
+	var _has_mono: bool = Engine.has_singleton(\"GodotSharp\")
+
+	func _init(
+		msg: String, level: int, new_thread_id := 0
+	) -> void:
+		self.msg = msg
+		self.level = level
+		var st = get_stack()
+		if st.size() > 2:
+			module = st[2].source.trim_prefix(\"res://\")
+			function_name = st[2].function
+		elif _has_mono:
+			# C#-specific stack handling
+			var mono_sh_script = load(\"res://addons/tracer/StackHandler.cs\")
+			var mono_stack_handler = mono_sh_script.new()
+			module = mono_stack_handler.GetModulePath()
+			function_name = mono_stack_handler.GetFunctionName()
+		else:
+			function_name = \"unknown\"
+		thread_id = new_thread_id
+"
+editable = false
+caret_blink = true
+caret_multiple = false
+syntax_highlighter = SubResource("CodeHighlighter_8eucx")
+highlight_all_occurrences = true
+highlight_current_line = true
+draw_tabs = true
+line_folding = true
+gutters_draw_executing_lines = true
+gutters_draw_line_numbers = true
+
+[node name="Exported" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="VSplitContainer" type="VSplitContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+dragger_visibility = 2
+
+[node name="Header" type="Label" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer"]
+layout_mode = 2
+text = "Exported Code"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Control" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer"]
+layout_mode = 2
+
+[node name="ExportedCode" type="CodeEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/Control"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+theme_override_colors/current_line_color = Color(0.752941, 0, 0.0509804, 0.419608)
+theme_override_fonts/font = SubResource("SystemFont_g6j54")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_syit6")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_bcbti")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_syit6")
+editable = false
+minimap_width = 35
+caret_blink = true
+caret_multiple = false
+syntax_highlighter = SubResource("CodeHighlighter_tq3hv")
+highlight_all_occurrences = true
+draw_tabs = true
+line_folding = true
+gutters_draw_executing_lines = true
+gutters_draw_line_numbers = true
+
+[node name="BottomDock" type="TabContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer"]
+layout_mode = 2
+theme_override_colors/font_selected_color = Color(0.541176, 0.792157, 0.992157, 1)
+theme_override_colors/font_hovered_color = Color(1, 1, 1, 1)
+theme_override_colors/font_unselected_color = Color(0.890196, 0.890196, 0.890196, 1)
+theme_override_constants/outline_size = 0
+theme_override_styles/tab_focus = SubResource("StyleBoxEmpty_i2xq8")
+
+[node name="Console" type="TextEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/BottomDock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_54gcf")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_e4wko")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_54gcf")
+text = "werqwe"
+editable = false
+context_menu_enabled = false
+shortcut_keys_enabled = false
+selecting_enabled = false
+deselect_on_focus_loss_enabled = false
+drag_and_drop_selection_enabled = false
+virtual_keyboard_enabled = false
+middle_mouse_paste_enabled = false
+
+[node name="Search Results" type="ItemList" parent="HSplitContainer/HSplitContainer/VSplitContainer/BottomDock"]
+visible = false
+layout_mode = 2
+
+[node name="Symbols" type="Control" parent="HSplitContainer/HSplitContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="SourceHeader" type="Label" parent="HSplitContainer/HSplitContainer/Symbols"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "Source Symbols"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ExportHeader" type="Label" parent="HSplitContainer/HSplitContainer/Symbols"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "Exported Symbols"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SourceSymbols" type="Tree" parent="HSplitContainer/HSplitContainer/Symbols"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = 30.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+hide_root = true
+
+[node name="ExportSymbols" type="Tree" parent="HSplitContainer/HSplitContainer/Symbols"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 30.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+hide_root = true
+
+[node name="LineEdit" type="LineEdit" parent="."]
+visible = false
+offset_right = 67.0625
+offset_bottom = 31.0
+editable = false
+
+[node name="Button" type="Button" parent="."]
+visible = false
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "Open a File"
+initial_position = 2
+size = Vector2i(900, 600)
+always_on_top = true
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.gd.map")
+use_native_dialog = true
+
+[connection signal="close_requested" from="." to="." method="_on_close_requested"]
+[connection signal="pressed" from="Panel/OpenFile" to="." method="_on_open_file_pressed"]
+[connection signal="text_changed" from="HSplitContainer/Control/FileFilter" to="." method="_on_file_filter_text_changed"]
+[connection signal="item_activated" from="HSplitContainer/Control/FileTree" to="." method="_on_file_tree_item_activated"]
+[connection signal="caret_changed" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/Control/SourceCode" to="." method="_on_source_code_caret_changed"]
+[connection signal="gui_input" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/Control/SourceCode" to="." method="_on_source_code_gui_input"]
+[connection signal="caret_changed" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/Control/ExportedCode" to="." method="_on_exported_code_caret_changed"]
+[connection signal="gui_input" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/Control/ExportedCode" to="." method="_on_exported_code_gui_input"]
+[connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]
