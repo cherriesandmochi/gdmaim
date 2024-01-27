@@ -12,6 +12,7 @@ var source_map_viewer : Window
 func _enter_tree() -> void:
 	name = "GDMaim"
 	
+	cfg.set_value("obfuscator", "enabled", true)
 	cfg.set_value("obfuscator", "inline_consts", true)
 	cfg.set_value("obfuscator", "inline_enums", true)
 	cfg.set_value("obfuscator", "export_vars", true)

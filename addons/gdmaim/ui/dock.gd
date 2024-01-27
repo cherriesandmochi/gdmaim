@@ -9,6 +9,7 @@ var cfg : ConfigFile
 
 var _write_queued : bool = false
 
+@onready var obfuscation_enabled : CheckBox = $ScrollContainer/VBoxContainer/EnableObfuscation/CheckBox
 @onready var inline_consts : CheckBox = $ScrollContainer/VBoxContainer/InlineConstants/CheckBox
 @onready var inline_enums : CheckBox = $ScrollContainer/VBoxContainer/InlineEnums/CheckBox
 @onready var export_vars : CheckBox = $ScrollContainer/VBoxContainer/ObfuscateExportVars/CheckBox
@@ -45,6 +46,7 @@ func _read_cfg() -> void:
 	if !cfg:
 		return
 	
+	obfuscation_enabled.button_pressed = cfg.get_value("obfuscator", "enabled", false)
 	inline_consts.button_pressed = cfg.get_value("obfuscator", "inline_consts", false)
 	inline_enums.button_pressed = cfg.get_value("obfuscator", "inline_enums", false)
 	export_vars.button_pressed = cfg.get_value("obfuscator", "export_vars", false)
@@ -75,6 +77,7 @@ func _write_cfg(force : bool = false) -> void:
 	
 	await get_tree().process_frame
 	
+	cfg.set_value("obfuscator", "enabled", obfuscation_enabled.button_pressed)
 	cfg.set_value("obfuscator", "inline_consts", inline_consts.button_pressed)
 	cfg.set_value("obfuscator", "inline_enums", inline_enums.button_pressed)
 	cfg.set_value("obfuscator", "export_vars", export_vars.button_pressed)

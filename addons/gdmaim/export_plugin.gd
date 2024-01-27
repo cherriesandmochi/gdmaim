@@ -24,6 +24,7 @@ var _current_script : ScriptData
 var _global_classes : Dictionary
 var _godot_data : Dictionary
 var _inject_autoload : String
+var _obfuscation_enabled : bool
 var _inline_constants : bool
 var _inline_enums : bool
 var _obfuscate_export_vars : bool
@@ -57,6 +58,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	if !_enabled:
 		return
 	
+	_obfuscation_enabled = cfg.get_value("obfuscator", "enabled", false)
 	_inline_constants = cfg.get_value("obfuscator", "inline_consts", false)
 	_inline_enums = cfg.get_value("obfuscator", "inline_enums", false)
 	_obfuscate_export_vars = cfg.get_value("obfuscator", "export_vars", false)
@@ -721,6 +723,11 @@ func _obfuscate_script(path : String) -> String:
 	var line_data : ScriptData.Line = script_data.get_next_line()
 	while line_data:
 		var line_code : String
+		
+		if !_obfuscation_enabled:
+			line_mapper.add_linked_line(line_data, line_data.text)
+			line_data = script_data.get_next_line()
+			continue
 		
 		if line_data.text.begins_with("##OBFUSCATE ") and line_data.tokens.size() >= 4:
 			if line_data.tokens[3] == "true":
