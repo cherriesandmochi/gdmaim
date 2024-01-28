@@ -270,6 +270,39 @@ theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
 theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
 text = "On"
 
+[node name="RegExFilters" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Strip Lines Matching RegEx
+If true, any lines matching the regular expression will be removed from the obfuscated code.
+"
+mouse_filter = 1
+text = "Strip Lines Matching RegEx"
+vertical_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="ScrollContainer/VBoxContainer/RegExFilters"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+
+[node name="RegExFilter" type="LineEdit" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Enter Regular Expression"
+
 [node name="FeatureFilters" type="Label" parent="ScrollContainer/VBoxContainer"]
 layout_mode = 2
 tooltip_text = "Process Feature Filters
@@ -627,6 +660,8 @@ text = "On"
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/ObfuscateSignals/CheckBox" to="." method="_on_check_box_toggled"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/StripComments/CheckBox" to="." method="_on_check_box_toggled"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/StripEmptyLines/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="ScrollContainer/VBoxContainer/RegExFilters/CheckBox" to="." method="_on_check_box_toggled"]
+[connection signal="text_changed" from="ScrollContainer/VBoxContainer/RegExFilter" to="." method="_on_line_edit_text_changed"]
 [connection signal="toggled" from="ScrollContainer/VBoxContainer/FeatureFilters/CheckBox" to="." method="_on_check_box_toggled"]
 [connection signal="text_changed" from="ScrollContainer/VBoxContainer/IDPrefix/LineEdit" to="." method="_on_line_edit_text_changed"]
 [connection signal="text_changed" from="ScrollContainer/VBoxContainer/IDCharacterList/LineEdit" to="." method="_on_line_edit_text_changed"]
