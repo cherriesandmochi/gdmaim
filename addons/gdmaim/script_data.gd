@@ -125,23 +125,23 @@ func get_member_symbol(symbol_name : String) -> SymbolTable.Symbol:
 	return member_symbols.get(symbol_name)
 
 
-func add_local_symbol(symbol_name : String, scope_path : String, scope_id : String, type : String = "", custom_name : String = "") -> String:
+func add_local_symbol(symbol_name : String, scope_path : String, scope_id : String, type : String = "", custom_name : String = "") -> SymbolTable.Symbol:
 	var symbol : SymbolTable.Symbol = local_symbols.get_symbol(scope_path + "." + symbol_name + "." + scope_id)
-	if symbol:
-		#NOTE should this even ever happen?
-		#prints("LOCAL SYMBOL ALREADY EXISTS:", scope_path + "." + symbol_name + "." + scope_id, symbol.name)
-		return symbol.name
+	if symbol: #NOTE should this even ever happen?
+		return symbol
 	
 	if exclude_symbols.has(symbol_name) or (!custom_name and !local_symbols.obfuscation_enabled):
 		custom_name = symbol_name
 	
-	local_symbols.add_symbol(scope_path + "." + symbol_name + "." + scope_id, custom_name, type)
-	symbol = local_symbols.get_symbol(scope_path + "." + symbol_name + "." + scope_id)
+	symbol = local_symbols.add_symbol(scope_path + "." + symbol_name + "." + scope_id, custom_name, type)
+	symbol.set_meta("local_path", scope_path + "." + symbol_name + "." + scope_id)
+	symbol.set_meta("scope_path", scope_path)
+	symbol.set_meta("scope_id", scope_id)
 	var symbols : Dictionary = _local_symbols_table.get(scope_path + "." + symbol_name, {})
 	_local_symbols_table[scope_path + "." + symbol_name] = symbols
 	symbols[scope_id] = symbol
 	
-	return symbol.name
+	return symbol
 
 
 func get_local_symbol(name : String, scope_path : String, scope_id : String) -> SymbolTable.Symbol:
@@ -151,7 +151,14 @@ func get_local_symbol(name : String, scope_path : String, scope_id : String) -> 
 		if !target_scope_id or scope_id.begins_with(target_scope_id):
 			return symbols[target_scope_id]
 	
+	if scope_path.contains(".@lambda"): # Handle special case for lambdas
+		return get_local_symbol(name, scope_path.substr(0, scope_path.find(".@lambda")), scope_id)
+	
 	return null
+
+
+func get_local_symbol_to(name : String, symbol : SymbolTable.Symbol) -> SymbolTable.Symbol:
+	return get_local_symbol(name, symbol.get_meta("scope_path", ""), symbol.get_meta("scope_id", ""))
 
 
 func increment_token_position(line : int, token : int, increment : int) -> Array[int]:

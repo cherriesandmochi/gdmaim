@@ -21,6 +21,7 @@ var _global_symbols : SymbolTable
 var _constants : Dictionary
 var _scripts_data : Dictionary
 var _current_script : ScriptData
+var _classes : Dictionary
 var _global_classes : Dictionary
 var _godot_data : Dictionary
 var _inject_autoload : String
@@ -212,6 +213,9 @@ func _prepare_obfuscation() -> void:
 	_global_symbols = SymbolTable.new(hash(str(_id_seed)), true, _built_in_symbols)
 	_global_symbols.exporter = self
 	_scripts_data.clear()
+	_constants.clear()
+	_classes.clear()
+	_global_classes.clear()
 	for path in scripts:
 		_parse_script(path)
 	
@@ -252,9 +256,11 @@ func _evaluate_constant(constant : String, constants : Dictionary, results : Dic
 	if results.has(constant):
 		return results[constant]
 	
-	var path : String = constant.substr(0, constant.rfind("."))
-	var expr_text : String = constants[constant].name
-	var tokens : PackedStringArray = _multi_split(expr_text, "+-*/(),")
+	var symbol : SymbolTable.Symbol = constants[constant]
+	var const_script : ScriptData = symbol.get_meta("const_script") if symbol.has_meta("const_script") else null
+	var class_path : String = _get_scope_class(constant)
+	var expr_text : String = symbol.name
+	var tokens : PackedStringArray = _multi_split(expr_text, "+-*/%(),")
 	var input_names : PackedStringArray
 	var inputs : Array
 	
@@ -265,7 +271,10 @@ func _evaluate_constant(constant : String, constants : Dictionary, results : Dic
 	for token in tokens:
 		var token_raw : String = token
 		if token and !token.contains(".") and !"01234567890".contains(token[0]):
-			token = path + "." + token
+			token = class_path + "." + token
+		var local_constant : SymbolTable.Symbol = const_script.get_local_symbol_to(token_raw, symbol) if const_script else null
+		if local_constant:
+			token = local_constant.get_meta("local_path")
 		if constants.has(token):
 			input_names.append(token_raw)
 			inputs.append(_evaluate_constant(token, constants, results))
@@ -274,11 +283,10 @@ func _evaluate_constant(constant : String, constants : Dictionary, results : Dic
 	expr.parse(expr_text, input_names)
 	var result = expr.execute(inputs, null, false, true)
 	if expr.has_execute_failed():
-		_script_log("ERROR while evaluating constant '" + constant + "': " + expr.get_error_text())
+		_script_log("ERROR while evaluating constant '" + constant + "'(>" + expr_text + "<): " + expr.get_error_text())
 		results[constant] = expr_text
 		return expr_text
 	
-	var symbol : SymbolTable.Symbol = constants[constant]
 	match symbol.type:
 		"bool": symbol.name = str(bool(result))
 		"Color": symbol.name = "Color" + str(Color(result))
@@ -292,9 +300,11 @@ func _evaluate_constant(constant : String, constants : Dictionary, results : Dic
 		"Vector4": symbol.name = "Vector4" + str(Vector4(result))
 		"Vector4i": symbol.name = "Vector4i" + str(Vector4i(result))
 		_: pass
-	symbol.get_meta("member").name = symbol.name
 	
-	_script_log("evaluated constant >" + constant + "< = " + expr_text + " = " + symbol.name)
+	if symbol.has_meta("member"):
+		symbol.get_meta("member").name = symbol.name
+	
+	_script_log("evaluated constant '" + constant + "' = " + expr_text + " = " + symbol.name)
 	
 	results[constant] = result
 	
@@ -525,6 +535,7 @@ func _parse_script(path : String) -> void:
 					scope_path += "." + token
 					scope_path_identations.append(identation)
 					in_class = true
+					_classes[scope_path] = new_symbol
 					
 					_script_log(str(line_idx+1) + " class " + scope_path)
 					
@@ -600,7 +611,7 @@ func _parse_script(path : String) -> void:
 						if i + 2 < tokens.size() and tokens[i + 1] == "=":
 							cur_emum_idx = int(tokens[i + 2])
 						
-						var name : String = script_data.add_local_symbol(token, scope_path, scope_id, "", str(cur_emum_idx) if _inline_enums and _global_symbols.obfuscation_enabled else "")
+						var name : String = script_data.add_local_symbol(token, scope_path, scope_id, "", str(cur_emum_idx) if _inline_enums and _global_symbols.obfuscation_enabled else "").name
 						if name:
 							_global_symbols.add_symbol(scope_path + "." + token, str(cur_emum_idx) if _inline_enums and _global_symbols.obfuscation_enabled and _global_symbols.obfuscation_enabled else enum_path + "." + name)
 							_global_symbols.add_symbol(_get_scope_path_tail(scope_path) + "." + token, str(cur_emum_idx) if _inline_enums and _global_symbols.obfuscation_enabled else _get_scope_path_tail(enum_path) + "." + name)
@@ -645,15 +656,18 @@ func _parse_script(path : String) -> void:
 									break
 					
 					if local_scope_stack:
-						script_data.add_local_symbol(token, scope_path, scope_id, type, value)
+						var local_constant : SymbolTable.Symbol = script_data.add_local_symbol(token, scope_path, scope_id, type, value)
+						local_constant.set_meta("const_script", script_data)
+						_constants[local_constant.get_meta("local_path")] = local_constant
+						_script_log(str(line_idx+1) + " local const " + scope_path + "." + token + "." + scope_id + " : " + type)
 					else:
 						var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token, value, "")
-						_constants[scope_path + "." + token] = _global_symbols.add_symbol(scope_path + "." + token, value if value else scope_path + "." + new_symbol.name, type)
+						var constant : SymbolTable.Symbol = _global_symbols.add_symbol(scope_path + "." + token, value if value else scope_path + "." + new_symbol.name, type)
+						_constants[scope_path + "." + token] = constant
 						if !in_class:
-							_constants[scope_path + "." + token].set_meta("member",
+							constant.set_meta("member",
 								script_data.add_member_symbol(token, SymbolTable.Symbol.new(value if value else (new_symbol.name if new_symbol else token), type)))
-					
-					_script_log(str(line_idx+1) + " const " + scope_path + "." + token + " : " + type)
+						_script_log(str(line_idx+1) + " const " + scope_path + "." + token + " : " + type)
 					
 					expr_type = ExpressionType.NONE
 				
@@ -668,7 +682,7 @@ func _parse_script(path : String) -> void:
 						parentheses = 0
 					elif token != "(" and token != "," and token != "\\":
 						var type : String = _get_var_type(i, tokens)
-						var name : String = script_data.add_local_symbol(token, scope_path, "", type)	
+						var name : String = script_data.add_local_symbol(token, scope_path, "", type).name
 						param_idx += 1
 						if string_param_names.has(token):
 							string_params[param_idx] = token
@@ -833,13 +847,9 @@ func _obfuscate_script(path : String) -> String:
 			
 			# First, search for token in local vars, if currently in a local scope
 			if line_data.local_scope and (i == 0 or line_data.tokens[i-1] != "."):
-				var local_path : String = line_data.scope_path
-				new_symbol = script_data.get_local_symbol(token, local_path, line_data.scope_id)
-				if !new_symbol and local_path.contains(".@lambda"): # Handle special case for lambdas
-					local_path = local_path.substr(0, local_path.find(".@lambda"))
-					new_symbol = script_data.get_local_symbol(token, local_path, line_data.scope_id)
+				new_symbol = script_data.get_local_symbol(token, line_data.scope_path, line_data.scope_id)
 				if new_symbol:
-					_script_log(str(script_data._idx+1) + " found local symbol >" + local_path + "." + token + "." + line_data.scope_id + "< = " + new_symbol.name)
+					_script_log(str(script_data._idx+1) + " found local symbol >" + new_symbol.get_meta("local_path") + "< = " + new_symbol.name)
 			
 			# Search for token in members and globals
 			if !new_symbol:
@@ -1174,6 +1184,14 @@ func _get_scope_path_tail(scope_path : String) -> String:
 	if idx != -1 and idx + 1 < scope_path.length():
 		return scope_path.substr(idx + 1)
 	return scope_path
+
+
+func _get_scope_class(path : String) ->  String:
+	while path.count(".") > 0:
+		if _classes.has(path):
+			break
+		path = path.substr(0, path.rfind("."))
+	return path
 
 
 func _get_var_type(idx : int, tokens : PackedStringArray) -> String:
