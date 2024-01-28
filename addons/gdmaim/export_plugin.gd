@@ -820,7 +820,7 @@ func _obfuscate_script(path : String) -> String:
 				continue
 			
 			# Skip node paths
-			if token.begins_with("$") or (token.begins_with("%") and i + 1 < line_data.tokens.size() and !"01234567890 ()".contains( line_data.tokens[i+1][0])):
+			if token.begins_with("$") or (token.begins_with("%") and i + 1 < line_data.tokens.size() and !"01234567890()".contains(line_data.tokens[i+1][0]) and !line_data.text.contains("% ")): #Hack: !line_data.text.contains("% ")
 				var node_path : String = token
 				i += 1
 				while i < line_data.tokens.size():
