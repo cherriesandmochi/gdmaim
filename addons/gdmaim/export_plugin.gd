@@ -38,6 +38,8 @@ var _dynamic_id_seed : bool
 var _strip_comments : bool
 var _strip_empty_lines : bool
 var _feature_filters : bool
+var _regex_filter_enabled : bool
+var _regex_filter : String
 var _source_map_path : String
 var _source_map_max_files : int
 var _source_map_compress : bool
@@ -71,6 +73,8 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_id_seed = cfg.get_value("id", "seed", 0) if !_dynamic_id_seed else int(Time.get_unix_time_from_system())
 	_strip_comments = cfg.get_value("post_process", "strip_comments", false)
 	_strip_empty_lines = cfg.get_value("post_process", "strip_empty_lines", false)
+	_regex_filter_enabled = cfg.get_value("post_process", "regex_filter_enabled", false)
+	_regex_filter = cfg.get_value("post_process", "regex_filter", "")
 	_feature_filters = cfg.get_value("post_process", "feature_filters", false)
 	_source_map_path = cfg.get_value("source_mapping", "filepath", "")
 	_source_map_max_files = cfg.get_value("source_mapping", "max_files", 1)
@@ -949,6 +953,15 @@ func _obfuscate_script(path : String) -> String:
 		for i in range(line_mapper.get_line_count() - 1, -1, -1):
 			var line : ScriptData.Line = line_mapper.get_line(i)
 			if line.text.replace(" ", "").replace("\n", "").replace("\t", "").length() == 0:
+				line_mapper.remove_line(i)
+				continue
+	
+	if _regex_filter_enabled:
+		var regex = RegEx.new()
+		regex.compile(_regex_filter)
+		for i in range(line_mapper.get_line_count() - 1, -1, -1):
+			var line : ScriptData.Line = line_mapper.get_line(i)
+			if regex.search(line.source_text):
 				line_mapper.remove_line(i)
 				continue
 	
