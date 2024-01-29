@@ -107,3 +107,51 @@ func read_string() -> String:
 				if last_char == "\\":
 					str += read_char()
 	return ""
+
+
+static func read_assignment(lines : PackedStringArray, line_idx : int, token_idx : int, allow_containers : bool = false) -> Dictionary:
+	var data : Dictionary = {
+		"value": "",
+		"from": [0, 0],
+		"to": [0, 0],
+	}
+	
+	var parser := preload("parser.gd").new(lines[line_idx])
+	var tokens : PackedStringArray = parser.get_tokens()
+	
+	var t : int = token_idx
+	while t < tokens.size():
+		if tokens[t] == "=":
+			t += 1
+			break
+		t += 1
+	
+	if !allow_containers and t < tokens.size() and "{[".contains(tokens[t]):
+		return data
+	
+	data["from"] = [line_idx, t]
+	
+	var depth : int = 0
+	var l : int = line_idx
+	while l < lines.size():
+		parser.code = lines[l]
+		tokens = parser.get_tokens()
+		while t < tokens.size():
+			var token : String = tokens[t]
+			if token == "#" or token == ";":
+				break
+			else:
+				data["value"] += token
+				if "([{".contains(token):
+					depth += 1
+				elif ")]}".contains(token):
+					depth -= 1
+			t += 1
+		if depth <= 0:
+			break
+		t = 0
+		l += 1
+	
+	data["to"] = [l, t]
+	
+	return data

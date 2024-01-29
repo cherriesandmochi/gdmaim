@@ -193,6 +193,7 @@ class Line:
 	var text : String
 	var tokens : PackedStringArray
 	var tokens_tween : PackedStringArray
+	var declarations : Dictionary
 	var scope_path : String
 	var scope_id : String
 	var identation : int

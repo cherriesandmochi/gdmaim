@@ -32,7 +32,7 @@ func add_symbol(name : String, custom_name : String = "", type : String = "") ->
 			exclude_symbol(name)
 		custom_name = name
 	
-	var symbol := Symbol.new(_generate_symbol_name(name) if !custom_name else custom_name, type)
+	var symbol := Symbol.new(name, _generate_symbol_name(name) if !custom_name else custom_name, type)
 	symbols[name] = symbol
 	
 	return symbol
@@ -67,10 +67,12 @@ func _generate_symbol_name(name : String) -> String:
 
 
 class Symbol:
+	var source_name : String
 	var name : String
 	var type : String
 	var string_params : Dictionary
 	
-	func _init(name : String = "", type : String = "") -> void:
+	func _init(source_name : String, name : String, type : String = "") -> void:
+		self.source_name = source_name
 		self.name = name
 		self.type = type
