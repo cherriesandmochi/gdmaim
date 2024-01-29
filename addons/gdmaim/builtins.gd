@@ -2,6 +2,9 @@ extends RefCounted
 
 
 const GLOBALS : Array[String] = [
+	# Virtual overrides
+	"_static_init",
+	
 	# GDScript
 	"Color8",
 	"assert",
