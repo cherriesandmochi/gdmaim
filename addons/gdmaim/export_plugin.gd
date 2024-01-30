@@ -1134,7 +1134,7 @@ func _compile_script_features(script : ScriptData) -> void:
 		idx += 1
 		
 		if line.text.begins_with("##FEATURE_FUNC "):
-			var feature : String = line.text.lstrip("##FEATURE_FUNC ")
+			var feature : String = line.text.trim_prefix("##FEATURE_FUNC ")
 			if _features.has(feature):
 				continue
 			
@@ -1152,38 +1152,39 @@ func _compile_script_features(script : ScriptData) -> void:
 					ret_type = splits2[-1].replace(" ", "").replace("->", "").replace(":", "")
 			
 			idx += 1
-			var last_valid : int = idx
-			while idx < line_mapper.get_line_count():
-				line = line_mapper.get_line(idx)
+			line = line_mapper.get_line(idx)
+			if line:
+				line.text = '\tprinterr("ERROR: illegal call to ' + "'" + func_name + "'!" + '");'
+				if ret_type == "bool":
+					line.text += "return false"
+				elif ret_type == "int":
+					line.text += "return 0"
+				elif ret_type == "float":
+					line.text += "return 0.0"
+				elif ret_type == "String":
+					line.text += 'return ""'
+				elif ret_type == "Array":
+					line.text += "return []"
+				elif ret_type == "Array[int]":
+					line.text += "return []"
+				elif ret_type == "Array[float]":
+					line.text += "return []"
+				elif ret_type == "Dictionary":
+					line.text += "return {}"
+				elif ret_type == "void":
+					line.text += "pass"
+				else:
+					line.text += "return null"
+			
+			idx += 1
+			line = line_mapper.get_line(idx)
+			while line:
 				if (line.text and line.text[0] != "\t" and line.text[0] != " " and line.text[0] != "#") or line.text.begins_with("##"):
-					var last_valid_line : ScriptData.Line = line_mapper.get_line(last_valid)
-					last_valid_line.text = '\tprinterr("ERROR: illegal call to ' + "'" + func_name + "'!" + '");'
-					if ret_type == "bool":
-						last_valid_line.text += "return false"
-					elif ret_type == "int":
-						last_valid_line.text += "return 0"
-					elif ret_type == "float":
-						last_valid_line.text += "return 0.0"
-					elif ret_type == "String":
-						last_valid_line.text += 'return ""'
-					elif ret_type == "Array":
-						last_valid_line.text += "return []"
-					elif ret_type == "Array[int]":
-						last_valid_line.text += "return []"
-					elif ret_type == "Array[float]":
-						last_valid_line.text += "return []"
-					elif ret_type == "Dictionary":
-						last_valid_line.text += "return {}"
-					elif ret_type == "void":
-						last_valid_line.text += "pass"
-					else:
-						last_valid_line.text += "return null"
 					break
 				else:
-					if line.has_statement():
-						last_valid = idx
 					line.text = ""
 				idx += 1
+				line = line_mapper.get_line(idx)
 
 
 func _set_scope_path_level(scope_path : String, level : int) -> String:
