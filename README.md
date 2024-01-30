@@ -17,6 +17,7 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 - [Installation](#installation-)
 - [Configuration](#configuration-)
 - [Usage](#usage-)
+	- [Source map viewer](#source-map-viewer)
 	- [Export template feature tags](#export-template-feature-tags)
 	- [Preprocessor hints](#preprocessor-hints)
 - [Limitations and caveats](#limitations-and-caveats-)
@@ -65,6 +66,8 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 ### Obfuscation
 
+`Enable Obfuscation`: If enabled, obfuscate scripts. Does _not_ affect post-processing.
+
 `Inline Constants`: If enabled, accesses to constants will be replaced with hardcoded values. Declarations of constants get removed.
 
 `Inline enums`: If enabled, accesses to enum keys will be replaced with hardcoded values. Declarations of enums get removed.
@@ -76,9 +79,11 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Strip Comments`: If enabled, remove all comments.
 
-`Strip Empty Lines`: If enabled, remove every line without any code.
+`Strip Empty Lines`: If enabled, any line without code will be removed.
 
 `Process Feature Filters`: If enabled, process automatic filtering of code, based on export template feature tags. For more information, see [feature filters](#preprocessor-hints).
+
+`Strip Lines Matching RegEx`: If enabled, any lines matching the regular expression will be removed.
 
 ### ID Generator
 
@@ -96,13 +101,15 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 > Warning: Dynamic seeds will produce unique scripts on each export, which might potentially 'break' delta updates, as used by Steam for example. It also makes debugging harder.
 
-### Debug
+### Source Mapping
 
-`Debug Scripts`: A comma-separated list of terms. Each script that contains at least one of the terms, will get their debug information printed during export.
+`Output Path`: The path where source maps will automatically be saved to upon export.
 
-`Debug Resources`: A comma-separated list of terms. Each resource that contains at least one of the terms, will get their debug information printed during export.
+`Max Files`: The maximum amount of saved source maps. When the limit has been reached, replace the oldest one.
 
-`Obfuscate Debug Only`: If enabled, skips obfuscating scripts and resources that are not currently being debugged. Useful to decrease export time while debugging the obfuscation of specific scripts.
+`Compress`: If true, compress the source maps before export to take up less space.
+
+`Inject Name`: If true, searches for the first enabled autoload during export and inserts a print statement into its `_enter_tree` method(or creates a new one if it does not exist). The print statement contains the filename of the associated source map that got generated during the export of that build.
 
 ## Usage [↑](#table-of-contents)
 
@@ -110,6 +117,22 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 While enabled, GDMaim automatically obfuscates scripts and resources during export.
 As mentioned earlier, the obfuscation only affects the exported '.pck' file, but as always, make sure to use version control.
+
+### Source map viewer
+
+During export, a source map for the current build will be generated and saved. By default `Max Files` is set to only keep the 10 latest files, so every time you actually release a build, make sure to copy the associated source map somewhere safe.
+
+__Debugging using source maps__
+
+<img src='docs/images/locate_source_map_viewer.png' width='200'>
+
+Open the source map viewer by navigating to the GDMaim dock and selecting `View Source Map`. Next, open the source map you want to view.
+
+On the left side you will find a file tree, containing all exported scripts. Double-clicking on one will open it.
+
+Once a script has been opened, both the source and exported code will be shown. By selecting a line in either code, you can get the equivalent line in the other code.
+
+<img src='docs/images/source_map_viewer.png' width='1000'>
 
 ### Export template feature tags
 
@@ -323,14 +346,9 @@ First, make sure your project respects the [limitations and caveats](#limitation
 
 ### Debugging obfuscation errors in exported projects
 
-- Disable the plugin and export without obfuscation to see if the issues remain.
-- Enable the plugin, disable `Strip Empty Lines` and export the project again.
-- Run the console version of the exported project.
-- Try to find out in which scripts and lines errors occur.
-- Add failing script(s) to [debug scripts](#debug) and export again(I heavily recommend debugging scripts one by one).
--- (Optional) Use [gdsdecomp](https://github.com/bruvzg/gdsdecomp) to inspect the generated code.
-- Inspect the generated code and additional debug information in the editor's console output.
-- Again, make sure the affected scripts adhere to the [limitations and caveats](#limitations-and-caveats-).
+- Run the console version of your exported project or read the logfile to see which scripts and lines contain the errors.
+- Use the [source map viewer](#source-map-viewer) to open the source map generated by the failing build and navigate to the errors in the exported code.
+- Again, make sure the equivalent source code lines adhere to the [limitations and caveats](#limitations-and-caveats-).
 
 ### Freezes during export
 
@@ -339,9 +357,8 @@ Huge file sizes are usually caused by embedded resources, some of which take up 
 
 ## Roadmap [↑](#table-of-contents)
 
-- [ ] Obfuscation of for-loop iterator names and parameter names of lambdas.
-- [ ] Make sure multi-line strings using '\\' work as intended.
 - [ ] class_name obfuscation: The base is done, just need to properly(yea right) update all symbols contained in named scripts.
+- [ ] Additional obfuscation techniques.
 - [ ] Filename obfuscation: Would require manually renaming and linking .remap files as well...
 - [ ] Converting text resources to binary: Requires obfuscation of binary files or a conversion tool.
 
