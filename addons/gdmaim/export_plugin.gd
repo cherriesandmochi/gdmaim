@@ -421,6 +421,7 @@ func _parse_script(path : String) -> void:
 		PARAMS = 10,
 		PARAMS_HINT = 11,
 		STRING = 12,
+		FOR = 13,
 	}
 	const ExpressionIdentifiers : Dictionary = {
 		"var": ExpressionType.VAR,
@@ -432,6 +433,7 @@ func _parse_script(path : String) -> void:
 		"const": ExpressionType.CONST,
 		"'": ExpressionType.STRING,
 		"\"": ExpressionType.STRING,
+		"for": ExpressionType.FOR,
 	}
 	var expr_type : int = ExpressionType.NONE
 	var string_end : String
@@ -726,6 +728,13 @@ func _parse_script(path : String) -> void:
 						parentheses += 1
 					elif token == "," and parentheses <= 0:
 						expr_type = ExpressionType.PARAMS
+				
+				ExpressionType.FOR:
+					scope_id += "-" + str(cur_scope_tree_branch.size())
+					var type : String = _get_var_type(i, tokens)
+					script_data.add_local_symbol(token, scope_path, scope_id, type)
+					_script_log(str(line_idx+1) + " local var " + scope_path + "." + token + "." + scope_id + " : " + type)
+					expr_type = ExpressionType.NONE
 				
 				_:
 					expr_type = ExpressionType.NONE
