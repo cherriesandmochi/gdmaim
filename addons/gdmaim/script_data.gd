@@ -7,6 +7,7 @@ const SymbolTable := preload("symbol_table.gd")
 var exporter : Object
 var path : String
 var base_script : String
+var name : String
 var autoload : bool = false
 var local_symbols : SymbolTable
 var member_symbols : Dictionary
@@ -199,6 +200,12 @@ class Line:
 	var identation : int
 	var local_scope : bool
 	var in_class : bool
+	
+	func has_content() -> bool:
+		return !text.replace(" ", "").replace("\n", "").replace("\t", "").replace(";", "").is_empty()
+	
+	func has_statement() -> bool:
+		return tokens and tokens[0] != "#" and has_content()
 
 
 class Param:

@@ -375,12 +375,6 @@ func _get_class_symbols(class_ : String) -> PackedStringArray:
 func _parse_script(path : String) -> void:
 	var script : Script = load(path)
 	var source_code : String = script.source_code
-	var methods : Dictionary
-	for method in script.get_script_method_list():
-		methods[method.name] = method
-	var signals : Dictionary
-	for signal_ in script.get_script_signal_list():
-		signals[signal_.name] = signal_
 	
 	_global_symbols.obfuscation_enabled = true
 	
@@ -404,6 +398,7 @@ func _parse_script(path : String) -> void:
 	script_data.local_symbols.exporter = self
 	script_data.path = path
 	script_data.base_script = script.get_base_script().resource_path if script.get_base_script() else ""
+	script_data.name = scope_path
 	script_data.autoload = is_autoload
 	script_data.source_code = source_code
 	_scripts_data[path] = script_data
@@ -584,6 +579,7 @@ func _parse_script(path : String) -> void:
 					#var new_symbol : SymbolTable.Symbol = _global_symbols.add_symbol(token, "", "")
 					#_global_classes[token] = new_symbol.name
 					
+					script_data.name = token
 					scope_path = token
 					scope_path_root = token + "."
 					expr_type = ExpressionType.NONE
@@ -772,8 +768,7 @@ func _obfuscate_script(path : String) -> String:
 			line_mapper.add_linked_line(line_data, line_data.text)
 			line_data = script_data.get_next_line()
 			continue
-		
-		if line_data.text.begins_with("##OBFUSCATE ") and line_data.tokens.size() >= 4:
+		elif line_data.text.begins_with("##OBFUSCATE") and line_data.tokens.size() >= 4:
 			if line_data.tokens[3] == "true":
 				obfuscate_declarations = true
 			elif line_data.tokens[3] == "false":
@@ -959,8 +954,7 @@ func _obfuscate_script(path : String) -> String:
 	# Compile features
 	if _feature_filters:# and _scripts_last_modification.get(path, 0) != FileAccess.get_modified_time(path):
 		#_scripts_last_modification[path] = FileAccess.get_modified_time(path)
-		#lines = _compile_script_features(path, _lines_to_code(lines)).split("\n")
-		pass
+		_compile_script_features(script_data)
 	
 	# Strip comments
 	if _strip_comments:
@@ -977,22 +971,14 @@ func _obfuscate_script(path : String) -> String:
 						elif cur_string_literal == c:
 							cur_string_literal = ""
 					elif c == "#" and !cur_string_literal:
-						if idx > 0:
-							line.text = line.text.substr(0, idx)
-							break
-						else:
-							if _strip_empty_lines:
-								line_mapper.remove_line(i)
-							else:
-								line.text = "# ..."
-							break
+						line.text = line.text.substr(0, idx) if idx > 0 else ""
 					idx += 1
 	
 	# Strip empty lines
 	if _strip_empty_lines:
 		for i in range(line_mapper.get_line_count() - 1, -1, -1):
 			var line : ScriptData.Line = line_mapper.get_line(i)
-			if line.text.replace(" ", "").replace("\n", "").replace("\t", "").replace(";", "").length() == 0:
+			if !line.has_content():
 				line_mapper.remove_line(i)
 				continue
 	
@@ -1127,93 +1113,68 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	return data
 
 
-#TODO: this should not be it's own function anymore...
-func _compile_script_features(path : String, source_code : String) -> String:
-	if source_code.find("##FEATURE") == -1:
-		return source_code
+func _compile_script_features(script : ScriptData) -> void:
+	if script.source_code.find("##FEATURE") == -1:
+		return
 	
-	var script_class : String = ""
-	if source_code.contains("class_name"):
-		var idx : int = source_code.find("class_name")
-		var cls : String = source_code.substr(idx, source_code.find("\n", idx) - idx)
-		cls = cls.lstrip("class_name ")
-		for c in cls:
-			if c == " " or c == "\t":
-				break
-			script_class += c
-	else:
-		script_class = path.get_file().rstrip(".gd")
-	
-	var lines : PackedStringArray = source_code.split("\n")
-	source_code = ""
+	var line_mapper : ScriptData.LineMapper = script.line_mapper
 	
 	var idx : int = 0
-	while idx < lines.size():
-		var line : String = lines[idx]
+	while idx < line_mapper.get_line_count():
+		var line : ScriptData.Line = line_mapper.get_line(idx)
 		idx += 1
-	
-		source_code += line + "\n"
 		
-		if line.begins_with("##FEATURE_FUNC "):
-			var feature : String = line.lstrip("##FEATURE_FUNC ")
+		if line.text.begins_with("##FEATURE_FUNC "):
+			var feature : String = line.text.lstrip("##FEATURE_FUNC ")
 			if _features.has(feature):
 				continue
 			
-			var func_name : String = script_class
+			var func_name : String = script.name
 			var ret_type : String
-			line = lines[idx]
-			if !line.begins_with("func"):
+			line = line_mapper.get_line(idx)
+			if !line.text.begins_with("func"):
 				continue
 			else:
-				source_code += line + "\n"
-				
-				var splits1 : PackedStringArray = line.split("(")
+				var splits1 : PackedStringArray = line.text.split("(")
 				if splits1:
 					func_name += "." + splits1[0].lstrip("func").replace(" ", "")
-				
-				var splits2 : PackedStringArray = line.split(")")
+				var splits2 : PackedStringArray = line.text.split(")")
 				if splits2:
 					ret_type = splits2[-1].replace(" ", "").replace("->", "").replace(":", "")
 			
 			idx += 1
-			var separation_buffer : String = ""
-			while idx < lines.size():
-				line = lines[idx]
-				if (line and line[0] != "\t" and line[0] != " " and line[0] != "#") or line.begins_with("##FEATURE") or idx + 1 >= lines.size():
-					source_code += '\tprinterr("ERROR: illegal call to ' + "'" + func_name + "'!" + '")\n'
+			var last_valid : int = idx
+			while idx < line_mapper.get_line_count():
+				line = line_mapper.get_line(idx)
+				if (line.text and line.text[0] != "\t" and line.text[0] != " " and line.text[0] != "#") or line.text.begins_with("##"):
+					var last_valid_line : ScriptData.Line = line_mapper.get_line(last_valid)
+					last_valid_line.text = '\tprinterr("ERROR: illegal call to ' + "'" + func_name + "'!" + '");'
 					if ret_type == "bool":
-						source_code += "\treturn false"
+						last_valid_line.text += "return false"
 					elif ret_type == "int":
-						source_code += "\treturn 0"
+						last_valid_line.text += "return 0"
 					elif ret_type == "float":
-						source_code += "\treturn 0.0"
+						last_valid_line.text += "return 0.0"
 					elif ret_type == "String":
-						source_code += '\treturn ""'
+						last_valid_line.text += 'return ""'
 					elif ret_type == "Array":
-						source_code += "\treturn []"
+						last_valid_line.text += "return []"
 					elif ret_type == "Array[int]":
-						source_code += "\treturn []"
+						last_valid_line.text += "return []"
 					elif ret_type == "Array[float]":
-						source_code += "\treturn []"
+						last_valid_line.text += "return []"
 					elif ret_type == "Dictionary":
-						source_code += "\treturn {}"
+						last_valid_line.text += "return {}"
 					elif ret_type == "void":
-						source_code += "\tpass"
+						last_valid_line.text += "pass"
 					else:
-						source_code += "\treturn null"
-					
-					source_code += separation_buffer
-					
+						last_valid_line.text += "return null"
 					break
 				else:
-					var true_line : String = line.replace("\t", "").replace(" ", "").replace("\n", "")
-					if true_line and true_line[0] != "#":
-						separation_buffer = "\n"
-					else:
-						separation_buffer += lines[idx] + "\n"
+					if line.has_statement():
+						last_valid = idx
+					line.text = ""
 				idx += 1
-	
-	return source_code
 
 
 func _set_scope_path_level(scope_path : String, level : int) -> String:
