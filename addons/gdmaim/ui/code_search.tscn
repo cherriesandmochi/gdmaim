@@ -1,0 +1,78 @@
+[gd_scene load_steps=8 format=3 uid="uid://crvfxjbaqfxn2"]
+
+[ext_resource type="Script" path="res://addons/gdmaim/ui/code_search.gd" id="1_4mnsc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s0j7j"]
+bg_color = Color(0.0745098, 0.0862745, 0.101961, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_58b8g"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_m7op6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jjfj5"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7k12u"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dylah"]
+
+[node name="CodeSearch" type="Panel"]
+custom_minimum_size = Vector2(0, 30)
+theme_override_styles/panel = SubResource("StyleBoxFlat_s0j7j")
+script = ExtResource("1_4mnsc")
+
+[node name="VBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Search" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Matches" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+
+[node name="Previous" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_58b8g")
+text = "<"
+flat = true
+
+[node name="Next" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_m7op6")
+text = ">"
+flat = true
+
+[node name="MatchCase" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/focus = SubResource("StyleBoxEmpty_jjfj5")
+text = "Match Case"
+flat = true
+
+[node name="WholeWords" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/focus = SubResource("StyleBoxEmpty_7k12u")
+text = "Whole Words"
+flat = true
+
+[node name="Close" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_styles/focus = SubResource("StyleBoxEmpty_dylah")
+text = "X"
+flat = true
+
+[connection signal="text_changed" from="VBoxContainer/Search" to="." method="_update_search"]
+[connection signal="text_submitted" from="VBoxContainer/Search" to="." method="_on_search_text_submitted"]
+[connection signal="pressed" from="VBoxContainer/Previous" to="." method="_on_previous_pressed"]
+[connection signal="pressed" from="VBoxContainer/Next" to="." method="_on_next_pressed"]
+[connection signal="pressed" from="VBoxContainer/MatchCase" to="." method="_update_search"]
+[connection signal="pressed" from="VBoxContainer/WholeWords" to="." method="_update_search"]
+[connection signal="pressed" from="VBoxContainer/Close" to="." method="close"]

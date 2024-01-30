@@ -16,7 +16,9 @@ var _caret_lock : bool = false
 @onready var console : TextEdit = %Console
 @onready var file_tree : Tree = %FileTree
 @onready var source_code : TextEdit = %SourceCode
+@onready var source_code_search : Panel = %SourceCodeSearch
 @onready var exported_code : TextEdit = %ExportedCode
+@onready var exported_code_search : Panel = %ExportedCodeSearch
 @onready var source_symbols : Tree = %SourceSymbols
 @onready var export_symbols : Tree = %ExportSymbols
 @onready var border : StyleBox = self["theme_override_styles/embedded_border"]
@@ -29,6 +31,9 @@ func _ready() -> void:
 	
 	_setup_syntax_highlighter()
 	_load_script("")
+	
+	var popup : PopupMenu = $Panel/HBoxContainer/MenuButton.get_popup()
+	popup.index_pressed.connect(_on_search_option_selected)
 
 
 func _process(delta: float) -> void:
@@ -38,12 +43,25 @@ func _process(delta: float) -> void:
 	self["theme_override_styles/embedded_border"] = border if has_focus() else border_unfocused
 
 
-func _input(event: InputEvent) -> void:
-	if !_as_plugin:
+func _input(event : InputEvent) -> void:
+	if !_as_plugin or !has_focus():
 		return
 	
-	if has_focus() and Input.is_key_pressed(KEY_ESCAPE):
-		_on_close_requested()
+	if not event is InputEventKey or !event.pressed or event.echo:
+		return
+	
+	if event.keycode == KEY_ESCAPE:
+		if source_code_search.visible and (source_code.has_focus() or source_code_search.is_search_focused()):
+			source_code_search.close()
+		elif exported_code_search.visible and (exported_code.has_focus() or exported_code_search.is_search_focused()):
+			exported_code_search.close()
+		else:
+			_on_close_requested()
+	elif event.keycode == KEY_F and event.ctrl_pressed:
+		if source_code.has_focus():
+			source_code_search.open()
+		elif exported_code.has_focus():
+			exported_code_search.open()
 
 
 func _load_source_map(path : String) -> void:
@@ -266,3 +284,11 @@ func _on_file_filter_text_changed(new_text : String) -> void:
 	for file in _file_tree_items:
 		if file.get_file().findn(new_text) != -1:
 			_set_file_visible(_file_tree_items[file], true)
+
+
+func _on_search_option_selected(idx : int) -> void:
+	match idx:
+		0:
+			source_code_search.open()
+		1:
+			exported_code_search.open()

@@ -1,6 +1,7 @@
-[gd_scene load_steps=15 format=3 uid="uid://dqknu058384tm"]
+[gd_scene load_steps=17 format=3 uid="uid://dqknu058384tm"]
 
 [ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer.gd" id="1_xfxdk"]
+[ext_resource type="PackedScene" uid="uid://crvfxjbaqfxn2" path="res://addons/gdmaim/ui/code_search.tscn" id="2_n0sd2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6bkrx"]
 bg_color = Color(0.113725, 0.298039, 0.333333, 1)
@@ -16,13 +17,16 @@ expand_margin_top = 26.0
 expand_margin_right = 1.0
 expand_margin_bottom = 1.0
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s0j7j"]
+bg_color = Color(0.0745098, 0.0862745, 0.101961, 1)
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ahkt6"]
 bg_color = Color(0.0705882, 0.141176, 0.180392, 1)
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_aq0q2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xmd2u"]
-bg_color = Color(0.901961, 0.894118, 0.941176, 0.376471)
+bg_color = Color(0.901961, 0.894118, 0.941176, 0)
 
 [sub_resource type="SystemFont" id="SystemFont_g6j54"]
 font_names = PackedStringArray("Consolas")
@@ -33,7 +37,7 @@ content_margin_left = 5.0
 content_margin_top = 5.0
 content_margin_right = 5.0
 content_margin_bottom = 5.0
-bg_color = Color(0.113725, 0.133333, 0.160784, 1)
+bg_color = Color(0.0980392, 0.117647, 0.141176, 1)
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_bcbti"]
 
@@ -177,13 +181,12 @@ theme_override_styles/embedded_unfocused_border = SubResource("StyleBoxFlat_bdbc
 script = ExtResource("1_xfxdk")
 
 [node name="BG" type="Panel" parent="."]
-modulate = Color(0.839216, 0.839216, 0.839216, 1)
-self_modulate = Color(0.603922, 0.603922, 0.603922, 1)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_s0j7j")
 
 [node name="Panel" type="Panel" parent="."]
 anchors_preset = 10
@@ -192,22 +195,34 @@ offset_bottom = 25.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_ahkt6")
 
-[node name="OpenFile" type="Button" parent="Panel"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel"]
 layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 1.0
-offset_top = -11.5
-offset_right = 51.0
-offset_bottom = 11.5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = -3.0
+offset_right = 5.0
+offset_bottom = 3.0
+grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="OpenFile" type="Button" parent="Panel/HBoxContainer"]
+layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxEmpty_aq0q2")
 theme_override_styles/hover = SubResource("StyleBoxFlat_xmd2u")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_xmd2u")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_aq0q2")
 text = "Open"
+
+[node name="MenuButton" type="MenuButton" parent="Panel/HBoxContainer"]
+layout_mode = 2
+text = "Search"
+item_count = 2
+popup/item_0/text = "Search source code...    (CTRL + F)"
+popup/item_0/id = 0
+popup/item_1/text = "Search exported code...    (CTRL + F)"
+popup/item_1/id = 1
 
 [node name="CurrentFile" type="Label" parent="Panel"]
 layout_mode = 1
@@ -275,7 +290,7 @@ split_offset = 1370
 
 [node name="VSplitContainer" type="VSplitContainer" parent="HSplitContainer/HSplitContainer"]
 layout_mode = 2
-split_offset = 650
+split_offset = 700
 
 [node name="Code" type="HSplitContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer"]
 custom_minimum_size = Vector2(100, 30)
@@ -302,10 +317,14 @@ text = "Source Code"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Control" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer"]
 layout_mode = 2
 
-[node name="SourceCode" type="CodeEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/Control"]
+[node name="Control" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SourceCode" type="CodeEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/VBoxContainer/Control"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
@@ -368,6 +387,12 @@ line_folding = true
 gutters_draw_executing_lines = true
 gutters_draw_line_numbers = true
 
+[node name="SourceCodeSearch" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/VBoxContainer" node_paths=PackedStringArray("code_edit") instance=ExtResource("2_n0sd2")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+code_edit = NodePath("../Control/SourceCode")
+
 [node name="Exported" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code"]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
@@ -387,10 +412,14 @@ text = "Exported Code"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Control" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer"]
 layout_mode = 2
 
-[node name="ExportedCode" type="CodeEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/Control"]
+[node name="Control" type="Control" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ExportedCode" type="CodeEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/VBoxContainer/Control"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
@@ -419,6 +448,12 @@ line_folding = true
 gutters_draw_executing_lines = true
 gutters_draw_line_numbers = true
 
+[node name="ExportedCodeSearch" parent="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/VBoxContainer" node_paths=PackedStringArray("code_edit") instance=ExtResource("2_n0sd2")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+code_edit = NodePath("../Control/ExportedCode")
+
 [node name="BottomDock" type="TabContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer"]
 layout_mode = 2
 theme_override_colors/font_selected_color = Color(0.541176, 0.792157, 0.992157, 1)
@@ -440,7 +475,7 @@ drag_and_drop_selection_enabled = false
 virtual_keyboard_enabled = false
 middle_mouse_paste_enabled = false
 
-[node name="Search Results" type="ItemList" parent="HSplitContainer/HSplitContainer/VSplitContainer/BottomDock"]
+[node name="Search Results" type="Tree" parent="HSplitContainer/HSplitContainer/VSplitContainer/BottomDock"]
 visible = false
 layout_mode = 2
 
@@ -518,11 +553,11 @@ filters = PackedStringArray("*.gd.map")
 use_native_dialog = true
 
 [connection signal="close_requested" from="." to="." method="_on_close_requested"]
-[connection signal="pressed" from="Panel/OpenFile" to="." method="_on_open_file_pressed"]
+[connection signal="pressed" from="Panel/HBoxContainer/OpenFile" to="." method="_on_open_file_pressed"]
 [connection signal="text_changed" from="HSplitContainer/Control/FileFilter" to="." method="_on_file_filter_text_changed"]
 [connection signal="item_activated" from="HSplitContainer/Control/FileTree" to="." method="_on_file_tree_item_activated"]
-[connection signal="caret_changed" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/Control/SourceCode" to="." method="_on_source_code_caret_changed"]
-[connection signal="gui_input" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/Control/SourceCode" to="." method="_on_source_code_gui_input"]
-[connection signal="caret_changed" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/Control/ExportedCode" to="." method="_on_exported_code_caret_changed"]
-[connection signal="gui_input" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/Control/ExportedCode" to="." method="_on_exported_code_gui_input"]
+[connection signal="caret_changed" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/VBoxContainer/Control/SourceCode" to="." method="_on_source_code_caret_changed"]
+[connection signal="gui_input" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Source/VSplitContainer/VBoxContainer/Control/SourceCode" to="." method="_on_source_code_gui_input"]
+[connection signal="caret_changed" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/VBoxContainer/Control/ExportedCode" to="." method="_on_exported_code_caret_changed"]
+[connection signal="gui_input" from="HSplitContainer/HSplitContainer/VSplitContainer/Code/Exported/VSplitContainer/VBoxContainer/Control/ExportedCode" to="." method="_on_exported_code_gui_input"]
 [connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]
