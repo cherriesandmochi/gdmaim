@@ -175,6 +175,7 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
 		code = _shuffle_top_level(code, path)
+		code = _remove_spaces(code)
 		add_file(path, code.to_utf8_buffer(), true)
 
 
@@ -755,6 +756,43 @@ func _parse_script(path : String) -> void:
 		line_data.identation = identation
 		line_data.local_scope = !local_scope_stack.is_empty()
 		line_data.in_class = in_class
+
+
+func _remove_spaces(source: String) -> String:
+	var out: String = ""
+	var idx: int = 0
+	var in_string: bool = false # ""
+	var in_istring: bool = false # ''
+	var dict_level: int = 0
+	var symbols: String = '><(){}[]:=-*/|+%'
+	while idx < source.length():
+		var next: String = ""
+		var prev: String = ""
+		if idx > 0 and idx < source.length()-1:
+			next = source[idx+1]
+			prev = source[idx-1]
+		var curr: String = source[idx]
+		if curr == '"' and not in_istring:
+			in_string = !in_string
+			out += curr
+		elif curr == "'" and not in_string:
+			in_istring = !in_istring
+			out += curr
+		elif curr == '{' and not in_istring and not in_string:
+			dict_level += 1
+			out += curr
+		elif curr == '}' and not in_istring and not in_string:
+			dict_level -= 1
+			out += curr
+		elif curr == '\n' and dict_level > 0 and not in_string and not in_istring:
+			pass
+		elif curr == ' ' and (prev in symbols or next in symbols) and not in_string and not in_istring:
+			pass
+		else:
+			out += curr
+		idx += 1
+	
+	return out
 
 
 func _is_statement_end(stmt: String) -> bool:
