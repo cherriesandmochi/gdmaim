@@ -810,6 +810,7 @@ func _shuffle_top_level(code: String, path: String) -> String:
 			current += "\n"
 		idx += 1
 	statements.shuffle()
+	statements.push_back(current)
 	for stmt in statements:
 		result += stmt + "\n"
 	#result += "\n# " + path + " :: " + str(statements)
