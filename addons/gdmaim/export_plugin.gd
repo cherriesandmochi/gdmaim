@@ -797,7 +797,7 @@ func _shuffle_top_level(code: String, path: String) -> String:
 		elif current.begins_with("class_name ") or current.begins_with("@tool") or current.begins_with("extends ") or current.begins_with("@icon"):
 			result += current + "\n"
 			current = ""
-		elif (current.begins_with("static var ") or current.begins_with("var ") or current.begins_with("const ")) and _is_statement_end(current):
+		elif (current.begins_with("static var ") or current.begins_with("signal ") or current.begins_with("var ") or current.begins_with("const ")) and _is_statement_end(current):
 			statements.push_back(current)
 			current = ""
 		elif (current.begins_with("@export") or current.begins_with("@onready")) and _is_statement_end(current):
