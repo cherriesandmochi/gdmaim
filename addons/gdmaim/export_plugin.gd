@@ -174,6 +174,7 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 				#add_file(binary_path, binary_data, true)
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
+		code = _shuffle_top_level(code, path)
 		add_file(path, code.to_utf8_buffer(), true)
 
 
@@ -754,6 +755,66 @@ func _parse_script(path : String) -> void:
 		line_data.identation = identation
 		line_data.local_scope = !local_scope_stack.is_empty()
 		line_data.in_class = in_class
+
+
+func _is_statement_end(stmt: String) -> bool:
+	var round_brackets: Array = []
+	var square_brackets: Array = []
+	var curly_brackets: Array = []
+
+	for char in stmt:
+		match char:
+			"(":
+				round_brackets.append(char)
+			")":
+				if round_brackets.size() == 0 or round_brackets.pop_back() != "(":
+					return false
+			"[":
+				square_brackets.append(char)
+			"]":
+				if square_brackets.size() == 0 or square_brackets.pop_back() != "[":
+					return false
+			"{":
+				curly_brackets.append(char)
+			"}":
+				if curly_brackets.size() == 0 or curly_brackets.pop_back() != "{":
+					return false
+
+	return round_brackets.size() == 0 and square_brackets.size() == 0 and curly_brackets.size() == 0
+
+
+func _shuffle_top_level(code: String, path: String) -> String:
+	# shuffles all top-level statements
+	var script_data : String = code
+	var statements: Array[String] = []
+	var current: String = ""
+	var idx: int = 0
+	var length: int = script_data.length()
+	var result: String = ""
+	for i in script_data:
+		if i != "\n":
+			current += i
+		elif current.begins_with("class_name ") or current.begins_with("@tool") or current.begins_with("extends ") or current.begins_with("@icon"):
+			result += current + "\n"
+			current = ""
+		elif (current.begins_with("static var ") or current.begins_with("var ") or current.begins_with("const ")) and _is_statement_end(current):
+			statements.push_back(current)
+			current = ""
+		elif (current.begins_with("@export") or current.begins_with("@onready")) and _is_statement_end(current):
+			statements.push_back(current)
+			current = ""
+		elif (current.begins_with("static func ") or current.begins_with("func ") or current.begins_with("class ")) and idx < length-1 and script_data[idx+1] != "	":
+			statements.push_back(current)
+			current = ""
+		else:
+			current += "\n"
+		idx += 1
+	statements.shuffle()
+	for stmt in statements:
+		result += stmt + "\n"
+	#result += "\n# " + path + " :: " + str(statements)
+	return result
+
 
 
 func _obfuscate_script(path : String) -> String:
