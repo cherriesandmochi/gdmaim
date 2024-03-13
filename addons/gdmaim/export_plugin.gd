@@ -1012,6 +1012,11 @@ func _obfuscate_script(path : String) -> String:
 		if !did_inject:
 			line_mapper.add_new_line('func _enter_tree() -> void:\n\t' + injection_code)
 	
+	if script_data.lines and script_data.lines[-1].source_text.is_empty():
+		line_mapper.add_linked_line(script_data.lines[-1], "")
+	else:
+		line_mapper.add_new_line("")
+	
 	script_data.export_code = line_mapper.get_code()
 	
 	return script_data.export_code
