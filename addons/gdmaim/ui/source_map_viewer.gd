@@ -196,7 +196,7 @@ func _setup_syntax_highlighter() -> void:
 	syntax_highlighter.add_color_region("#", "", Color("#cdcfd280"))
 	syntax_highlighter.add_color_region("##", "", Color("#7945c1")) #99b3cccc
 	
-	for keyword in ["var", "func", "signal", "enum", "const", "class", "class_name", "extends", "static", "await", "true", "false", "load", "preload", "print", "prints"]:
+	for keyword in ["var", "func", "signal", "enum", "const", "class", "class_name", "extends", "static", "self", "await", "super", "and", "or", "not", "is", "true", "false", "null", "load", "preload", "print", "prints"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#ff7085"))
 	
 	for keyword in ["if", "else", "elif", "for", "in", "while", "return", "continue", "break", "pass", "match", "case"]:
@@ -205,7 +205,7 @@ func _setup_syntax_highlighter() -> void:
 	for keyword in ["tool", "export", "export_range", "onready", "rpc"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#ffb373"))
 	
-	for keyword in ["void","bool", "int", "float", "String", "Array", "Dictionary", "Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i"]:
+	for keyword in ["void", "bool", "int", "float", "String", "Array", "Dictionary", "Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i", "Transform2D", "Transform3D", "Quaternion", "Basis"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#42ffc2"))
 	
 	source_code.syntax_highlighter = syntax_highlighter
