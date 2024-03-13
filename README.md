@@ -5,7 +5,7 @@
 A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a project, resulting in increased difficulty of successful reverse engineering.
 
 
-[![Godot Engine 4.2](https://img.shields.io/badge/Godot%20Engine-4.2-blue.svg)](https://godotengine.org/)
+[![Godot Engine 4.3](https://img.shields.io/badge/Godot_Engine-4.x-blue)](https://godotengine.org/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 
 ## Table of contents
