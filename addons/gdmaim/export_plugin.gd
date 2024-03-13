@@ -38,6 +38,7 @@ var _id_seed : int
 var _dynamic_id_seed : bool
 var _strip_comments : bool
 var _strip_empty_lines : bool
+var _strip_extraneous_spacing : bool
 var _feature_filters : bool
 var _regex_filter_enabled : bool
 var _regex_filter : String
@@ -74,6 +75,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_id_seed = cfg.get_value("id", "seed", 0) if !_dynamic_id_seed else int(Time.get_unix_time_from_system())
 	_strip_comments = cfg.get_value("post_process", "strip_comments", false)
 	_strip_empty_lines = cfg.get_value("post_process", "strip_empty_lines", false)
+	_strip_extraneous_spacing = cfg.get_value("post_process", "strip_extraneous_spacing", false)
 	_regex_filter_enabled = cfg.get_value("post_process", "regex_filter_enabled", false)
 	_regex_filter = cfg.get_value("post_process", "regex_filter", "")
 	_feature_filters = cfg.get_value("post_process", "feature_filters", false)
@@ -740,6 +742,15 @@ func _parse_script(path : String) -> void:
 					expr_type = ExpressionType.NONE
 			
 			i += 1
+		
+		if _strip_extraneous_spacing:
+			for t in tokens_tween.size():
+				if t == 0:
+					continue
+				
+				const token_filter : String = ",;><(){}[]:=-*/|+%\"'"
+				if token_filter.contains(tokens[t-1]) or t >= tokens.size() or token_filter.contains(tokens[t]):
+					tokens_tween[t] = ""
 		
 		var line_data : ScriptData.Line = script_data.new_line()
 		line_data.idx = line_idx

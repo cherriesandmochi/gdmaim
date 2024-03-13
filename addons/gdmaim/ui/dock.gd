@@ -21,6 +21,7 @@ var _write_queued : bool = false
 @onready var dynamic_seed : CheckBox = $ScrollContainer/VBoxContainer/DynamicSeed/CheckBox
 @onready var strip_comments : CheckBox = $ScrollContainer/VBoxContainer/StripComments/CheckBox
 @onready var strip_empty_lines : CheckBox = $ScrollContainer/VBoxContainer/StripEmptyLines/CheckBox
+@onready var strip_extraneous_spacing : CheckBox = $ScrollContainer/VBoxContainer/StripExtraneousSpacing/CheckBox
 @onready var regex_filter_enabled : CheckBox = $ScrollContainer/VBoxContainer/RegExFilters/CheckBox
 @onready var regex_filter : LineEdit = $ScrollContainer/VBoxContainer/RegExFilter
 @onready var feature_filters : CheckBox = $ScrollContainer/VBoxContainer/FeatureFilters/CheckBox
@@ -60,6 +61,7 @@ func _read_cfg() -> void:
 	dynamic_seed.button_pressed = cfg.get_value("id", "dynamic_seed", false)
 	strip_comments.button_pressed = cfg.get_value("post_process", "strip_comments", false)
 	strip_empty_lines.button_pressed = cfg.get_value("post_process", "strip_empty_lines", false)
+	strip_extraneous_spacing.button_pressed = cfg.get_value("post_process", "strip_extraneous_spacing", false)
 	feature_filters.button_pressed = cfg.get_value("post_process", "feature_filters", false)
 	regex_filter_enabled.button_pressed = cfg.get_value("post_process", "regex_filter_enabled", false)
 	regex_filter.text = cfg.get_value("post_process", "regex_filter", "")
@@ -93,6 +95,7 @@ func _write_cfg(force : bool = false) -> void:
 	cfg.set_value("id", "dynamic_seed", dynamic_seed.button_pressed)
 	cfg.set_value("post_process", "strip_comments", strip_comments.button_pressed)
 	cfg.set_value("post_process", "strip_empty_lines", strip_empty_lines.button_pressed)
+	cfg.set_value("post_process", "strip_extraneous_spacing", strip_extraneous_spacing.button_pressed)
 	cfg.set_value("post_process", "feature_filters", feature_filters.button_pressed)
 	cfg.set_value("post_process", "regex_filter_enabled", regex_filter_enabled.button_pressed)
 	cfg.set_value("post_process", "regex_filter", regex_filter.text)

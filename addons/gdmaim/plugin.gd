@@ -24,6 +24,7 @@ func _enter_tree() -> void:
 	cfg.set_value("id", "dynamic_seed", false)
 	cfg.set_value("post_process", "strip_comments", true)
 	cfg.set_value("post_process", "strip_empty_lines", true)
+	cfg.set_value("post_process", "strip_extraneous_spacing", true)
 	cfg.set_value("post_process", "feature_filters", true)
 	cfg.set_value("source_mapping", "filepath", get_script().resource_path.get_base_dir() + "/source_maps")
 	cfg.set_value("source_mapping", "max_files", 10)
