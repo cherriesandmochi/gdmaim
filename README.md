@@ -81,6 +81,8 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Strip Empty Lines`: If enabled, any line without code will be removed.
 
+`Strip Extraneous Spacing`: If enabled, spaces and tabs that are not required, get removed.
+
 `Process Feature Filters`: If enabled, process automatic filtering of code, based on export template feature tags. For more information, see [feature filters](#preprocessor-hints).
 
 `Strip Lines Matching RegEx`: If enabled, any lines matching the regular expression will be removed.
