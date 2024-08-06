@@ -1,7 +1,7 @@
 [gd_scene load_steps=17 format=3 uid="uid://dqknu058384tm"]
 
-[ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer.gd" id="1_xfxdk"]
-[ext_resource type="PackedScene" uid="uid://crvfxjbaqfxn2" path="res://addons/gdmaim/ui/code_search.tscn" id="2_n0sd2"]
+[ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer/source_map_viewer.gd" id="1_xfxdk"]
+[ext_resource type="PackedScene" uid="uid://crvfxjbaqfxn2" path="res://addons/gdmaim/ui/source_map_viewer/code_search.tscn" id="2_n0sd2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6bkrx"]
 bg_color = Color(0.113725, 0.298039, 0.333333, 1)
@@ -31,6 +31,7 @@ bg_color = Color(0.901961, 0.894118, 0.941176, 0)
 [sub_resource type="SystemFont" id="SystemFont_g6j54"]
 font_names = PackedStringArray("Consolas")
 generate_mipmaps = true
+subpixel_positioning = 0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_syit6"]
 content_margin_left = 5.0
@@ -209,10 +210,10 @@ grow_vertical = 2
 
 [node name="OpenFile" type="Button" parent="Panel/HBoxContainer"]
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxEmpty_aq0q2")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_aq0q2")
 theme_override_styles/hover = SubResource("StyleBoxFlat_xmd2u")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_xmd2u")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_aq0q2")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_aq0q2")
 text = "Open"
 
 [node name="MenuButton" type="MenuButton" parent="Panel/HBoxContainer"]
@@ -220,7 +221,6 @@ layout_mode = 2
 text = "Search"
 item_count = 2
 popup/item_0/text = "Search source code...    (CTRL + F)"
-popup/item_0/id = 0
 popup/item_1/text = "Search exported code...    (CTRL + F)"
 popup/item_1/id = 1
 
@@ -332,9 +332,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
 theme_override_colors/current_line_color = Color(0.752941, 0, 0.0509804, 0.419608)
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = SubResource("SystemFont_g6j54")
 theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_syit6")
@@ -427,9 +427,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
 theme_override_colors/current_line_color = Color(0.752941, 0, 0.0509804, 0.419608)
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = SubResource("SystemFont_g6j54")
 theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_syit6")
@@ -456,11 +456,12 @@ code_edit = NodePath("../Control/ExportedCode")
 
 [node name="BottomDock" type="TabContainer" parent="HSplitContainer/HSplitContainer/VSplitContainer"]
 layout_mode = 2
-theme_override_colors/font_selected_color = Color(0.541176, 0.792157, 0.992157, 1)
-theme_override_colors/font_hovered_color = Color(1, 1, 1, 1)
 theme_override_colors/font_unselected_color = Color(0.890196, 0.890196, 0.890196, 1)
+theme_override_colors/font_hovered_color = Color(1, 1, 1, 1)
+theme_override_colors/font_selected_color = Color(0.541176, 0.792157, 0.992157, 1)
 theme_override_constants/outline_size = 0
 theme_override_styles/tab_focus = SubResource("StyleBoxEmpty_i2xq8")
+current_tab = 0
 
 [node name="Console" type="TextEdit" parent="HSplitContainer/HSplitContainer/VSplitContainer/BottomDock"]
 unique_name_in_owner = true
@@ -474,10 +475,12 @@ editable = false
 drag_and_drop_selection_enabled = false
 virtual_keyboard_enabled = false
 middle_mouse_paste_enabled = false
+metadata/_tab_index = 0
 
 [node name="Search Results" type="Tree" parent="HSplitContainer/HSplitContainer/VSplitContainer/BottomDock"]
 visible = false
 layout_mode = 2
+metadata/_tab_index = 1
 
 [node name="Symbols" type="Control" parent="HSplitContainer/HSplitContainer"]
 custom_minimum_size = Vector2(100, 0)

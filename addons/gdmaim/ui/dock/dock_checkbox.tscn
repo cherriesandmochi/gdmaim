@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3 uid="uid://nb5lkomvijrw"]
+
+[ext_resource type="Script" path="res://addons/gdmaim/ui/dock/setting.gd" id="1_emcmu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bv73c"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+content_margin_bottom = 2.0
+bg_color = Color(0.113725, 0.133333, 0.160784, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="CheckBox" type="CheckBox"]
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -9.5
+offset_bottom = 9.5
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/focus = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/hover = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_bv73c")
+theme_override_styles/normal = SubResource("StyleBoxFlat_bv73c")
+text = "On"
+script = ExtResource("1_emcmu")
+node_var = "button_pressed"

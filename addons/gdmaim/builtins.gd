@@ -2,10 +2,8 @@ extends RefCounted
 
 
 const GLOBALS : Array[String] = [
-	# Virtual overrides
-	"_static_init",
-	
 	# GDScript
+	"_static_init",
 	"Color8",
 	"assert",
 	"char",
@@ -21,6 +19,11 @@ const GLOBALS : Array[String] = [
 	"print_stack",
 	"range",
 	"type_exists",
+	
+	"PI",
+	"TAU",
+	"INF",
+	"NAN",
 	
 	# @GlobalScope
 	"abs",
@@ -137,6 +140,14 @@ const GLOBALS : Array[String] = [
 	"wrap",
 	"wrapf",
 	"wrapi",
+	
+	# Common enum keys
+	"VERTICAL",
+	"HORIZONTAL",
+	"CLOCKWISE",
+	"COUNTERCLOCKWISE",
+	"OK",
+	"FAILED",
 ]
 const VARIANTS : Array[Dictionary] = [
 	{

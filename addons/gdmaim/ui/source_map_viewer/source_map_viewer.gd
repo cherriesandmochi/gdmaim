@@ -2,7 +2,8 @@
 extends Window
 
 
-const ExportPlugin := preload("../export_plugin.gd")
+const ExportPlugin := preload("../../export_plugin.gd")
+const _Settings := preload("../../settings.gd")
 
 var _as_plugin : bool = false
 var _source_map : Dictionary
@@ -11,6 +12,7 @@ var _source_mappings : Dictionary
 var _export_mappings : Dictionary
 var _file_tree_items : Dictionary
 var _caret_lock : bool = false
+var _prev_preprocessor_hint : String
 
 @onready var current_file : Label = $Panel/CurrentFile
 @onready var console : TextEdit = %Console
@@ -31,6 +33,8 @@ func _ready() -> void:
 	
 	_setup_syntax_highlighter()
 	_load_script("")
+	
+	visibility_changed.connect(_on_visibility_changed)
 	
 	var popup : PopupMenu = $Panel/HBoxContainer/MenuButton.get_popup()
 	popup.index_pressed.connect(_on_search_option_selected)
@@ -94,8 +98,9 @@ func _load_source_map(path : String) -> void:
 	_file_tree_items.clear()
 	var root : TreeItem = file_tree.create_item()
 	root.set_text(0, "res://")
-	for script : String in _source_map.get("scripts", {}):
-		var folders : PackedStringArray = script.trim_prefix("res://").split("/", false)
+	
+	for p : String in _source_map.get("scripts", {}).keys() + _source_map.get("resources", {}).keys():
+		var folders : PackedStringArray = p.trim_prefix("res://").split("/", false)
 		var prev_branch : TreeItem = root
 		var cur_path : String
 		for i in folders.size():
@@ -110,8 +115,9 @@ func _load_source_map(path : String) -> void:
 				if !is_file:
 					prev_branch.set_meta("folder_idx", prev_branch.get_meta("folder_idx", 0) + 1)
 			if is_file:
-				branch.set_meta("script", script)
+				branch.set_meta("path", p)
 			prev_branch = branch
+	
 	root.set_collapsed_recursive(true)
 	root.collapsed = false
 	for child in root.get_children():
@@ -141,7 +147,11 @@ func _load_script(path : String) -> void:
 	if !path:
 		return
 	
-	_script_data = _source_map.get("scripts", {}).get(path)
+	if _source_map.get("scripts", {}).has(path):
+		_script_data = _source_map.get("scripts", {}).get(path)
+	elif _source_map.get("resources", {}).has(path):
+		_script_data = _source_map.get("resources", {}).get(path)
+	
 	_script_data["path"] = path
 	
 	_source_mappings = _script_data.get("source_mappings", {})
@@ -153,11 +163,9 @@ func _load_script(path : String) -> void:
 	exported_code.text = _script_data.get("export_code", "")
 	
 	for i in source_code.get_line_count():
-		if _source_mappings.get(str(i), -1) == -1:
-			source_code.set_line_as_executing(i, true)
+		source_code.set_line_as_executing(i, _source_mappings and _source_mappings.get(str(i), -1) == -1)
 	for i in exported_code.get_line_count():
-		if _export_mappings.get(str(i), -1) == -1:
-			exported_code.set_line_as_executing(i, true)
+		exported_code.set_line_as_executing(i, _export_mappings and _export_mappings.get(str(i), -1) == -1)
 
 
 func _on_close_requested() -> void:
@@ -177,13 +185,18 @@ func _on_file_tree_item_activated() -> void:
 	if !selected:
 		return
 	
-	if !selected.has_meta("script"):
+	if !selected.has_meta("path"):
 		selected.collapsed = !selected.collapsed
 	else:
-		_load_script(selected.get_meta("script", ""))
+		_load_script(selected.get_meta("path", ""))
 
 
 func _setup_syntax_highlighter() -> void:
+	if _prev_preprocessor_hint == _Settings.current.preprocessor_prefix:
+		return
+	
+	_prev_preprocessor_hint = _Settings.current.preprocessor_prefix
+	
 	var syntax_highlighter := CodeHighlighter.new()
 	syntax_highlighter.function_color = Color("#66e6ff")
 	syntax_highlighter.member_variable_color = Color("#bce0ff")
@@ -194,7 +207,7 @@ func _setup_syntax_highlighter() -> void:
 	syntax_highlighter.add_color_region('"', '"', Color("#ffeda1"))
 	
 	syntax_highlighter.add_color_region("#", "", Color("#cdcfd280"))
-	syntax_highlighter.add_color_region("##", "", Color("#7945c1")) #99b3cccc
+	syntax_highlighter.add_color_region(_prev_preprocessor_hint, "", Color("#7945c1")) #99b3cccc
 	
 	for keyword in ["var", "func", "signal", "enum", "const", "class", "class_name", "extends", "static", "self", "await", "super", "and", "or", "not", "is", "true", "false", "null", "load", "preload", "print", "prints"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#ff7085"))
@@ -245,9 +258,14 @@ func _unlock_caret() -> void:
 	_caret_lock = false
 
 
+func _on_visibility_changed() -> void:
+	if visible:
+		_setup_syntax_highlighter()
+
+
 func _on_source_code_caret_changed() -> void:
 	if _try_lock_caret():
-		var mapped_line : int = _source_mappings.get(str(source_code.get_caret_line()), -1)
+		var mapped_line : int = _source_mappings.get(str(source_code.get_caret_line()), -1) if _source_mappings else source_code.get_caret_line()
 		exported_code.highlight_current_line = mapped_line != -1
 		if exported_code.highlight_current_line:
 			exported_code.set_caret_line(mapped_line)
@@ -255,7 +273,7 @@ func _on_source_code_caret_changed() -> void:
 
 func _on_exported_code_caret_changed() -> void:
 	if _try_lock_caret():
-		var mapped_line : int = _export_mappings.get(str(exported_code.get_caret_line()), -1)
+		var mapped_line : int = _export_mappings.get(str(exported_code.get_caret_line()), -1) if _export_mappings else exported_code.get_caret_line()
 		source_code.highlight_current_line = mapped_line != -1
 		if source_code.highlight_current_line:
 			source_code.set_caret_line(mapped_line)

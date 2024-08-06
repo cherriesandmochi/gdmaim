@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://crvfxjbaqfxn2"]
 
-[ext_resource type="Script" path="res://addons/gdmaim/ui/code_search.gd" id="1_4mnsc"]
+[ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer/code_search.gd" id="1_4mnsc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s0j7j"]
 bg_color = Color(0.0745098, 0.0862745, 0.101961, 1)

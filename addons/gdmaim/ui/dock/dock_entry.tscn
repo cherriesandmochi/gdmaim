@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://cabphcp2t7cv3"]
+
+[node name="Entry" type="Label"]
+tooltip_text = "Entry
+Tooltip"
+mouse_filter = 1
+text = "Entry"
+vertical_alignment = 1

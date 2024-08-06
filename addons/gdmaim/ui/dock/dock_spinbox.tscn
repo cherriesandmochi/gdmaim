@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3 uid="uid://bs7ppfpdatv58"]
+
+[ext_resource type="Script" path="res://addons/gdmaim/ui/dock/setting.gd" id="1_etn3l"]
+
+[node name="SpinBox" type="SpinBox"]
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -81.0
+offset_top = -11.5
+offset_bottom = 11.5
+grow_horizontal = 0
+grow_vertical = 2
+min_value = -2.14748e+09
+max_value = 2.14748e+09
+script = ExtResource("1_etn3l")
+node_var = "value"
