@@ -243,7 +243,7 @@ func _parse_script(path : String) -> void:
 	_Logger.write("---------- " + " Parsing script " + path + " ----------")
 	
 	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
-	return
+	
 	_Logger.write("\nAbstract Syntax Tree\n" + obfuscator._ast.print_tree(-1))
 	
 	_Logger.write("\n---------- " + " Resolving symbols " + path + " ----------\n")
