@@ -94,7 +94,7 @@ func rename_symbol(symbol : Symbol, target : String) -> void:
 
 func resolve_symbol_paths() -> void:
 	for symbol_path in _symbol_paths:
-		var log : String = "Line " + str(symbol_path.line + 1) + " |" + str(symbol_path) + " |"
+		var log : String = "Line " + str(symbol_path.line + 1) + " | " + str(symbol_path) + " |"
 		
 		var cur : Symbol
 		var maybe_local : bool = symbol_path.maybe_local
