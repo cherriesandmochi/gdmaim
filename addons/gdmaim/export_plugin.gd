@@ -24,6 +24,7 @@ var _symbols : SymbolTable
 var _src_obfuscators : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
+var _exported_script_count : int
 
 
 func _get_name() -> String:
@@ -34,6 +35,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_features = features
 	_export_path = path
 	_source_map_filename = _export_path.get_file().get_basename() + Time.get_datetime_string_from_system().replace(":", ".") + ".gd.map"
+	_exported_script_count = 0
 	_enabled = !features.has("no_gdmaim")
 	if !_enabled:
 		return
@@ -110,6 +112,10 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 
 func _export_end() -> void:
 	if !_enabled:
+		return
+	
+	if _exported_script_count == 0:
+		push_error('GDMaim - No scripts have been exported! Please set the export mode of scripts to "Text" in the current export template.')
 		return
 	
 	_build_data_path(settings.source_map_path)
@@ -202,6 +208,7 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
 		add_file(path, code.to_utf8_buffer(), true)
+		_exported_script_count += 1
 
 
 func _get_class_symbols(class_ : String) -> PackedStringArray:
