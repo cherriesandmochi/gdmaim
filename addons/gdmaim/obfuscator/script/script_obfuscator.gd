@@ -226,7 +226,7 @@ func _shuffle_toplevel() -> void:
 
 func _strip_code() -> void:
 	var regex := RegEx.new()
-	if _Settings.current.regex_filter_enabled:
+	if _Settings.current.regex_filter_enabled and _Settings.current.regex_filter:
 		regex.compile(_Settings.current.regex_filter)
 	
 	var lines : Array[Tokenizer.Line] = tokenizer.get_output_lines()
@@ -260,6 +260,6 @@ func _strip_code() -> void:
 			continue
 		
 		# Strip lines matching RegEx
-		if _Settings.current.regex_filter_enabled and regex.search(str(line)):
+		if regex.is_valid() and regex.search(str(line)):
 			tokenizer.remove_output_line(l)
 			continue
