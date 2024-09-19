@@ -215,13 +215,16 @@ func _read_string() -> void:
 
 func _read_node_path() -> void:
 	var str : String
+	var str_char : String
 	
 	while !_stream.is_eof():
 		var char : String = _stream.peek()
-		if char == "\n" or _is_punctuator(char) or _is_whitespace(char):
-			if char == ".":
-				str += _stream.get_next()
+		if char == "\n" or (_is_punctuator(char) and (char != "." or !str_char)) or (_is_whitespace(char) and !str_char):
 			break
+		if char == "'" or char == '"':
+			str_char = ""
+			if str == "$":
+				str_char = char
 		str += char
 		_stream.get_next()
 	
