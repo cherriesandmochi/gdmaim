@@ -194,7 +194,7 @@ func _shuffle_toplevel() -> void:
 		var prev_line : Tokenizer.Line = lines[i - 1] if i >= 1 else null
 		var starter_token : Token = line.tokens[0] if line.tokens else null
 		var prev_starter_token : Token = prev_line.tokens[0] if prev_line and prev_line.tokens else null
-		if starter_token and ["@tool", "class_name", "extends"].has(starter_token.get_value()):
+		if starter_token and ["@icon", "@tool", "class_name", "extends"].has(starter_token.get_value()):
 			top_block.append(line)
 			continue
 		if starter_token and starter_token.get_value() == "@onready":
