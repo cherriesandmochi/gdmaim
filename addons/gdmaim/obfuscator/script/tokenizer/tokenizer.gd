@@ -10,7 +10,7 @@ const KEYWORDS : Array[String] = ["extends", "class_name", "@tool", "@onready", 
 const LITERALS : Array[String] = ["true", "false", "null", "self", "PI", "TAU", "NAN", "INF"]
 const OPERATORS : String = "+-*^/%=<>!&|"
 const PUNCTUATORS : String = "()[]{},;:."
-const IDENTIFIER_CHARACTERS : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_@"
+const IDENTIFIER_CHARACTERS : String = "1234567890_@"
 
 var line_count : int
 
@@ -292,7 +292,8 @@ func _is_digit(char : String) -> bool:
 
 
 func _is_valid_identifier(char : String) -> bool:
-	return IDENTIFIER_CHARACTERS.contains(char)
+	return TextServerManager.get_primary_interface().is_valid_letter(char.unicode_at(0)) or IDENTIFIER_CHARACTERS.contains(char)
+	#return char.is_valid_unicode_identifier() or char == "@" #TODO: Godot 4.4
 
 
 func _is_keyword(token : String) -> bool:
