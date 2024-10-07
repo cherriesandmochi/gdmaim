@@ -207,8 +207,14 @@ func _shuffle_toplevel() -> void:
 	
 	var w_blocks : Dictionary
 	var random := RandomNumberGenerator.new()
+	var line_seeds : Dictionary
 	for block in blocks:
-		random.seed = hash(path) + path.length() + _symbol_table._seed + (hash(block[0].to_string()) if block else 0)
+		var line_seed : int = 0
+		if block:
+			line_seed = hash(block[0].to_string())
+			line_seeds[line_seed] = line_seeds.get(line_seed, -1) + 1
+			line_seed += line_seeds[line_seed]
+		random.seed = hash(path) + path.length() + _symbol_table._seed + line_seed
 		w_blocks[block] = random.randi()
 	blocks.sort_custom((func(a, b): return w_blocks[a] > w_blocks[b]))
 	
