@@ -200,8 +200,9 @@ func _shuffle_toplevel() -> void:
 		if starter_token and starter_token.get_value() == "@onready":
 			on_ready.append(line)
 			continue
-		if line.get_identation() == 0 and starter_token and starter_token.is_keyword() and (!prev_starter_token or !prev_starter_token.has_value("@rpc")):
+		if line.get_identation() == 0 and starter_token and starter_token.is_keyword() and (!prev_starter_token or (!prev_starter_token.has_value("@rpc") and !(prev_starter_token.get_value().begins_with("@export") and !prev_line.has_token_value("var")))):
 			blocks.append([])
+		
 		blocks.back().append(line)
 	
 	var w_blocks : Dictionary

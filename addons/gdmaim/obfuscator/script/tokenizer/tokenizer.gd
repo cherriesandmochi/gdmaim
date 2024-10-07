@@ -406,3 +406,9 @@ class Line:
 	func has_statement() -> bool:
 		var t : int = 0 if get_identation() == 0 else 1
 		return tokens.size() >= t + 1 and !tokens[t].is_comment() and !tokens[t].is_line_break()
+	
+	func has_token_value(value : String) -> bool:
+		for token in tokens:
+			if token.get_value() == value:
+				return true
+		return false

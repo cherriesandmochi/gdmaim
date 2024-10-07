@@ -174,7 +174,8 @@ func _parse_keyword(parent : AST.ASTNode) -> AST.ASTNode:
 	if token.get_value().begins_with("@export"):
 		if _tokenizer.peek().is_punctuator("("):
 			_skip_brackets("(", ")")
-		_tokenizer.get_next()
+		while _tokenizer.get_next().get_value() != "var":
+			pass
 		return _parse_export_var(parent)
 	
 	match token.get_value():
