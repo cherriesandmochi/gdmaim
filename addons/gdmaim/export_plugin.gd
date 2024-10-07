@@ -79,6 +79,8 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 			_symbols.lock_symbol_name(variant["class"])
 		for signal_ in variant.get("signals", []):
 			_symbols.lock_symbol_name(signal_)
+		for constant_ in variant.get("constants", []):
+			_symbols.lock_symbol_name(constant_)
 		for var_ in variant.get("properties", []):
 			_symbols.lock_symbol_name(var_)
 		for func_ in variant.get("methods", []):
