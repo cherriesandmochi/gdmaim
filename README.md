@@ -31,8 +31,7 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 
 ### Vulnerability of GDScripts
 
-GDScripts are stored as is when exporting a project, which makes it very easy for anyone to gain full access to the original source code, using tools like [gdsdecomp](https://github.com/bruvzg/gdsdecomp). Right now, even comments are preserved.
-Godot does have built-in [encryption](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_script_encryption_key.html), but that will only deter people who don't know about [gdke](https://github.com/pozm/gdke), which extracts the encryption key from the executable.
+GDScripts are stored as is when exporting a project, which makes it very easy for anyone to gain full access to the original source code, using tools like [gdsdecomp](https://github.com/bruvzg/gdsdecomp). Godot does have built-in [encryption](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_script_encryption_key.html), but that will only deter people who don't know about [gdke](https://github.com/pozm/gdke), which extracts the encryption key from the executable.
 
 Thus, it's very easy for people to get the entire GDScript source code of any exported project.
 This also means that writing cheats for multiplayer games becomes a lot easier, which includes finding and taking advantage of vulnerabilities in server-authoritative code.
@@ -68,12 +67,16 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Enable Obfuscation`: If enabled, obfuscate scripts. Does _not_ affect post-processing.
 
+`Obfuscate Exports Vars`: If enabled, obfuscate export vars.
+> Note: Requires all resources which modify export vars to be saved as '.tres' files.
+
+`Shuffle Top-Level Declarations`: Shuffles the line positions of top-level declarations, such as variables, functions and classes.
+
 `Inline Constants`: If enabled, accesses to constants will be replaced with hardcoded values. Declarations of constants get removed.
 
 `Inline enums`: If enabled, accesses to enum keys will be replaced with hardcoded values. Declarations of enums get removed.
 
-`Obfuscate Exports Vars`: If enabled, obfuscate export vars.
-> Note: Requires all resources which modify export vars to be saved as '.tres' files.
+`Preprocessor prefix`: The prefix to use for preprocessor hints.
 
 ### Post Processing
 
@@ -83,19 +86,19 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Strip Extraneous Spacing`: If enabled, spaces and tabs that are not required, get removed.
 
-`Process Feature Filters`: If enabled, process automatic filtering of code, based on export template feature tags. For more information, see [feature filters](#preprocessor-hints).
-
 `Strip Lines Matching RegEx`: If enabled, any lines matching the regular expression will be removed.
 
-### ID Generator
+`Process Feature Filters`: If enabled, process automatic filtering of code, based on export template feature tags. For more information, see [feature filters](#preprocessor-hints).
 
-`ID Prefix`: Sets the prefix to use for all generated IDs.
+### Name Generator
 
-`ID Character List`: A list of characters the ID generator is allowed to use.
+`Prefix`: Sets the prefix to use for all generated names.
 
-`Target ID Length`: The length of the ID the generator will try to target. The length does _not_ include the prefix.
+`Character List`: A list of characters the name generator is allowed to use.
 
-`Seed`: The seed the ID generator will use to generate IDs. A given seed will always produce the same ID for a given name.
+`Target Name Length`: The length of names the generator will try to target. The length does _not_ include the prefix.
+
+`Seed`: The seed the name generator will use to generate names. A given seed will always produce the same name for every identifier.
 
 > Note: The set value will be ignored, if `Use Dynamic Seed` is enabled.
 
@@ -152,25 +155,25 @@ If [`Process Feature Filters`](#post-processing) is enabled, custom feature tags
 
 __Obfuscation__
 
-`##OBFUSCATE bool`: Must be at the beginning of a line. Overrides obfuscation for any code after the hint.
+`##LOCK_SYMBOLS`: Prevents obfuscation of identifiers _declared_ in the current line.
 
 ```js
-##OBFUSCATE false
-var my_var : interval
-##OBFUSCATE true
+var my_var : int ##LOCK_SYMBOLS
 var my_var2 : int
+my_var2 = 0 ##LOCK_SYMBOLS
 ```
 
 =>
 
 ```js
-var my_var : int
+var my_var : int ##LOCK_SYMBOLS
 var __6vjJ : int
+__6vjJ = 0 ##LOCK_SYMBOLS
 ```
 
 > Note: Globally accessible names are shared with all scripts, which in the above example means that `my_var` declarations will _not_ get obfuscated in _any_ script.
 
-`##OBFUSCATE_STRINGS`: Must be at the end of a line. Obfuscates all strings in the same line.
+`##OBFUSCATE_STRINGS`: Obfuscates all strings in the same line.
 
 ```js
 var my_var : int
@@ -181,7 +184,7 @@ set("my_var", 1) ##OBFUSCATE_STRINGS
 
 ```js
 var __pQFC : int
-set("__pQFC", 1)
+set("__pQFC", 1) ##OBFUSCATE_STRINGS
 ```
 
 `##OBFUSCATE_STRING_PARAMETERS arg_name`: Must be at the beginning of a line and before a function declaration. For all specified _string_ parameters, obfuscate the arguments when the function is called.
@@ -198,8 +201,10 @@ custom_set("my_var", 3)
 =>
 
 ```js
+##OBFUSCATE_STRING_PARAMETERS name
 func __U5iZ(name : String, value) -> void:
   set(name, value)
+
 var __rEyW : int
 __U5iZ("__rEyW", 3)
 ```
@@ -222,6 +227,7 @@ func server_func() -> int:
 => If the feature tag 'server' has not been defined in the current export template:
 
 ```js
+##FEATURE_FUNC server
 func __Dg8o() -> int:
   printerr("ERROR: illegal call to 'test.__Dg8o'!")
   return 0
@@ -276,7 +282,7 @@ Object.disconnect() -> Signal.disconnect()
 Object.emit_signal() -> Signal.emit()
 ```
 
-__Calls__
+__Calls and RPCs__
 
 Use [`Callables`](https://docs.godotengine.org/en/stable/classes/class_callable.html) instead of calling methods via string names.
 
@@ -284,6 +290,8 @@ Use [`Callables`](https://docs.godotengine.org/en/stable/classes/class_callable.
 Object.call() -> Callable.call()
 Object.callv() -> Callable.callv()
 Object.call_deferred() -> Callable.call_deferred()
+Node.rpc() -> Callable.rpc()
+Node.rpc_id() -> Callable.rpc_id()
 ```
 
 __Set/get__
