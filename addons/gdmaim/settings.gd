@@ -21,6 +21,7 @@ var feature_filters : bool = true
 var regex_filter_enabled : bool = true
 var regex_filter : String = ""
 var preprocessor_prefix : String = "##"
+var obfuscate_exclude : String = ""
 var source_map_path : String = get_script().resource_path.get_base_dir() + "/source_maps"
 var source_map_max_files : int = 10
 var source_map_compress : bool = true
@@ -48,6 +49,7 @@ func _init() -> void:
 	add_entry("inline_constants", "inline_consts", "Inline Constants", "If true, replace constants with hardcoded values.\nNote: Only bool, int, float, Color, Vector(2/3/4)(i) and NodePath are supported.").disabled = true
 	add_entry("inline_enums", "inline_enums", "Inline Enums", "If true, replace enums with hardcoded values.").disabled = true
 	add_entry("preprocessor_prefix", "preprocessor_prefix", "Preprocessor Prefix", "Sets the prefix to use for preprocessor hints.")
+	add_entry("obfuscate_exclude", "exclude", "Exclude Files/Folders", "Comma-separated paths (eg: addons/*, main.gd) to exclude from obfuscation.")
 	
 	set_category("post_process", "Post Processing")
 	add_entry("strip_comments", "strip_comments", "Strip Comments", "If true, remove all comments.")

@@ -25,6 +25,7 @@ var _src_obfuscators : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
+var _exclude_paths : PackedStringArray
 
 
 func _get_name() -> String:
@@ -40,6 +41,15 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	if !_enabled:
 		return
 	
+	_exclude_paths.clear()
+	if !settings.obfuscate_exclude.strip_edges().is_empty():
+		for exclude_path in settings.obfuscate_exclude.strip_edges().split(","):
+			exclude_path = exclude_path.strip_edges()
+			if !exclude_path.is_empty():
+				if !exclude_path.begins_with("res://"):
+					exclude_path = "res://" + exclude_path
+				_exclude_paths.push_back(exclude_path)
+		
 	_convert_text_resources_to_binary = ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", false)
 	if _convert_text_resources_to_binary:
 		#push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' being enabled might significantly affect the time it takes to export")
@@ -207,7 +217,7 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 				#var binary_path : String = "res://.godot/exported/gdmaim/" + _generate_uuid(path)
 				#binary_path += "-" + path.get_file().replace(".tres", ".res").replace(".tscn", ".scn")
 				#add_file(binary_path, binary_data, true)
-	elif ext == "gd":
+	elif ext == "gd" and !_is_exclude(path):
 		var code : String = _obfuscate_script(path)
 		add_file(path, code.to_utf8_buffer(), true)
 		_exported_script_count += 1
@@ -324,17 +334,28 @@ func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 	return splits
 
 
+func _is_exclude(path : String) -> bool:
+	for exclude_path in _exclude_paths:
+		if path.match(exclude_path):
+			return true
+	return false
+
+
 func _get_files(path : String, ext : String) -> PackedStringArray:
 	var files : PackedStringArray
 	var dirs : Array[String] = [path]
 	while dirs:
 		var dir : String = dirs.pop_front()
+		if _is_exclude(dir):
+			continue
 		for sub_dir in DirAccess.get_directories_at(dir):
 			if !sub_dir.begins_with("."):
 				dirs.append(dir.path_join(sub_dir))
 		for file in DirAccess.get_files_at(dir):
 			if file.replace(".remap", "").ends_with(ext):
-				files.append(dir.path_join(file))
+				var file_path := dir.path_join(file)
+				if !_is_exclude(file_path):
+					files.append(file_path)
 	files.sort()
 	
 	return files
