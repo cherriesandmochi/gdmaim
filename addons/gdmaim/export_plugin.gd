@@ -25,6 +25,7 @@ var _src_obfuscators : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
+var _rgx : RegEx = null
 
 
 func _get_name() -> String:
@@ -92,8 +93,9 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 			_symbols.lock_symbol_name(symbol)
 	
 	# Parse scripts and gather their symbols
-	for script_path in scripts:
-		_parse_script(script_path)
+	for paths in [scripts, _get_files("res://", ".tscn")]:
+		for script_path in paths:
+			_parse_script(script_path)
 	
 	_symbols.resolve_symbol_paths()
 	if settings.obfuscation_enabled:
@@ -241,15 +243,34 @@ func _get_class_symbols(class_ : String) -> PackedStringArray:
 
 
 func _parse_script(path : String) -> void:
-	var script : Script = load(path)
-	var source_code : String = script.source_code
+	var source_code : String
+	var as_embedded : bool = false
+	if path.ends_with(".gd"):
+		var script : Script = load(path)
+		source_code = script.source_code
+	elif path.ends_with(".tscn"):
+		as_embedded = true
+		var file : FileAccess = FileAccess.open(path, FileAccess.READ)
+		var data : String = file.get_as_text()
+		if null == _rgx:
+			_rgx = RegEx.new()
+			_rgx.compile("script\\/source = \\\"([.|\\W|\\S]*?)\\\"")
+		var r_match : RegExMatch = _rgx.search(data)
+		if null != r_match and r_match.strings.size() > 1:
+			source_code = r_match.strings[1]
+		file.close()
+	
+	if source_code.is_empty():return
 	var obfuscator := ScriptObfuscator.new(path)
 	_src_obfuscators[path] = obfuscator
 	
 	_Logger.swap(obfuscator)
 	_Logger.clear()
 	_Logger.write("Export log for '" + path + "'\n")
-	_Logger.write("---------- " + " Parsing script " + path + " ----------")
+	if as_embedded:
+		_Logger.write("---------- " + " Parsing script embedded " + path + " ----------")
+	else:
+		_Logger.write("---------- " + " Parsing script " + path + " ----------")
 	
 	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
 	
@@ -295,10 +316,20 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	var obfuscator := ResourceObfuscator.new(path)
 	_res_obfuscators[path] = obfuscator
 	
+	var code : String
+	if _src_obfuscators.has(path):
+		code = _obfuscate_script(path)
+		_src_obfuscators.erase(path) #Resource map consumed
+	
 	_Logger.swap(obfuscator)
 	_Logger.write("---------- " + " Obfuscating resource " + path + " ----------\n")
 	
 	obfuscator.run(source_data, _symbols)
+	
+	if !code.is_empty():
+		var data : String = obfuscator.get_data()
+		data = _rgx.sub(data, str("script/source = \"", code,"\""))
+		obfuscator.set_data(data)
 	
 	return obfuscator.get_data()
 

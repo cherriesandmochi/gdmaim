@@ -53,7 +53,7 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 			var tmp_lines : String
 			var has_script : bool = line.contains("instance=") or line.contains('type="Animation"')
 			var j : int = i
-			while j < lines.size(): 
+			while j < lines.size():
 				if lines[j].begins_with("["):
 					break
 				
@@ -112,6 +112,10 @@ func get_source_data() -> String:
 
 func get_data() -> String:
 	return _data
+
+
+func set_data(custom : String) -> void:
+	_data = custom
 
 
 func _replace_first(str : String, replace : String, with : String) -> String:
