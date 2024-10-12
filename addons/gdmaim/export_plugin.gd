@@ -25,8 +25,8 @@ var _src_obfuscators : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
-
 var _rgx : RegEx = null
+
 
 func _get_name() -> String:
 	return "gdmaim"
@@ -40,25 +40,25 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_enabled = !features.has("no_gdmaim")
 	if !_enabled:
 		return
-
+	
 	_convert_text_resources_to_binary = ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", false)
 	if _convert_text_resources_to_binary:
 		#push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' being enabled might significantly affect the time it takes to export")
 		#_build_data_path(get_script().resource_path.get_base_dir() + "/cache")
 		push_warning("GDMaim: The project setting 'editor/export/convert_text_resources_to_binary' is enabled, but will be ignored during export.")
-
+	
 	if settings.symbol_seed == 0 and !settings.symbol_dynamic_seed:
 		push_warning("GDMaim - The ID generation seed is still set to the default value of 0. Please choose another one.")
-
+	
 	var scripts : PackedStringArray = _get_files("res://", ".gd")
-
+	
 	#_godot_data.clear()
 	_autoloads.clear()
 	_src_obfuscators.clear()
 	_res_obfuscators.clear()
-
+	
 	_symbols = SymbolTable.new(settings)
-
+	
 	_inject_autoload = ""
 	if settings.source_map_inject_name:
 		var cfg : ConfigFile = ConfigFile.new()
@@ -70,7 +70,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 			_symbols.lock_symbol_name(autoload)
 		if !_inject_autoload:
 			push_warning("GDMaim - No valid autoload found! GDMaim will not be able to print the source map filename to the console on the exported build.")
-
+	
 	# Gather built-in variant and global symbols
 	var builtins : Script = preload("builtins.gd")
 	for global in builtins.GLOBALS:
@@ -86,21 +86,21 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 			_symbols.lock_symbol_name(var_)
 		for func_ in variant.get("methods", []):
 			_symbols.lock_symbol_name(func_)
-
+	
 	# Gather built-in class symbols
 	for class_ in ClassDB.get_class_list():
 		for symbol in _get_class_symbols(class_):
 			_symbols.lock_symbol_name(symbol)
-
+	
 	# Parse scripts and gather their symbols
 	for paths in [scripts, _get_files("res://", ".tscn")]:
 		for script_path in paths:
 			_parse_script(script_path)
-
+	
 	_symbols.resolve_symbol_paths()
 	if settings.obfuscation_enabled:
 		_symbols.obfuscate_symbols()
-
+	
 	# Modify class cache
 	#var class_cache : ConfigFile = ConfigFile.new()
 	#class_cache.load("res://.godot/global_script_class_cache.cfg")
@@ -117,11 +117,11 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 func _export_end() -> void:
 	if !_enabled:
 		return
-
+	
 	if _exported_script_count == 0:
 		push_error('GDMaim - No scripts have been exported! Please set the export mode of scripts to "Text" in the current export template.')
 		return
-
+	
 	_build_data_path(settings.source_map_path)
 	var files : PackedStringArray
 	for filepath in DirAccess.get_files_at(settings.source_map_path):
@@ -131,7 +131,7 @@ func _export_end() -> void:
 	files.reverse()
 	for i in range(files.size() - 1, maxi(-1, settings.source_map_max_files - 2), -1):
 		DirAccess.remove_absolute(settings.source_map_path + "/" + files[i])
-
+	
 	var source_map : Dictionary = {
 		"version": "2.0",
 		"symbols": { "source": {}, "export": {}, },
@@ -175,7 +175,7 @@ func _export_end() -> void:
 		print("GDMaim - A source map has been saved to '" + full_source_map_path + "'")
 	else:
 		push_warning("GDMaim - Failed to write source map to '" + full_source_map_path + "'!")
-
+	
 	_autoloads.clear()
 	_symbols = null
 	_src_obfuscators.clear()
@@ -186,12 +186,12 @@ func _export_end() -> void:
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
 		return
-
+	
 	#HACK for some reason, this only works on the last (few?) exported files
 	#TODO instead of doing it for every file, try to predict the amount of files which will be exported and only do this when the export is expected to end, with a margin of error
 	#for data_path : String in _godot_data:
 		#add_file(data_path, _godot_data[data_path], false)
-
+	
 	var ext : String = path.get_extension()
 	if ext == "csv":
 		skip() #HACK
@@ -217,29 +217,30 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 
 func _get_class_symbols(class_ : String) -> PackedStringArray:
 	var symbols : PackedStringArray
-
+	
 	symbols.append(class_)
-
+	
 	for signal_ in ClassDB.class_get_signal_list(class_, true):
 		symbols.append(signal_.name)
-
+	
 	for const_ in ClassDB.class_get_integer_constant_list(class_, true):
 		symbols.append(const_)
-
+	
 	for enum_ in ClassDB.class_get_enum_list(class_, true):
 		symbols.append(enum_)
 		for key_ in ClassDB.class_get_enum_constants(class_, enum_, true):
 			symbols.append(key_)
-
+	
 	for var_ in ClassDB.class_get_property_list(class_, true):
 		const EXCLUDE_USAGES : PackedInt32Array = [64]
 		if !EXCLUDE_USAGES.has(var_.usage):
 			symbols.append(var_.name)
-
+	
 	for func_ in ClassDB.class_get_method_list(class_, true):
 		symbols.append(func_.name)
-
+	
 	return symbols
+
 
 func _parse_script(path : String) -> void:
 	var source_code : String
@@ -258,11 +259,11 @@ func _parse_script(path : String) -> void:
 		if null != r_match and r_match.strings.size() > 1:
 			source_code = r_match.strings[1]
 		file.close()
-
+	
 	if source_code.is_empty():return
 	var obfuscator := ScriptObfuscator.new(path)
 	_src_obfuscators[path] = obfuscator
-
+	
 	_Logger.swap(obfuscator)
 	_Logger.clear()
 	_Logger.write("Export log for '" + path + "'\n")
@@ -270,26 +271,27 @@ func _parse_script(path : String) -> void:
 		_Logger.write("---------- " + " Parsing script embedded " + path + " ----------")
 	else:
 		_Logger.write("---------- " + " Parsing script " + path + " ----------")
-
+	
 	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
-
+	
 	_Logger.write("\nAbstract Syntax Tree\n" + obfuscator._ast.print_tree(-1))
-
+	
 	_Logger.write("\n---------- " + " Resolving symbols " + path + " ----------\n")
+
 
 func _obfuscate_script(path : String) -> String:
 	var obfuscator : ScriptObfuscator = _src_obfuscators[path]
-
+	
 	_Logger.swap(obfuscator)
 	_Logger.write("\n---------- " + " Obfuscating script " + path + " ----------")
-
+	
 	obfuscator.run(_features)
-
+	
 	# Inject startup code into the first autoload
 	if path == _inject_autoload:
 		var injection_code : String = 'print("GDMaim - Source map \'' + _source_map_filename + '\'\\n");'
 		var did_inject : bool = false
-
+		
 		var found_func : bool = false
 		for line in obfuscator.tokenizer.get_output_lines():
 			for i in line.tokens.size():
@@ -303,39 +305,38 @@ func _obfuscate_script(path : String) -> String:
 					break
 			if did_inject:
 				break
-
+		
 		if !did_inject:
 			obfuscator.tokenizer.insert_output_line(obfuscator.tokenizer.get_output_lines().size(), Tokenizer.Line.new([Token.new(Token.Type.LITERAL, 'func _enter_tree() -> void:\n\t' + injection_code, -1, -1)]))
-
+	
 	return obfuscator.generate_source_code()
 
 
 func _obfuscate_resource(path : String, source_data : String) -> String:
 	var obfuscator := ResourceObfuscator.new(path)
 	_res_obfuscators[path] = obfuscator
-
+	
 	var code : String
 	if _src_obfuscators.has(path):
 		code = _obfuscate_script(path)
 		_src_obfuscators.erase(path) #Resource map consumed
-
+	
 	_Logger.swap(obfuscator)
 	_Logger.write("---------- " + " Obfuscating resource " + path + " ----------\n")
-
-
+	
 	obfuscator.run(source_data, _symbols)
-
+	
 	if !code.is_empty():
 		var data : String = obfuscator.get_data()
 		data = _rgx.sub(data, str("script/source = \"", code,"\""))
 		obfuscator.set_data(data)
-
+	
 	return obfuscator.get_data()
 
 
 func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 	var splits := PackedStringArray()
-
+	
 	var i : int = 0
 	var last : int = 0
 	while i < source.length():
@@ -347,10 +348,10 @@ func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 				last = i + 1
 				break
 		i += 1
-
+	
 	if last < i:
 		splits.append(source.substr(last, i - last))
-
+	
 	return splits
 
 
@@ -366,7 +367,7 @@ func _get_files(path : String, ext : String) -> PackedStringArray:
 			if file.replace(".remap", "").ends_with(ext):
 				files.append(dir.path_join(file))
 	files.sort()
-
+	
 	return files
 
 
@@ -388,17 +389,17 @@ func _build_data_path(path : String) -> void:
 
 func _convert_text_to_binary_resource(extension : String, text_data : String) -> PackedByteArray:
 	return PackedByteArray() # does NOT work right now, as obfuscated expors vars will not get serialized
-
+	
 	var path : String = get_script().resource_path.get_base_dir() + "/cache/convert."
 	var binary_ext : String = "scn" if extension == "tscn" else "res"
-
+	
 	_write_file_str(path + extension, text_data)
 	var resource : Resource = ResourceLoader.load(path + extension, "", ResourceLoader.CACHE_MODE_IGNORE)
 	if !resource:
 		return PackedByteArray()
-
+	
 	ResourceSaver.save(resource, path + binary_ext)
-
+	
 	return FileAccess.get_file_as_bytes(path + binary_ext)
 
 
