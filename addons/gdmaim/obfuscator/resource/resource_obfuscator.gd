@@ -18,7 +18,7 @@ func _init(path : String) -> void:
 func run(source_data : String, symbol_table : SymbolTable) -> bool:
 	_source_data = source_data
 	_data = ""
-
+	
 	var lines : PackedStringArray = source_data.split("\n")
 	var i : int = 0
 	while i < lines.size():
@@ -27,28 +27,28 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 			_data += line + "\n"
 			i += 1
 			continue
-
+		
 		if line.begins_with('[connection signal="') or line.begins_with('[node name="'):
 			var node_paths : bool = false
 			var tokens : PackedStringArray = line.split(" ", false)
 			for token in tokens:
 				if token.begins_with('signal="') or token.begins_with('method="') or token.begins_with('node_paths=PackedStringArray("') or node_paths:
 					node_paths = (token.begins_with("node_paths") or node_paths) and token[-1] == ","
-
+					
 					var start : int = token.find('"')
 					var end : int = token.find('"', start + 1)
 					if end == -1:
 						continue
-
+					
 					var name : String = token.substr(start + 1, end - (start + 1))
 					var new_symbol : SymbolTable.Symbol = symbol_table.find_global_symbol(name)
 					if new_symbol:
 						line = _replace_first(line, name, str(new_symbol.name))
 						_Logger.write(str(i+1) + " found symbol '" + name + "' = " + str(new_symbol.name))
-
+		
 		_data += line + "\n"
 		i += 1
-
+		
 		if line.begins_with("[node") or line.begins_with("[sub_resource") or line.begins_with("[resource"):
 			var tmp_lines : String
 			var has_script : bool = line.contains("instance=") or line.contains('type="Animation"')
@@ -56,16 +56,16 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 			while j < lines.size():
 				if lines[j].begins_with("["):
 					break
-
+				
 				tmp_lines += lines[j] + "\n"
-
+				
 				var tokens : PackedStringArray = lines[j].split(" = ", false, 1)
 				if tokens.size() == 2 and tokens[0] == "script":
 					has_script = true
 					_Logger.write(str(i+1) + " found script " + line + " " + tokens[1])
-
+				
 				j += 1
-
+			
 			if !has_script:
 				_data += tmp_lines
 				i = j
@@ -86,7 +86,7 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 							line = tokens[0] + " = " + tokens[1]
 							if node_path != new_path:
 								_Logger.write(str(i+1) + " found node path '" + node_path + "' = " + new_path)
-
+						
 						var new_symbol : SymbolTable.Symbol = symbol_table.find_global_symbol(tokens[0])
 						if new_symbol:
 							line = str(new_symbol.name) + " = " + tokens[1]
@@ -97,12 +97,12 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 						if new_symbol:
 							line = '"method": &"' + str(new_symbol.name) + '"'
 							_Logger.write(str(i+1) + " found method '" + method + "' = " + str(new_symbol.name))
-
+					
 					_data += line + "\n"
 					i += 1
-
+	
 	_data = _data.strip_edges(false, true) + "\n"
-
+	
 	return true
 
 
@@ -112,6 +112,7 @@ func get_source_data() -> String:
 
 func get_data() -> String:
 	return _data
+
 
 func set_data(custom : String) -> void:
 	_data = custom
