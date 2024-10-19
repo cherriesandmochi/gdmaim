@@ -88,19 +88,23 @@ func _lazy2(path : String, ext : String, res : Resource = null) -> Array:
 				path = p2
 	return [path, data]
 
-func parse_to_binary(path : String,data : String) -> PackedByteArray:
+## Parse text data to binary data
+func parse_to_binary(path : String, data : String, out_type : String = "res") -> PackedByteArray:
 	if data.is_empty():
 		push_error("Lazy2 err: Data Empty!! ", path)
 		return []
 	var default_ext : String = path.get_extension()
 	var tmp_ext : String = ""
-	if default_ext != "res" and default_ext != "scn":
-		push_warning("Lazy2 err: Not valid binary file: ", path)
+
+	if default_ext == "scn" or default_ext == "tscn":
+		tmp_ext = "tscn"
+	elif default_ext == "res" or default_ext == "tres":
+		tmp_ext = "tres"
+
+	if tmp_ext != "tres" and tmp_ext != "tscn":
+		push_warning("Lazy2 err: Not valid text file: ", path)
 		return []
-	var _d : Array = _get_type(path)
-	if _d.size() == 0:
-		return []
-	tmp_ext = _d[0]
+
 	var new_path : String = str(FOLDER, path.get_file().trim_suffix(str(".", default_ext)), ".", tmp_ext)
 	var file : FileAccess = FileAccess.open(new_path,FileAccess.WRITE)
 	if !file:
@@ -110,7 +114,7 @@ func parse_to_binary(path : String,data : String) -> PackedByteArray:
 	file.close()
 	_buffered[path] = new_path
 	var rs : Resource = ResourceLoader.load(new_path, "",ResourceLoader.CACHE_MODE_IGNORE)
-	new_path = str(FOLDER, path.get_file())
+	new_path = str(FOLDER, path.get_file().trim_suffix(str(".", default_ext)), ".", out_type)
 	if  ResourceSaver.save(rs, new_path) != OK:
 		push_error("Lazy2 err: Can not save file ", new_path)
 		return []
