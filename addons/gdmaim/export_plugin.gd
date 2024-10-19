@@ -299,7 +299,7 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 			# > with the remap enabled, auto point to new path, now end with:
 			#data_file = lazy2res.parse_to_binary(path, new_data)
 
-			data_file = data.to_utf8_buffer()
+		data_file = data.to_utf8_buffer()
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
 		#add_file(path, code.to_utf8_buffer(), true)
