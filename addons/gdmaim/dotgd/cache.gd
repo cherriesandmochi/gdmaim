@@ -6,7 +6,7 @@ const SETTINGS_PATH : String = "res://project.godot" # Text settings file
 const UID_PATH : String = DEFAULT_ENGINE_CACHE_FOLDER + "uid_cache.bin"
 
 #region DEVUSER_PREFERENCES
-var parse_uid : bool = true #WARN: Make more time for export!!
+var parse_uid : bool = false #WARN: Make more time for export!!
 
 ## This prevent break uids if you set parse_uid as false and has not real obfuscate_path_callback or the logic depends only of remaps
 var force_use_path_param : bool = false #Safe in the maintance workflow
@@ -40,7 +40,7 @@ func parse_uid_cache(path : String = "") -> void:
 	if path.is_empty():
 		path = ProjectSettings.globalize_path(UID_PATH)
 	if !FileAccess.file_exists(path):
-		push_warning("Cache file not exit!")
+		push_warning("Cache file not exit! ", path)
 		return
 
 	var unique_ids : Dictionary = {}
@@ -73,7 +73,7 @@ func parse_uid_cache(path : String = "") -> void:
 		file.store_buffer(packed)
 	file.close()
 
-func get_project_settings(path : String = "res://project.godot") -> ConfigFile:
+func get_project_settings(path : String = "") -> ConfigFile:
 	var cfg : ConfigFile = null
 	if path.is_empty():
 		path = ProjectSettings.globalize_path(str(SETTINGS_PATH))
@@ -135,7 +135,7 @@ func _parse_config_settings(cfg : ConfigFile, force : bool) -> void:
 				ProjectSettings.set_setting(key, cfg.get_value(s, k))
 	ProjectSettings.save()
 
-func parse_project_settings(path : String = "res://project.godot") -> void:
+func parse_project_settings(path : String = "") -> void:
 	if !obfuscate_path_callback.is_valid():return
 	if path.is_empty():
 		path = ProjectSettings.globalize_path(str(SETTINGS_PATH))
@@ -280,3 +280,17 @@ func _notification(what: int) -> void:
 					DirAccess.remove_absolute(path)
 				DirAccess.rename_absolute(temp, path)
 		_cache_paths.clear()
+		#INLINE SETTINGS
+		if is_instance_valid(_project_settings_origin):
+			for s in _project_settings_origin.get_sections():
+				for k in _project_settings_origin.get_section_keys(s):
+					var key : String = str(s,"/",k)
+					ProjectSettings.set_setting(key, _project_settings_origin.get_value(s, k))
+			ProjectSettings.save()
+			_project_settings_origin = null
+		#INLINE UID
+		var temp : String = str(UID_PATH, ".tmp")
+		if FileAccess.file_exists(temp):
+			if FileAccess.file_exists(UID_PATH):
+				DirAccess.remove_absolute(UID_PATH)
+			DirAccess.rename_absolute(temp, UID_PATH)
