@@ -7,6 +7,9 @@ const UID_PATH : String = DEFAULT_ENGINE_CACHE_FOLDER + "uid_cache.bin"
 
 #region DEVUSER_PREFERENCES
 var parse_uid : bool = true #WARN: Make more time for export!!
+
+## This prevent break uids if you set parse_uid as false and has not real obfuscate_path_callback or the logic depends only of remaps
+var force_use_path_param : bool = false #Safe in the maintance workflow
 #endregion
 
 var _cache_paths : Array[String] = []
@@ -26,7 +29,7 @@ func parse() -> void:
 	if parse_uid:
 		parse_uid_cache()
 	else:
-		if obfuscate_path_callback.is_valid():
+		if force_use_path_param and obfuscate_path_callback.is_valid():
 			#Force to use path param setted in exported proyects
 			if FileAccess.file_exists(UID_PATH):
 				DirAccess.rename_absolute(UID_PATH, str(UID_PATH, ".tmp"))
