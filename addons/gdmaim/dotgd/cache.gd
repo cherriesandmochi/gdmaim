@@ -2,7 +2,12 @@
 ## ** GodotCache **
 extends RefCounted
 const DEFAULT_ENGINE_CACHE_FOLDER : String ="res://.godot/" #res://.bridge/ | res://.redot/
-const SETTINGS_PATH : String = "res://project.godot"
+const SETTINGS_PATH : String = "res://project.godot" # Text settings file
+const UID_PATH : String = DEFAULT_ENGINE_CACHE_FOLDER + "uid_cache.bin"
+
+#region DEVUSER_PREFERENCES
+var parse_uid : bool = true #WARN: Make more time for export!!
+#endregion
 
 var _cache_paths : Array[String] = []
 var obfuscate_token_callback : Callable
@@ -18,12 +23,52 @@ func reset() -> void:
 func parse() -> void:
 	parse_global_script_class_cache()
 	parse_project_settings()
-	parse_uid_cache()
+	if parse_uid:
+		parse_uid_cache()
+	else:
+		if obfuscate_path_callback.is_valid():
+			#Force to use path param setted in exported proyects
+			if FileAccess.file_exists(UID_PATH):
+				DirAccess.rename_absolute(UID_PATH, str(UID_PATH, ".tmp"))
 	#TODO: Parse functions
 
 func parse_uid_cache(path : String = "") -> void:
-	#TODO
-	return
+	if !obfuscate_path_callback.is_valid():return
+	if path.is_empty():
+		path = ProjectSettings.globalize_path(UID_PATH)
+	if !FileAccess.file_exists(path):
+		push_warning("Cache file not exit!")
+		return
+
+	var unique_ids : Dictionary = {}
+	var file : FileAccess = FileAccess.open(path,FileAccess.READ)
+	if !file:
+		push_warning("Cache err, Can not open uid bin!")
+		return
+	var size : int = file.get_32()
+
+	for x : int in range(size):
+		var id : int = file.get_64()
+		var len : int = file.get_32()
+		var packed : PackedByteArray = []
+		packed.resize(len)
+		packed = file.get_buffer(packed.size())
+		unique_ids[id] = packed
+	file.close()
+
+	DirAccess.copy_absolute(path, str(path, ".tmp"))
+	file = FileAccess.open(path, FileAccess.WRITE)
+	if !file:
+		push_warning("Cache err, Can not open uid bin!")
+		return
+	file.store_32(unique_ids.size())
+	for id in unique_ids.keys():
+		var data : String = obfuscate_path_callback.call((unique_ids[id] as PackedByteArray).get_string_from_utf8())
+		var packed : PackedByteArray = data.to_utf8_buffer()
+		file.store_64(id)
+		file.store_32(packed.size())
+		file.store_buffer(packed)
+	file.close()
 
 func get_project_settings(path : String = "res://project.godot") -> ConfigFile:
 	var cfg : ConfigFile = null
@@ -116,24 +161,38 @@ func parse_project_settings(path : String = "res://project.godot") -> void:
 						if has_asteric:
 							buffer = str("*", buffer)
 						cfg.set_value(s, k, buffer)
-				elif value is PackedStringArray:
+				elif value is PackedStringArray or value is Array:
+					if k == "config/features":
+						#FIXME: Not working!
+						for v in range(value.size()):
+							var c : Variant = value[v]
+							if c is String:
+								if (c).is_valid_float():
+									var nv : String = str(4 ,".",randi_range(2, 4))
+									while c == nv:
+										nv = str(4,".",randi_range(0, 4))
+									value[v] = nv
+									cfg.set_value(s, k, value)
+									break
+						continue
 					var new_packed : PackedStringArray = []
 					var dirt : bool = false
-					for v : String in value:
-						var has_asteric : bool = false
-						if v.begins_with("*"):
-							has_asteric = true
-							v = v.trim_prefix("*")
-						if v.is_absolute_path():
-							dirt = true
-							v = obfuscate_path_callback.call(v)
-							if has_asteric:
-								v = str("*", v)
-							new_packed.append(v)
-						else:
-							if has_asteric:
-								v = str("*", v)
-							new_packed.append(v)
+					for v : Variant in value:
+						if v is String:
+							var has_asteric : bool = false
+							if v.begins_with("*"):
+								has_asteric = true
+								v = v.trim_prefix("*")
+							if v.is_absolute_path():
+								dirt = true
+								v = obfuscate_path_callback.call(v)
+								if has_asteric:
+									v = str("*", v)
+								new_packed.append(v)
+							else:
+								if has_asteric:
+									v = str("*", v)
+								new_packed.append(v)
 					if dirt:
 						cfg.set_value(s, k, new_packed)
 
@@ -145,6 +204,7 @@ func parse_project_settings(path : String = "res://project.godot") -> void:
 		if ProjectSettings.has_setting("editor/version_control/plugin_name"):
 			_project_settings_origin.set_value("editor","version_control/plugin_name", ProjectSettings.get_setting("editor/version_control/plugin_name"))
 			ProjectSettings.set_setting("editor/version_control/plugin_name", null)
+		#ProjectSettings.set_setting("application/config/features", PackedStringArray(["4.3", "Forward Plus"]))
 		_parse_config_settings(cfg, false)
 
 func parse_global_script_class_cache(path : String = "") -> void:
@@ -202,9 +262,10 @@ func restore(path : String) -> void:
 func clear() -> void:
 	for path : String in _cache_paths:
 		restore(path)
-	_cache_paths.clear()
+	reset()
 	_parse_config_settings(_project_settings_origin, true)
 	_project_settings_origin = null
+	restore(UID_PATH)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
