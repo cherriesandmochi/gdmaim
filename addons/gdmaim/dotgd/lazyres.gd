@@ -5,7 +5,7 @@
 
 ## Class LazyRes
 extends RefCounted
-const FOLDER : String = "res://.aquadottemp/"
+const FOLDER : String = "res://.bridgetmp/"
 
 var save_flags : int = 0
 var use_buffer_clear : bool = true
@@ -34,7 +34,6 @@ static func grant_clear() -> void:
 
 ## Clear all buffer files
 func clear() -> void:
-	return
 	for b in _buffered.values():
 		if FileAccess.file_exists(b):
 			DirAccess.remove_absolute(b)
@@ -57,7 +56,8 @@ func _notification(what: int) -> void:
 				DirAccess.remove_absolute(b)
 		_buffered.clear()
 		grant_clear()
-		DirAccess.remove_absolute(FOLDER)
+		if DirAccess.dir_exists_absolute(FOLDER):
+			DirAccess.remove_absolute(FOLDER)
 
 func _lazy2(path : String, ext : String, res : Resource = null) -> Array:
 	var data : String = ""
