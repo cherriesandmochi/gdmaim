@@ -242,6 +242,12 @@ This section offers solutions to various limitations of this plugin.
 The obfuscator does not support parsing and obfuscating binary files.
 Thus, if `Obfuscate Exports Vars` is enabled, every custom resource containing export vars must be saved as '.tres' and every packed scene modifying export vars or containing signal connections as '.tscn'. Furthermore, built-in scripts are not supported and must be saved to a file instead.
 
+Since binary files are not supported the script exporting option must be kept to text in Godot 4.3, otherwise no scripts will be exported.
+
+**Script Export Option**
+
+![image](https://github.com/user-attachments/assets/bd1808b7-f136-4bbc-a8dc-b40187a3b280)
+
 ### Static typing
 
 In order for the obfuscator to work as well as possible, I recommend heavy use of [static typing](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/static_typing.html). Although this mostly affects just dictionaries at the moment.
