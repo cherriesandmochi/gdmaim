@@ -239,8 +239,8 @@ This section offers solutions to various limitations of this plugin.
 
 ### Resource formats
 
-The obfuscator does not support parsing and obfuscating binary files.
-Thus, if `Obfuscate Exports Vars` is enabled, every custom resource containing export vars must be saved as '.tres' and every packed scene modifying export vars or containing signal connections as '.tscn'. Furthermore, built-in scripts are not supported and must be saved to a file instead.
+The obfuscator does not yet support parsing and obfuscating binary files.
+Thus, if `Obfuscate Exports Vars` is enabled, every custom resource or packed scene containing export vars must be saved as '.tres' and '.tscn', respectively. Packed scenes must also be saved as '.tscn', if they contain signal connections or embedded scripts. As of now, you should probably just avoid binary packed scene files altogether if you want to use this addon.
 
 Since binary files are not supported the script exporting option must be kept to text in Godot 4.3, otherwise no scripts will be exported.
 
