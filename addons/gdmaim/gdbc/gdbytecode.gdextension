@@ -1,0 +1,16 @@
+[configuration]
+
+entry_symbol = "gdbytecode_init"
+compatibility_minimum = "4.1"
+
+[libraries]
+
+windows.editor.x86_64 = "res://addons/gdmaim/gdbc/windows/libgdbytecode.windows.editor.x86_64.dll"
+windows.debug.x86_64 = "res://addons/gdmaim/gdbc/windows/libgdbytecode.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/gdmaim/gdbc/windows/libgdbytecode.windows.template_release.x86_64.dll"
+linux.editor.x86_64 = "res://addons/gdmaim/gdbc/linux/libgdbytecode.linux.editor.x86_64.so"
+linux.debug.x86_64 = "res://addons/gdmaim/gdbc/linux/libgdbytecode.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://addons/gdmaim/gdbc/linux/libgdbytecode.linux.template_release.x86_64.so"
+android.editor.x86_64 = "res://addons/gdmaim/gdbc/android/libgdbytecode.android.editor.x86_64.so"
+android.debug.x86_64 = "res://addons/gdmaim/gdbc/android/libgdbytecode.android.template_debug.x86_64.so"
+android.release.x86_64 = "res://addons/gdmaim/gdbc/android/libgdbytecode.android.template_release.x86_64.so"
