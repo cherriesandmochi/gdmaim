@@ -28,6 +28,7 @@ var source_map_inject_name : bool = true
 var debug_scripts : PackedStringArray
 var debug_resources : PackedStringArray
 var obfuscate_debug_only : bool = false
+var export_mode : int = 0
 
 var _cfg := ConfigFile.new()
 var _entries : Dictionary
@@ -56,6 +57,7 @@ func _init() -> void:
 	add_entry("regex_filter_enabled", "regex_filter_enabled", "Strip Lines Matching RegEx", "If true, any lines matching the regular expression will be removed from the obfuscated code.")
 	add_entry("regex_filter", "regex_filter", "", "Enter Regular Expression")
 	add_entry("feature_filters", "feature_filters", "Process Feature Filters", "If true, export template feature tags may be used to filter code.")
+	add_entry("export_mode", "export_mode", "Export Mode", "Sets the final script format, follows the same options as the script export options.")
 	
 	set_category("id", "Name Generator")
 	add_entry("symbol_prefix", "prefix", "Prefix", "Sets the prefix to use for all generated names.")
