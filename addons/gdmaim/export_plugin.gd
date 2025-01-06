@@ -342,6 +342,7 @@ func _parse_script(path : String) -> void:
 		var script : Script = load(path)
 		var source_code : String = script.source_code
 		if source_code.is_empty():return
+		source_code = str(source_code.strip_edges(), "\n")
 		var obfuscator := ScriptObfuscator.new(path)
 		_src_obfuscators[path] = obfuscator
 
@@ -387,6 +388,8 @@ func _parse_resource(path : String, data : String) -> void:
 		var embedded_path : String = str(path,":",x)
 		var obfuscator := ScriptObfuscator.new(embedded_path)
 		_src_obfuscators[embedded_path] = obfuscator
+		source_code = str(source_code.strip_edges(), "\n")
+
 
 		_Logger.swap(obfuscator)
 		_Logger.clear()
