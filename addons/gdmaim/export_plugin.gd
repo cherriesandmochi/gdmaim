@@ -207,7 +207,8 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 	elif ext == "tres" or ext == "tscn":
 		if settings.obfuscate_export_vars or ext == "tscn":
 			var data : String = _obfuscate_resource(path, FileAccess.get_file_as_string(path))
-			add_file(path, data.to_utf8_buffer(), true)
+			skip()
+			add_file(path, data.to_utf8_buffer(), false)
 			#var binary_data : PackedByteArray = _convert_text_to_binary_resource(ext, data) if _convert_text_resources_to_binary and path.contains("MapPractice") else PackedByteArray()
 			#if !binary_data:
 				#add_file(path, data.to_utf8_buffer(), true)
@@ -217,7 +218,8 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 				#add_file(binary_path, binary_data, true)
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
-		add_file(path, code.to_utf8_buffer(), true)
+		skip()
+		add_file(path, code.to_utf8_buffer(), false)
 		_exported_script_count += 1
 
 
