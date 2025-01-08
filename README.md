@@ -373,9 +373,10 @@ Huge file sizes are usually caused by embedded resources, some of which take up 
 
 ## Roadmap [↑](#table-of-contents)
 
-- [ ] class_name obfuscation: The base is done, just need to properly(yea right) update all symbols contained in named scripts.
-- [ ] Additional obfuscation techniques.
-- [ ] Filename obfuscation: Would require manually renaming and linking .remap files as well...
+- [ ] Filename obfuscation
+	- [ ] Scripts
+	- [ ] Created resources
+	- [ ] Imported resources
 - [ ] Converting text resources to binary: Requires obfuscation of binary files or a conversion tool.
 
 ## License [↑](#table-of-contents)
