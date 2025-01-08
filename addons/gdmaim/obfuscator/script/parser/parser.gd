@@ -26,9 +26,12 @@ func read(tokenizer : Tokenizer, symbol_table : SymbolTable, autoload_symbol : S
 	ast.body = _parse_block(ast, -1)
 	
 	_symbol_table = null
-	_class_symbol = null
 	
 	return ast
+
+
+func get_class_symbol() -> SymbolTable.Symbol:
+	return _class_symbol 
 
 
 func _parse_block(parent : AST.ASTNode, identation : int) -> AST.Sequence:
@@ -327,10 +330,8 @@ func _parse_class_name(parent : AST.ASTNode) -> void:
 	while ast.get_parent() and not ast is AST.Class:
 		ast = ast.get_parent()
 	
-	_class_symbol = _symbol_table.create_symbol(ast, token.get_value())
+	_class_symbol = _symbol_table.create_global_symbol(token.get_value())
 	ast.symbol = _class_symbol
-	
-	_symbol_table.lock_symbol_name(token.get_value()) #NOTE class_name obfuscation currently disabled
 	
 	token.link_symbol(ast.symbol)
 

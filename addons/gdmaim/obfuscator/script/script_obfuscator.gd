@@ -93,6 +93,10 @@ func generate_line_mappings() -> Array[Dictionary]:
 	return [mappings_in, mappings_out]
 
 
+func get_class_symbol() -> SymbolTable.Symbol:
+	return parser.get_class_symbol() if parser else null
+
+
 func _string_obfuscation(token : Token) -> void:
 	if !token.is_string_literal():
 		return

@@ -3,6 +3,7 @@ extends EditorExportPlugin
 
 const _Settings := preload("settings.gd")
 const _Logger := preload("logger.gd")
+const GodotFiles := preload("godot_files.gd")
 const ScriptObfuscator := preload("obfuscator/script/script_obfuscator.gd")
 const ResourceObfuscator := preload("obfuscator/resource/resource_obfuscator.gd")
 const SymbolTable := preload("obfuscator/symbol_table.gd")
@@ -10,6 +11,7 @@ const Tokenizer := preload("obfuscator/script/tokenizer/tokenizer.gd")
 const Token := preload("obfuscator/script/tokenizer/token.gd")
 
 const SOURCE_MAP_EXT : String = ".gd.map"
+const GODOT_CLASS_CACHE_PATH : String = "res://.godot/global_script_class_cache.cfg"
 
 var settings : _Settings
 
@@ -20,12 +22,14 @@ var _export_path : String
 var _source_map_filename : String
 var _scripts_last_modification : Dictionary
 var _autoloads : Dictionary
+var _class_symbols : Dictionary
 var _symbols : SymbolTable
 var _src_obfuscators : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
 var _rgx : RegEx = null
+var _godot_files : GodotFiles
 
 
 func _get_name() -> String:
@@ -52,7 +56,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	
 	var scripts : PackedStringArray = _get_files("res://", ".gd")
 	
-	#_godot_data.clear()
+	_godot_files = GodotFiles.new()
 	_autoloads.clear()
 	_src_obfuscators.clear()
 	_res_obfuscators.clear()
@@ -102,16 +106,20 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		_symbols.obfuscate_symbols()
 	
 	# Modify class cache
-	#var class_cache : ConfigFile = ConfigFile.new()
-	#class_cache.load("res://.godot/global_script_class_cache.cfg")
-	#var classes : Array[Dictionary] = class_cache.get_value("", "list")
-	#for class_data : Dictionary in classes:
-		#if _global_classes.has(class_data.class):
-			#class_data.class = StringName(_global_classes[class_data.class])
-		#if _global_classes.has(class_data.base):
-			#class_data.base = StringName(_global_classes[class_data.base])
-	#class_cache.set_value("", "list", classes)
-	#_godot_data["res://.godot/global_script_class_cache.cfg"] = class_cache.encode_to_text().to_utf8_buffer()
+	var class_cache := ConfigFile.new()
+	var class_cache_src : PackedByteArray = FileAccess.get_file_as_bytes(GODOT_CLASS_CACHE_PATH)
+	class_cache.parse(class_cache_src.get_string_from_utf8())
+	var classes : Array[Dictionary] = class_cache.get_value("", "list")
+	for class_data : Dictionary in classes:
+		if _class_symbols.has(class_data.class):
+			class_data.class = StringName(_class_symbols[class_data.class].get_name())
+		if _class_symbols.has(class_data.base):
+			class_data.base = StringName(_class_symbols[class_data.base].get_name())
+	class_cache.set_value("", "list", classes)
+	_godot_files.edit(GODOT_CLASS_CACHE_PATH, class_cache_src, class_cache.encode_to_text().to_utf8_buffer())
+	
+	# Apply changes made to Godot's internal export files
+	_godot_files.flush()
 
 
 func _export_end() -> void:
@@ -176,6 +184,9 @@ func _export_end() -> void:
 	else:
 		push_warning("GDMaim - Failed to write source map to '" + full_source_map_path + "'!")
 	
+	# Revert temporary changes made to Godot files
+	_godot_files.restore()
+	
 	_autoloads.clear()
 	_symbols = null
 	_src_obfuscators.clear()
@@ -186,11 +197,6 @@ func _export_end() -> void:
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
 		return
-	
-	#HACK for some reason, this only works on the last (few?) exported files
-	#TODO instead of doing it for every file, try to predict the amount of files which will be exported and only do this when the export is expected to end, with a margin of error
-	#for data_path : String in _godot_data:
-		#add_file(data_path, _godot_data[data_path], false)
 	
 	var ext : String = path.get_extension()
 	if ext == "csv":
@@ -273,6 +279,8 @@ func _parse_script(path : String) -> void:
 		_Logger.write("---------- " + " Parsing script " + path + " ----------")
 	
 	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
+	if obfuscator.get_class_symbol():
+		_class_symbols[obfuscator.get_class_symbol().to_string()] = obfuscator.get_class_symbol()
 	
 	_Logger.write("\nAbstract Syntax Tree\n" + obfuscator._ast.print_tree(-1))
 	
