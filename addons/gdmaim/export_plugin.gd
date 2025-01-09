@@ -12,6 +12,7 @@ const Token := preload("obfuscator/script/tokenizer/token.gd")
 
 const SOURCE_MAP_EXT : String = ".gd.map"
 const GODOT_CLASS_CACHE_PATH : String = "res://.godot/global_script_class_cache.cfg"
+const BINARY_MODE : int = 1
 
 var settings : _Settings
 
@@ -30,6 +31,8 @@ var _inject_autoload : String
 var _exported_script_count : int
 var _rgx : RegEx = null
 var _godot_files : GodotFiles
+var _compiler : BytecodeCompiler
+var _compress_mode := BytecodeCompiler.UNCOMPRESSED
 
 
 func _get_name() -> String:
@@ -53,7 +56,18 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	
 	if settings.symbol_seed == 0 and !settings.symbol_dynamic_seed:
 		push_warning("GDMaim - The ID generation seed is still set to the default value of 0. Please choose another one.")
-	
+
+	if settings.export_mode >= BINARY_MODE:
+		_compiler = BytecodeCompiler.new()
+		if settings.export_mode == BINARY_MODE:
+			print("GDMaim - Exporting scripts as binary tokens.")
+			_compress_mode = BytecodeCompiler.UNCOMPRESSED
+		else:
+			print("GDMaim - Exporting scripts as compressed binary tokens.")
+			_compress_mode = BytecodeCompiler.COMPRESSED
+	else:
+		print("GDMaim - Exporting scripts as plain text.")
+
 	var scripts : PackedStringArray = _get_files("res://", ".gd")
 	
 	_godot_files = GodotFiles.new()
@@ -218,8 +232,14 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 				#add_file(binary_path, binary_data, true)
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
+		var bytes : PackedByteArray
+		if settings.export_mode >= BINARY_MODE:
+			path += "c" # convert .gd to .gdc
+			bytes = _compiler.compile_from_string(code, _compress_mode)
+		else:
+			bytes = code.to_utf8_buffer()
 		skip()
-		add_file(path, code.to_utf8_buffer(), false)
+		add_file(path, bytes, false)
 		_exported_script_count += 1
 
 
