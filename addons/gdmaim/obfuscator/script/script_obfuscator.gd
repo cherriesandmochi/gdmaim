@@ -297,14 +297,15 @@ func _combine_statement_lines() -> void:
 	while i < lines.size():
 		var line : Tokenizer.Line = lines[i]
 		i += 1
-		var first_token : Token = line.tokens[0]
-		var last_token : Token = line.tokens[line.tokens.size() - 2]
-		var is_indented : bool = first_token.type == Token.Type.WHITESPACE or first_token.type == Token.Type.IDENTATION
-		var current_scope : String = scope_indents[scope_indents.size()-1] if !scope_indents.is_empty() else ''
 		
 		# Skip empty lines
 		if line.tokens.size() < 2:
 			continue
+			
+		var first_token : Token = line.tokens[0]
+		var last_token : Token = line.tokens[line.tokens.size() - 2]
+		var is_indented : bool = first_token.type == Token.Type.WHITESPACE or first_token.type == Token.Type.IDENTATION
+		var current_scope : String = scope_indents[scope_indents.size()-1] if !scope_indents.is_empty() else ''
 		
 		var process_curent_line : bool = true
 		
@@ -334,7 +335,10 @@ func _combine_statement_lines() -> void:
 		# Track bracket count
 		var line_has_control := false
 		var line_has_inline_control := false
+		var line_empty := true
 		for token in line.tokens:
+			if token.type not in [Token.Type.LINE_BREAK, Token.Type.WHITESPACE, Token.Type.IDENTATION, Token.Type.COMMENT]:
+				line_empty = false
 			if token.type == Token.Type.PUNCTUATOR and token.get_value() in "[{(":
 				scope_brackets_count += 1
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() in ")}]":
@@ -346,7 +350,7 @@ func _combine_statement_lines() -> void:
 		
 		# If the line is the start of a new scope, do not run this because it will try to add to a previous scope
 		# Done like this so lines that start a scope can still count brackets and be checked if they themselves open a scope
-		if process_curent_line:
+		if process_curent_line and not line_empty:
 			var newline_token : Token = active_line.tokens[active_line.tokens.size() - 1]
 			# Don't add semicolons if inside of a bracket structure, just remove newline
 			# (it's affecting the active_line, which is before this current line, so use prev_line_brackets_count)
@@ -368,7 +372,7 @@ func _combine_statement_lines() -> void:
 			tokenizer.remove_output_line(i)
 		
 		# Fulfill newline requirement
-		if standalone_annotations:
+		if standalone_annotations or line_empty or last_token.type == Token.Type.COMMENT:
 			active_line = null
 		
 		# The statement opens a new scope -> it needs to be indented so it can be exited
