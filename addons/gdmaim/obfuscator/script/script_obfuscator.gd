@@ -284,43 +284,83 @@ func _combine_statement_lines() -> void:
 	
 	var lines : Array[Tokenizer.Line] = tokenizer.get_output_lines()
 	if lines.is_empty(): return
+	
 	var active_line : Tokenizer.Line = lines[0]
+	var start_new_scope : bool = false
+	var require_separate_line : bool = false
 	var i : int = 1
+	
 	var scope_indents : Array[String] = []
+	var scope_start_idx : Array[int] = []
+	var scope_can_inline : Array[bool] = []
 	var scope_brackets_count : int = 0
+	
+	var empty_line_counter : int = 0
 	var prev_line_brackets_count : int = 0
 	
 	# Check if the file starts with "extends" to handle the inconsistent requirement it has
 	if active_line.tokens[0].type == Token.Type.KEYWORD and active_line.tokens[0].get_value() == "extends":
 		active_line = null
 	
-	while i < lines.size():
-		var line : Tokenizer.Line = lines[i]
+	while i <= lines.size():
+		var end_of_file : bool = i >= lines.size()
+		var line : Tokenizer.Line = lines[i] if !end_of_file else Tokenizer.Line.new([Token.new(Token.Type.WHITESPACE, '', 0, i)])
 		i += 1
 		
-		# Skip empty lines
-		if line.tokens.size() < 2:
-			continue
-			
-		var first_token : Token = line.tokens[0]
-		var last_token : Token = line.tokens[line.tokens.size() - 2]
+		var first_token : Token = line.tokens[0] if !line.tokens.is_empty() else Token.new(Token.Type.LINE_BREAK, '\n', 0, i-1)
+		var last_token : Token = line.tokens[line.tokens.size() - 2] if line.tokens.size() > 2 else Token.new(Token.Type.LINE_BREAK, '\n', 0, i-1)
 		var is_indented : bool = first_token.type == Token.Type.WHITESPACE or first_token.type == Token.Type.IDENTATION
 		var current_scope : String = scope_indents[scope_indents.size()-1] if !scope_indents.is_empty() else ''
+		
+		# An empty line is any whitespace or tab only line that isn't the last fake line
+		var line_empty := not end_of_file
+		if line_empty:
+			for token in line.tokens:
+				if token.type not in [Token.Type.LINE_BREAK, Token.Type.WHITESPACE, Token.Type.IDENTATION, Token.Type.COMMENT]:
+					line_empty = false
+					break
+		
+		var current_indent : String = first_token.get_value() if !line_empty else current_scope
 		
 		var process_curent_line : bool = true
 		
 		# Start of a new anchor line, which will kept being expanded
 		if active_line == null:
 			active_line = line
-			if is_indented:  # If it's indented, track the indent
-				scope_indents.append(first_token.get_value())
+			if is_indented and current_scope.length() < current_indent.length():  # If it's indented more (not less), track the indent
+				scope_indents.append(current_indent)
+				scope_start_idx.append(i-1)
+				scope_can_inline.append(not require_separate_line)
 			process_curent_line = false
 		
 		# Scope change (whilst not in brackets) => Reducing indents
-		elif prev_line_brackets_count == 0 and !scope_indents.is_empty() and first_token.get_value() != current_scope:
+		if prev_line_brackets_count == 0 and !scope_indents.is_empty() and current_indent != current_scope and not start_new_scope:
 			active_line = line
-			while scope_indents.size() and scope_indents[scope_indents.size()-1] != first_token.get_value():
-				scope_indents.remove_at(scope_indents.size()-1)
+			var internal_indent_index = scope_indents.size()-1
+			# Closing (one/several) scopes
+			while !scope_indents.is_empty() and scope_indents[internal_indent_index] != current_indent:
+				# Check if the scope resulting inside code is one line -> assume we can inline the entire line then
+				# Since this runs on a line that changes scope, aka non empty line, we need to subtract any empty lines that were between the last scope and this new one
+				#    so the condition still checks out on a difference of 2
+				var current_scope_start_idx := scope_start_idx[internal_indent_index]
+				var head_line : Tokenizer.Line = lines[current_scope_start_idx-1]
+				# Make sure if we will merge, it will not be into a comment!
+				# Also check if we're allowed to inline this scope, not all scopes can
+				if i - current_scope_start_idx - empty_line_counter == 2 and (head_line.tokens.size() > 2 and head_line.tokens[head_line.tokens.size()-2].type != Token.Type.COMMENT) and scope_can_inline[internal_indent_index]:
+					# If so, we can merge them without any separator
+					head_line.remove_token(head_line.tokens.size() - 1)
+					for token_idx in range(1, lines[current_scope_start_idx].tokens.size()):  # We skip the first token aka indent
+						var token : Token = lines[current_scope_start_idx].tokens[token_idx]
+						token.line = head_line.tokens[0].line
+						head_line.add_token(token)
+					# Remove line from tokenizer to keep sanitary data
+					tokenizer.remove_output_line(current_scope_start_idx)
+					i -= 1
+				
+				scope_indents.remove_at(internal_indent_index)
+				scope_start_idx.remove_at(internal_indent_index)
+				scope_can_inline.remove_at(internal_indent_index)
+				internal_indent_index -= 1
 			process_curent_line = false
 		
 		# Clear leading indent
@@ -332,21 +372,52 @@ func _combine_statement_lines() -> void:
 		var standalone_annotations := first_token.type == Token.Type.KEYWORD and first_token.get_value() in ["extends", "@export_group"]
 		var top_level_class_annotation := first_token.type == Token.Type.KEYWORD and first_token.get_value() in ["extends", "class_name", "@tool", "@icon"]
 		
-		# Track bracket count
+		# Whitespace tracking
+		var line_still_indenting := true
+		# Control tracking
 		var line_has_control := false
 		var line_has_inline_control := false
-		var line_empty := true
+		# Get set tracking
+		var line_getset_conditions := 0  # 0: nothing, 1: 'var' keyword
+		var line_has_getset := false
+		# Get set function tracking
+		var line_getset_function_conditions := 0  # 0: nothing, 1: 'set' keyword, 2: 'set(' or 'get'. A ':' punctuation will most likely mean a getset function
+		var line_has_getset_function := false
+		# Inner class tracking
+		var line_has_class := false
+		# Discover what type of statements exist in this line, such as inline if blocks or variables with pending getters setters
 		for token in line.tokens:
-			if token.type not in [Token.Type.LINE_BREAK, Token.Type.WHITESPACE, Token.Type.IDENTATION, Token.Type.COMMENT]:
-				line_empty = false
 			if token.type == Token.Type.PUNCTUATOR and token.get_value() in "[{(":
 				scope_brackets_count += 1
+				if line_getset_function_conditions == 1: line_getset_function_conditions = 2
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() in ")}]":
 				scope_brackets_count -= 1
-			elif line_has_control and token.type == Token.Type.PUNCTUATOR and token.get_value() == ":":
-				line_has_inline_control = true
+			
+			elif token.type == Token.Type.PUNCTUATOR and token.get_value() == ":":
+				if scope_brackets_count > 0: continue
+				if line_has_control: line_has_inline_control = true
+				if line_getset_function_conditions == 2: line_has_getset_function = true
+			elif token.type == Token.Type.PUNCTUATOR and token.get_value() == ";":
+				line_getset_conditions = 0
+				line_getset_function_conditions = 0
+			
 			elif token.type == Token.Type.KEYWORD and token.get_value() in ["if", "else", "elif", "while", "for", "match", "func"]:
 				line_has_control = true
+			elif token.type == Token.Type.KEYWORD and token.get_value() == 'var':
+				line_getset_conditions = 1
+			elif token.type == Token.Type.KEYWORD and token.get_value() == 'class':
+				line_has_class = true
+			elif token.type == Token.Type.SYMBOL and token.get_value() == 'get':
+				if line_still_indenting: line_getset_function_conditions = 2
+			elif token.type == Token.Type.SYMBOL and token.get_value() == 'set':
+				if line_still_indenting: line_getset_function_conditions = 1
+			
+			if line_still_indenting and (token.type != Token.Type.WHITESPACE and token.type != Token.Type.IDENTATION):
+				line_still_indenting = false
+		
+		# The next scope defines a getter or setter if the line starts with a 'get' or 'set' and has a colon
+		if scope_brackets_count == 0 and line_getset_conditions == 1 and last_token.type == Token.Type.PUNCTUATOR and last_token.get_value() == ':':
+			line_has_getset = true
 		
 		# If the line is the start of a new scope, do not run this because it will try to add to a previous scope
 		# Done like this so lines that start a scope can still count brackets and be checked if they themselves open a scope
@@ -368,16 +439,33 @@ func _combine_statement_lines() -> void:
 			for token in line.tokens:
 				token.line = first_token.line
 				active_line.add_token(token)
-			i -= 1
-			tokenizer.remove_output_line(i)
+			if !end_of_file:
+				i -= 1
+				tokenizer.remove_output_line(i)
+		
+		require_separate_line = false
+		start_new_scope = false
 		
 		# Fulfill newline requirement
 		if standalone_annotations or line_empty or last_token.type == Token.Type.COMMENT:
 			active_line = null
 		
+		# Getters setters scope must be in its own indented scope, can't be inline
+		# Inner classes are less error prone if they're not inline too
+		if line_has_getset or line_has_class:
+			active_line = null
+			start_new_scope = true
+			require_separate_line = true
+		
 		# The statement opens a new scope -> it needs to be indented so it can be exited
 		# Also check for in-line control statements as to prevent statements from flooding into the inline scope
-		if (last_token.type == Token.Type.PUNCTUATOR and last_token.get_value() == ':') or line_has_inline_control:
+		if (scope_brackets_count == 0 and last_token.type == Token.Type.PUNCTUATOR and last_token.get_value() == ':') or line_has_inline_control or line_has_getset_function:
 			active_line = null
+			start_new_scope = true
 		
 		prev_line_brackets_count = scope_brackets_count
+		
+		if line_empty:
+			empty_line_counter += 1
+		else:
+			empty_line_counter = 0
