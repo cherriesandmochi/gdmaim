@@ -12,6 +12,8 @@ const Token := preload("obfuscator/script/tokenizer/token.gd")
 
 const SOURCE_MAP_EXT : String = ".gd.map"
 const GODOT_CLASS_CACHE_PATH : String = "res://.godot/global_script_class_cache.cfg"
+const BINARY_MODE : int = 1
+const EXTENSIONS_CFG : String = "res://.godot/extension_list.cfg"
 
 var settings : _Settings
 
@@ -30,10 +32,44 @@ var _inject_autoload : String
 var _exported_script_count : int
 var _rgx : RegEx = null
 var _godot_files : GodotFiles
+var _compiler
+var _compress_mode : int
+var _extensions_backup : String
 
 
 func _get_name() -> String:
 	return "gdmaim"
+
+
+func _clear_gdbc_extension() -> void:
+	var extensions := FileAccess.open(EXTENSIONS_CFG, FileAccess.READ)
+	if not extensions:
+		return # nothing to do here
+	_extensions_backup = extensions.get_as_text()
+	var new_extensions := []
+	while not extensions.eof_reached():
+		var line := extensions.get_line()
+		if not line.ends_with("gdbc.gdextension"):
+			new_extensions.append(line)
+	extensions.close()
+	extensions = FileAccess.open(EXTENSIONS_CFG, FileAccess.WRITE)
+	if not extensions:
+		push_error("GDMaim - Failed to remove gdbc.gdextension from extension_list.cfg.")
+		return
+	for line in new_extensions:
+		extensions.store_line(line)
+	extensions.close()
+
+
+func _restore_extensions() -> void:
+	if not _extensions_backup or _extensions_backup.is_empty():
+		return
+	var extensions := FileAccess.open(EXTENSIONS_CFG, FileAccess.WRITE)
+	if not extensions:
+		push_error("GDMaim - Failed to fix the extension_list.cfg. Reload the project after exporting ends.")
+		return
+	extensions.store_string(_extensions_backup)
+	extensions.close()
 
 
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
@@ -53,7 +89,21 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	
 	if settings.symbol_seed == 0 and !settings.symbol_dynamic_seed:
 		push_warning("GDMaim - The ID generation seed is still set to the default value of 0. Please choose another one.")
-	
+
+	_clear_gdbc_extension()
+	if settings.export_mode >= BINARY_MODE and ClassDB.class_exists("BytecodeCompiler"):
+		_compiler = ClassDB.instantiate("BytecodeCompiler")
+		if settings.export_mode == BINARY_MODE:
+			print("GDMaim - Exporting scripts as binary tokens.")
+			_compress_mode = _compiler.UNCOMPRESSED
+		else:
+			print("GDMaim - Exporting scripts as compressed binary tokens.")
+			_compress_mode = _compiler.COMPRESSED
+	else:
+		if settings.export_mode >= BINARY_MODE and !ClassDB.class_exists("BytecodeCompiler"):
+			printerr("GDMaim - Failed to locate GDBC! Cannot compile scripts to bytecode!")
+		print("GDMaim - Exporting scripts as plain text.")
+
 	var scripts : PackedStringArray = _get_files("res://", ".gd")
 	
 	_godot_files = GodotFiles.new()
@@ -125,7 +175,9 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 func _export_end() -> void:
 	if !_enabled:
 		return
-	
+
+	_restore_extensions()
+
 	if _exported_script_count == 0:
 		push_error('GDMaim - No scripts have been exported! Please set the export mode of scripts to "Text" in the current export template.')
 		return
@@ -218,8 +270,14 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 				#add_file(binary_path, binary_data, true)
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
+		var bytes : PackedByteArray
+		if _compiler:
+			path += "c" # convert .gd to .gdc
+			bytes = _compiler.compile_from_string(code, _compress_mode)
+		else:
+			bytes = code.to_utf8_buffer()
 		skip()
-		add_file(path, code.to_utf8_buffer(), false)
+		add_file(path, bytes, _compiler != null)
 		_exported_script_count += 1
 
 

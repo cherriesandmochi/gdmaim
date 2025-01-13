@@ -37,12 +37,21 @@ func _ready() -> void:
 					label.add_child(checkbox)
 					register_setting(checkbox)
 				TYPE_INT:
-					var spinbox : SpinBox = preload("dock_spinbox.tscn").instantiate()
-					spinbox.settings_var = entry.var_name
-					spinbox.editable = !entry.disabled
-					spinbox.value_changed.connect(_on_spin_box_value_changed)
-					label.add_child(spinbox)
-					register_setting(spinbox)
+					if entry.var_name == "export_mode":
+						# edge case for Export Mode
+						var options : OptionButton = preload("dock_modes.tscn").instantiate()
+						options.settings_var = entry.var_name
+						options.disabled = entry.disabled
+						options.item_selected.connect(_on_options_button_item_selected)
+						label.add_child(options)
+						register_setting(options)
+					else:
+						var spinbox : SpinBox = preload("dock_spinbox.tscn").instantiate()
+						spinbox.settings_var = entry.var_name
+						spinbox.editable = !entry.disabled
+						spinbox.value_changed.connect(_on_spin_box_value_changed)
+						label.add_child(spinbox)
+						register_setting(spinbox)
 				TYPE_STRING:
 					var lineedit : LineEdit = preload("dock_lineedit.tscn").instantiate()
 					lineedit.settings_var = entry.var_name
@@ -90,6 +99,10 @@ func _on_line_edit_text_changed(new_text : String) -> void:
 
 
 func _on_spin_box_value_changed(value : float) -> void:
+	_write_cfg()
+
+
+func _on_options_button_item_selected(index: int) -> void:
 	_write_cfg()
 
 

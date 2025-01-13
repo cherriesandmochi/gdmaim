@@ -1,0 +1,12 @@
+[configuration]
+
+entry_symbol = "gdbc_init"
+compatibility_minimum = "4.1"
+
+[libraries]
+
+macos.editor = "res://addons/gdmaim/gdbc/macos/macos.framework/libgdbc.macos.editor"
+windows.editor.x86_64 = "res://addons/gdmaim/gdbc/windows/libgdbc.windows.editor.x86_64.dll"
+linux.editor.x86_64 = "res://addons/gdmaim/gdbc/linux/libgdbc.linux.editor.x86_64.so"
+android.editor.x86_64 = "res://addons/gdmaim/gdbc/android/libgdbc.android.editor.x86_64.so"
+android.editor.arm64 = "res://addons/gdmaim/gdbc/android/libgdbc.android.editor.arm64.so"
