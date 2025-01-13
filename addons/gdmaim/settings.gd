@@ -63,7 +63,7 @@ func _init() -> void:
 	add_entry("regex_filter_enabled", "regex_filter_enabled", "Strip Lines Matching RegEx", "If true, any lines matching the regular expression will be removed from the obfuscated code.")
 	add_entry("regex_filter", "regex_filter", "", "Enter Regular Expression")
 	add_entry("feature_filters", "feature_filters", "Process Feature Filters", "If true, export template feature tags may be used to filter code.")
-	add_entry("export_mode", "export_mode", "Export Mode", "Sets the final script format, follows the same options as the script export options.")
+	add_entry("export_mode", "export_mode", "Export Mode", "Sets the exported script format.\nText: easier debugging\nBinary: faster loading\nCompressed: smaller files").set_custom_type(Entry.CustomType.OPTIONS, ["Text", "Binary", "Compressed"])
 	
 	set_category("id", "Name Generator")
 	add_entry("symbol_prefix", "prefix", "Prefix", "Sets the prefix to use for all generated names.")
@@ -138,12 +138,19 @@ class Category:
 
 
 class Entry:
+	enum CustomType {
+		NONE = 0,
+		OPTIONS,
+	}
+	
 	var var_name : String
 	var cfg_region : String
 	var cfg_key : String
 	var visible_name : String
 	var tooltip : String
 	var disabled : bool = false
+	var custom_type : CustomType = CustomType.NONE
+	var custom_data
 	
 	func _init(var_name : String, cfg_region : String, cfg_key : String, visible_name : String, tooltip : String) ->void:
 		self.var_name = var_name
@@ -151,3 +158,7 @@ class Entry:
 		self.cfg_key = cfg_key
 		self.visible_name = visible_name
 		self.tooltip = tooltip
+	
+	func set_custom_type(custom_type : CustomType, custom_data) -> void:
+		self.custom_type = custom_type
+		self.custom_data = custom_data

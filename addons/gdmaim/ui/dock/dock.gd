@@ -28,43 +28,46 @@ func _ready() -> void:
 					label.tooltip_text = entry.visible_name + "\n" + entry.tooltip
 				$ScrollContainer/VBoxContainer.add_child(label)
 			
-			match typeof(settings.get(entry.var_name)):
-				TYPE_BOOL:
-					var checkbox : CheckBox = preload("dock_checkbox.tscn").instantiate()
-					checkbox.settings_var = entry.var_name
-					checkbox.disabled = entry.disabled
-					checkbox.toggled.connect(_on_check_box_toggled)
-					label.add_child(checkbox)
-					register_setting(checkbox)
-				TYPE_INT:
-					if entry.var_name == "export_mode":
-						# edge case for Export Mode
-						var options : OptionButton = preload("dock_modes.tscn").instantiate()
+			if entry.custom_type != entry.CustomType.NONE:
+				match entry.custom_type:
+					entry.CustomType.OPTIONS:
+						var options : OptionButton = preload("dock_options.tscn").instantiate()
 						options.settings_var = entry.var_name
 						options.disabled = entry.disabled
+						for option in entry.custom_data:
+							options.add_item(option)
 						options.item_selected.connect(_on_options_button_item_selected)
 						label.add_child(options)
 						register_setting(options)
-					else:
+			else:
+				match typeof(settings.get(entry.var_name)):
+					TYPE_BOOL:
+						var checkbox : CheckBox = preload("dock_checkbox.tscn").instantiate()
+						checkbox.settings_var = entry.var_name
+						checkbox.disabled = entry.disabled
+						checkbox.toggled.connect(_on_check_box_toggled)
+						label.add_child(checkbox)
+						register_setting(checkbox)
+					TYPE_INT:
 						var spinbox : SpinBox = preload("dock_spinbox.tscn").instantiate()
 						spinbox.settings_var = entry.var_name
 						spinbox.editable = !entry.disabled
 						spinbox.value_changed.connect(_on_spin_box_value_changed)
 						label.add_child(spinbox)
 						register_setting(spinbox)
-				TYPE_STRING:
-					var lineedit : LineEdit = preload("dock_lineedit.tscn").instantiate()
-					lineedit.settings_var = entry.var_name
-					lineedit.editable = !entry.disabled
-					lineedit.text_changed.connect(_on_line_edit_text_changed)
-					if entry.visible_name:
-						label.add_child(lineedit)
-					else:
-						$ScrollContainer/VBoxContainer.add_child(lineedit)
-						lineedit.position = Vector2(0.0, -4.0)
-						lineedit.set_anchors_preset(Control.PRESET_HCENTER_WIDE)
-						lineedit.placeholder_text = entry.tooltip
-					register_setting(lineedit)
+					TYPE_STRING:
+						var lineedit : LineEdit = preload("dock_lineedit.tscn").instantiate()
+						lineedit.settings_var = entry.var_name
+						lineedit.editable = !entry.disabled
+						lineedit.text_changed.connect(_on_line_edit_text_changed)
+						if entry.visible_name:
+							label.add_child(lineedit)
+						else:
+							$ScrollContainer/VBoxContainer.add_child(lineedit)
+							lineedit.position = Vector2(0.0, -4.0)
+							lineedit.set_anchors_preset(Control.PRESET_HCENTER_WIDE)
+							lineedit.placeholder_text = entry.tooltip
+						register_setting(lineedit)
 
 
 # Registers a new settings entry
@@ -102,7 +105,7 @@ func _on_spin_box_value_changed(value : float) -> void:
 	_write_cfg()
 
 
-func _on_options_button_item_selected(index: int) -> void:
+func _on_options_button_item_selected(index : int) -> void:
 	_write_cfg()
 
 
