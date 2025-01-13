@@ -2,6 +2,7 @@
 extends EditorPlugin
 
 
+const GodotFiles := preload("godot_files.gd")
 const _Settings := preload("settings.gd")
 
 var settings : _Settings
@@ -13,7 +14,8 @@ var source_map_viewer : Window
 # Called when entering scene tree
 func _enter_tree() -> void:
 	name = "GDMaim"
-
+	
+	GodotFiles.check_backups()
 	settings = _Settings.new()
 	
 	script_processor = preload("export_plugin.gd").new()

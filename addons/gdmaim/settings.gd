@@ -3,6 +3,12 @@ extends RefCounted
 
 const _Settings := preload("settings.gd")
 
+enum GDScriptExportMode {
+	TEXT = 0,
+	BINARY,
+	COMPRESSED,
+}
+
 var obfuscation_enabled : bool = true
 var shuffle_top_level : bool = true
 var inline_constants : bool = true
@@ -28,7 +34,7 @@ var source_map_inject_name : bool = true
 var debug_scripts : PackedStringArray
 var debug_resources : PackedStringArray
 var obfuscate_debug_only : bool = false
-var export_mode : int = 0
+var export_mode : int = GDScriptExportMode.TEXT
 
 var _cfg := ConfigFile.new()
 var _entries : Dictionary

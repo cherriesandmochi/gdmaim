@@ -155,6 +155,8 @@ func _export_end() -> void:
 		push_error('GDMaim - No scripts have been exported! Please set the export mode of scripts to "Text" in the current export template.')
 		return
 	
+	_write_file_str(get_script().resource_path.get_base_dir() + "/.gitignore", "cache/\nsource_maps/\nbackup/")
+	
 	_build_data_path(settings.source_map_path)
 	var files : PackedStringArray
 	for filepath in DirAccess.get_files_at(settings.source_map_path):
@@ -375,7 +377,7 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	return obfuscator.get_data()
 
 
-func _multi_split(source : String, delimeters : String) -> PackedStringArray:
+static func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 	var splits := PackedStringArray()
 	
 	var i : int = 0
@@ -396,7 +398,7 @@ func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 	return splits
 
 
-func _get_files(path : String, ext : String) -> PackedStringArray:
+static func _get_files(path : String, ext : String) -> PackedStringArray:
 	var files : PackedStringArray
 	var dirs : Array[String] = [path]
 	while dirs:
@@ -412,7 +414,7 @@ func _get_files(path : String, ext : String) -> PackedStringArray:
 	return files
 
 
-func _write_file_str(path : String, text : String) -> bool:
+static func _write_file_str(path : String, text : String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(text)
@@ -421,11 +423,10 @@ func _write_file_str(path : String, text : String) -> bool:
 	return false
 
 
-func _build_data_path(path : String) -> void:
+static func _build_data_path(path : String) -> void:
 	if !DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)
 	_write_file_str(path + "/.gdignore", "")
-	_write_file_str(get_script().resource_path.get_base_dir() + "/.gitignore", "cache/\nsource_maps/")
 
 
 func _convert_text_to_binary_resource(extension : String, text_data : String) -> PackedByteArray:
@@ -444,7 +445,7 @@ func _convert_text_to_binary_resource(extension : String, text_data : String) ->
 	return FileAccess.get_file_as_bytes(path + binary_ext)
 
 
-func _generate_uuid(path : String) -> String:
+static func _generate_uuid(path : String) -> String:
 	var bytes : PackedByteArray
 	var idx : int = 0
 	for i in 16: # I have no idea how well this actually works
