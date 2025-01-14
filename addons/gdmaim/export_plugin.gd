@@ -12,6 +12,7 @@ const Token := preload("obfuscator/script/tokenizer/token.gd")
 
 const SOURCE_MAP_EXT : String = ".gd.map"
 const GODOT_CLASS_CACHE_PATH : String = "res://.godot/global_script_class_cache.cfg"
+const GODOT_EXTENSION_LIST_PATH : String = "res://.godot/extension_list.cfg"
 
 var settings : _Settings
 
@@ -30,6 +31,8 @@ var _inject_autoload : String
 var _exported_script_count : int
 var _rgx : RegEx = null
 var _godot_files : GodotFiles
+var _compiler
+var _compress_mode : int
 
 
 func _get_name() -> String:
@@ -105,6 +108,28 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	if settings.obfuscation_enabled:
 		_symbols.obfuscate_symbols()
 	
+	# Initialize gdbc if necessary
+	if settings.export_mode != settings.GDScriptExportMode.TEXT and ClassDB.class_exists("BytecodeCompiler"):
+		_compiler = ClassDB.instantiate("BytecodeCompiler")
+		if settings.export_mode == settings.GDScriptExportMode.BINARY:
+			print("GDMaim - Exporting scripts as binary tokens.")
+			_compress_mode = _compiler.UNCOMPRESSED
+		else:
+			print("GDMaim - Exporting scripts as compressed binary tokens.")
+			_compress_mode = _compiler.COMPRESSED
+	else:
+		if settings.export_mode != settings.GDScriptExportMode.TEXT and !ClassDB.class_exists("BytecodeCompiler"):
+			printerr("GDMaim - Failed to locate GDBC! Cannot compile scripts to bytecode!")
+		print("GDMaim - Exporting scripts as plain text.")
+	
+	# Remove gdbc from extension list
+	var extension_list_src := FileAccess.get_file_as_string(GODOT_EXTENSION_LIST_PATH)
+	var extension_list : String
+	for line in extension_list_src.split("\n", false):
+		if not line.ends_with("gdbc.gdextension"):
+			extension_list += line + "\n"
+	_godot_files.edit(GODOT_EXTENSION_LIST_PATH, extension_list_src.to_utf8_buffer(), extension_list.to_utf8_buffer())
+	
 	# Modify class cache
 	var class_cache := ConfigFile.new()
 	var class_cache_src : PackedByteArray = FileAccess.get_file_as_bytes(GODOT_CLASS_CACHE_PATH)
@@ -129,6 +154,8 @@ func _export_end() -> void:
 	if _exported_script_count == 0:
 		push_error('GDMaim - No scripts have been exported! Please set the export mode of scripts to "Text" in the current export template.')
 		return
+	
+	_write_file_str(get_script().resource_path.get_base_dir() + "/.gitignore", "cache/\nsource_maps/\nbackup/")
 	
 	_build_data_path(settings.source_map_path)
 	var files : PackedStringArray
@@ -218,8 +245,14 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 				#add_file(binary_path, binary_data, true)
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
+		var bytes : PackedByteArray
+		if _compiler:
+			path += "c" # convert .gd to .gdc
+			bytes = _compiler.compile_from_string(code, _compress_mode)
+		else:
+			bytes = code.to_utf8_buffer()
 		skip()
-		add_file(path, code.to_utf8_buffer(), false)
+		add_file(path, bytes, _compiler != null)
 		_exported_script_count += 1
 
 
@@ -344,7 +377,7 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	return obfuscator.get_data()
 
 
-func _multi_split(source : String, delimeters : String) -> PackedStringArray:
+static func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 	var splits := PackedStringArray()
 	
 	var i : int = 0
@@ -365,7 +398,7 @@ func _multi_split(source : String, delimeters : String) -> PackedStringArray:
 	return splits
 
 
-func _get_files(path : String, ext : String) -> PackedStringArray:
+static func _get_files(path : String, ext : String) -> PackedStringArray:
 	var files : PackedStringArray
 	var dirs : Array[String] = [path]
 	while dirs:
@@ -381,7 +414,7 @@ func _get_files(path : String, ext : String) -> PackedStringArray:
 	return files
 
 
-func _write_file_str(path : String, text : String) -> bool:
+static func _write_file_str(path : String, text : String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(text)
@@ -390,11 +423,10 @@ func _write_file_str(path : String, text : String) -> bool:
 	return false
 
 
-func _build_data_path(path : String) -> void:
+static func _build_data_path(path : String) -> void:
 	if !DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)
 	_write_file_str(path + "/.gdignore", "")
-	_write_file_str(get_script().resource_path.get_base_dir() + "/.gitignore", "cache/\nsource_maps/")
 
 
 func _convert_text_to_binary_resource(extension : String, text_data : String) -> PackedByteArray:
@@ -413,7 +445,7 @@ func _convert_text_to_binary_resource(extension : String, text_data : String) ->
 	return FileAccess.get_file_as_bytes(path + binary_ext)
 
 
-func _generate_uuid(path : String) -> String:
+static func _generate_uuid(path : String) -> String:
 	var bytes : PackedByteArray
 	var idx : int = 0
 	for i in 16: # I have no idea how well this actually works

@@ -191,8 +191,17 @@ func _func_feature_filter(token : Token, line : Tokenizer.Line, feature : String
 func _shuffle_toplevel() -> void:
 	var lines : Array[Tokenizer.Line] = tokenizer.get_output_lines()
 	var top_block : Array
-	var on_ready : Array
-	var blocks : Array[Array] = [[]]
+	var on_ready : Array[Array] = []
+	var blocks : Array[Array] = []
+	var current_block : Array
+	var current_is_onready : bool
+	
+	var add_block = func(block : Array, is_onready : bool):
+		if block.is_empty(): return
+		if is_onready:
+			on_ready.append(block)
+		else:
+			blocks.append(block)
 	
 	for i in lines.size():
 		var line : Tokenizer.Line = lines[i]
@@ -203,12 +212,17 @@ func _shuffle_toplevel() -> void:
 			top_block.append(line)
 			continue
 		if starter_token and starter_token.get_value() == "@onready":
-			on_ready.append(line)
-			continue
-		if line.get_identation() == 0 and starter_token and starter_token.is_keyword() and (!prev_starter_token or (!prev_starter_token.has_value("@rpc") and !(prev_starter_token.get_value().begins_with("@export") and !prev_line.has_token_value("var")))):
-			blocks.append([])
+			add_block.call(current_block, current_is_onready)
+			current_block = []
+			current_is_onready = true
+		elif line.get_identation() == 0 and starter_token and starter_token.is_keyword() and (!prev_starter_token or (!prev_starter_token.has_value("@rpc") and !(prev_starter_token.get_value().begins_with("@export") and !prev_line.has_token_value("var")))):
+			add_block.call(current_block, current_is_onready)
+			current_block = []
+			current_is_onready = false
 		
-		blocks.back().append(line)
+		current_block.append(line)
+	
+	add_block.call(current_block, current_is_onready)
 	
 	var w_blocks : Dictionary
 	var random := RandomNumberGenerator.new()
@@ -227,9 +241,10 @@ func _shuffle_toplevel() -> void:
 		var idx : int = 0
 		var max_spacing : int = mini(blocks.size() / on_ready.size() * 2, blocks.size() + 1)
 		random.seed = hash(path) + path.length() + _symbol_table._seed
-		for line in on_ready:
-			idx += maxi(1, random.randi() % max_spacing)
-			blocks.insert(mini(idx, blocks.size()), [line])
+		for block in on_ready:
+			if max_spacing:
+				idx += maxi(1, random.randi() % max_spacing)
+			blocks.insert(mini(idx, blocks.size()), block)
 	
 	lines.clear()
 	for block in [top_block] + blocks:

@@ -90,6 +90,8 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Process Feature Filters`: If enabled, process automatic filtering of code, based on export template feature tags. For more information, see [feature filters](#preprocessor-hints).
 
+`Export Mode`: Defines the final format in which the scripts will be exported. This has the same function as the script export option from the editor, allowing to choose between plain text, binary tokens or compressed binary tokens.
+
 ### Name Generator
 
 `Prefix`: Sets the prefix to use for all generated names.
@@ -247,6 +249,8 @@ Since binary files are not supported the script exporting option must be kept to
 **Script Export Option**
 
 ![image](https://github.com/user-attachments/assets/bd1808b7-f136-4bbc-a8dc-b40187a3b280)
+
+It is still possible to export in the binary token formats via the GDMaim `Export Mode` option, which will override the plain text format after obfuscation has concluded.
 
 ### Static typing
 
