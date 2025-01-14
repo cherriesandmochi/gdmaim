@@ -312,6 +312,7 @@ func _combine_statement_lines() -> void:
 	
 	var empty_line_counter : int = 0
 	var prev_line_brackets_count : int = 0
+	var prev_line_decorator : bool = false
 	
 	# Check if the file starts with "extends" to handle the inconsistent requirement it has
 	if active_line.tokens[0].is_keyword() and active_line.tokens[0].get_value() == "extends":
@@ -382,10 +383,11 @@ func _combine_statement_lines() -> void:
 		if process_curent_line and is_indented:
 			line.remove_token(0)
 		
-		# Top line @decorators should not be separated with an ;
 		# Some keywords (like export in certain scenarios or @export_group) MUST end in a new line
-		var standalone_annotations := first_token.type == Token.Type.KEYWORD and first_token.get_value() in ["extends", "@export_group"]
-		var top_level_class_annotation := first_token.type == Token.Type.KEYWORD and first_token.get_value() in ["extends", "class_name", "@tool", "@icon"]
+		var standalone_annotations := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "@export_group"]
+		# Search for unfinished statements, such as @annotations that dont follow the statement they're annotating in the same line or keywords like `extends` and `class_name`
+		var top_level_class_annotation := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "class_name", "@tool", "@icon"]
+		var is_line_extending_prev_line = top_level_class_annotation or prev_line_decorator
 		
 		# Whitespace tracking
 		var line_still_indenting := true
@@ -440,11 +442,11 @@ func _combine_statement_lines() -> void:
 			var newline_token : Token = active_line.tokens[active_line.tokens.size() - 1]
 			# Don't add semicolons if inside of a bracket structure, just remove newline
 			# (it's affecting the active_line, which is before this current line, so use prev_line_brackets_count)
-			if prev_line_brackets_count == 0 and not top_level_class_annotation:
+			if prev_line_brackets_count == 0 and not is_line_extending_prev_line:
 				newline_token.type = Token.Type.PUNCTUATOR
 				newline_token.set_value(';')
 			# GDScript top level decorators should just be separated by space
-			elif top_level_class_annotation:
+			elif is_line_extending_prev_line:
 				newline_token.type = Token.Type.WHITESPACE
 				newline_token.set_value(' ')
 			else:
@@ -477,6 +479,20 @@ func _combine_statement_lines() -> void:
 		if (scope_brackets_count == 0 and last_token.is_punctuator(':')) or line_has_inline_control or line_has_getset_function:
 			active_line = null
 			start_new_scope = true
+		
+		# Check if the line has a decorator (with optional params in parentheses) but no following statement
+		# The next line will need to extend this without adding a ; punctuation
+		if not line_empty: prev_line_decorator = false
+		if first_token.is_annotation():
+			prev_line_decorator = true
+			var _open_annotation_brackets := 0
+			# Look for any non-whitespace token that isn't in brackets. If exists the annotation is followed by something in the same line
+			for anno_i in range(1, line.tokens.size()):
+				var token : Token = line.tokens[anno_i]
+				if token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.INDENTATION | Token.Type.COMMENT): continue
+				elif token.is_punctuator('('): _open_annotation_brackets += 1
+				elif token.is_punctuator(')'): _open_annotation_brackets -= 1
+				else: prev_line_decorator = false; break
 		
 		prev_line_brackets_count = scope_brackets_count
 		
