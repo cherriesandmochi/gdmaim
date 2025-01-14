@@ -446,7 +446,8 @@ func _combine_statement_lines() -> void:
 				newline_token.type = Token.Type.PUNCTUATOR
 				newline_token.set_value(';')
 			# GDScript top level decorators should just be separated by space
-			elif is_line_extending_prev_line:
+			# Additionally check if the previous line ends in a punctuator, such as a ). Then don't run this as this will add a space, the else will remove any whitespace
+			elif is_line_extending_prev_line and (active_line.tokens.size() >= 2 and not active_line.tokens[active_line.tokens.size()-2].is_punctuator()):
 				newline_token.type = Token.Type.WHITESPACE
 				newline_token.set_value(' ')
 			else:
@@ -482,7 +483,7 @@ func _combine_statement_lines() -> void:
 		
 		# Check if the line has a decorator (with optional params in parentheses) but no following statement
 		# The next line will need to extend this without adding a ; punctuation
-		if not line_empty: prev_line_decorator = false
+		if not line_empty and prev_line_brackets_count == 0: prev_line_decorator = false
 		if first_token.is_annotation():
 			prev_line_decorator = true
 			var _open_annotation_brackets := 0
@@ -492,7 +493,7 @@ func _combine_statement_lines() -> void:
 				if token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.INDENTATION | Token.Type.COMMENT): continue
 				elif token.is_punctuator('('): _open_annotation_brackets += 1
 				elif token.is_punctuator(')'): _open_annotation_brackets -= 1
-				else: prev_line_decorator = false; break
+				elif _open_annotation_brackets == 0: prev_line_decorator = false; break
 		
 		prev_line_brackets_count = scope_brackets_count
 		
