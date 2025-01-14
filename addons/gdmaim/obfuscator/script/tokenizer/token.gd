@@ -3,18 +3,19 @@ extends RefCounted
 
 enum Type {
 	NONE = 0,
-	SYMBOL = 2^0,
-	KEYWORD = 2^1,
-	LITERAL = 2^2,
-	NUMBER_LITERAL = 2^3,
-	STRING_LITERAL = 2^4,
-	NODE_PATH = 2^5,
-	PUNCTUATOR = 2^6,
-	OPERATOR = 2^7,
-	COMMENT = 2^8,
-	WHITESPACE = 2^9,
-	IDENTATION = 2^10,
-	LINE_BREAK = 2^11,
+	SYMBOL = 2**0,
+	KEYWORD = 2**1,
+	LITERAL = 2**2,
+	NUMBER_LITERAL = 2**3,
+	STRING_LITERAL = 2**4,
+	NODE_PATH = 2**5,
+	ANNOTATION = 2**6,
+	PUNCTUATOR = 2**7,
+	OPERATOR = 2**8,
+	COMMENT = 2**9,
+	WHITESPACE = 2**10,
+	INDENTATION = 2**11,
+	LINE_BREAK = 2**12,
 }
 
 const StringRef := preload("../../string_ref.gd")
@@ -84,6 +85,10 @@ func is_node_path(value : String = "") -> bool:
 	return type == Type.NODE_PATH and (!value or get_value() == value)
 
 
+func is_annotation(value : String = "") -> bool:
+	return type == Type.ANNOTATION and (!value or get_value() == value)
+
+
 func is_punctuator(value : String = "") -> bool:
 	return type == Type.PUNCTUATOR and (!value or get_value() == value)
 
@@ -100,9 +105,13 @@ func is_whitespace(value : String = "") -> bool:
 	return type == Type.WHITESPACE and (!value or get_value() == value)
 
 
-func is_identation(value : String = "") -> bool:
-	return type == Type.IDENTATION and (!value or get_value() == value)
+func is_indentation(value : String = "") -> bool:
+	return type == Type.INDENTATION and (!value or get_value() == value)
 
 
 func is_line_break(value : String = "") -> bool:
 	return type == Type.LINE_BREAK and (!value or get_value() == value)
+
+
+func is_of_type(type_bitflags : int) -> bool:
+	return (type & type_bitflags) || type == type_bitflags

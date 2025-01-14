@@ -6,11 +6,11 @@ const _Settings := preload("../../../settings.gd")
 const Token := preload("token.gd")
 const Stream := preload("stream.gd")
 
-const KEYWORDS : Array[String] = ["extends", "class_name", "@tool", "@onready", "setget", "const", "signal", "enum", "static", "var", "func","@rpc", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not", "@icon", "@export_group"]
+const KEYWORDS : Array[String] = ["extends", "class_name", "setget", "const", "signal", "enum", "static", "var", "func", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not"]
 const LITERALS : Array[String] = ["true", "false", "null", "self", "PI", "TAU", "NAN", "INF"]
 const OPERATORS : String = "+-*^/%=<>!&|"
 const PUNCTUATORS : String = "()[]{},;:."
-const IDENTIFIER_CHARACTERS : String = "1234567890_@"
+const IDENTIFIER_CHARACTERS : String = "1234567890_"
 
 var line_count : int
 
@@ -45,7 +45,7 @@ func get_next() -> Token:
 	return _tokens[_idx] if _idx < _tokens.size() else null
 
 
-func get_next_filtered(type_filter : int = Token.Type.WHITESPACE + Token.Type.COMMENT + Token.Type.IDENTATION + Token.Type.LINE_BREAK) -> Token:
+func get_next_filtered(type_filter : int = Token.Type.WHITESPACE | Token.Type.COMMENT | Token.Type.INDENTATION | Token.Type.LINE_BREAK) -> Token:
 	var token : Token = peek_next_filtered(type_filter)
 	if token:
 		seek_token(token)
@@ -55,7 +55,7 @@ func get_next_filtered(type_filter : int = Token.Type.WHITESPACE + Token.Type.CO
 	return token
 
 
-func peek_next_filtered(type_filter : int = Token.Type.WHITESPACE + Token.Type.COMMENT + Token.Type.IDENTATION + Token.Type.LINE_BREAK) -> Token:
+func peek_next_filtered(type_filter : int = Token.Type.WHITESPACE | Token.Type.COMMENT | Token.Type.INDENTATION | Token.Type.LINE_BREAK) -> Token:
 	for i in range(_idx + 1, _tokens.size()):
 		var token : Token = _tokens[i]
 		if !(token.type & type_filter):
@@ -148,7 +148,7 @@ func _read_next_token() -> bool:
 	if _is_whitespace(char):
 		if _stream.get_column_pos() == 0:
 			# Identation
-			_read_identation()
+			_read_indentation()
 		else:
 			# Whitespace
 			_read_whitespace()
@@ -166,6 +166,8 @@ func _read_next_token() -> bool:
 		_read_string()
 	elif char == "$":
 		_read_node_path()
+	elif char == "@":
+		_read_annotation()
 	elif _is_digit(char):
 		# Number(literal)
 		_read_number()
@@ -179,8 +181,8 @@ func _read_next_token() -> bool:
 	return true
 
 
-func _read_identation() -> void:
-	_add_identation(_read_while(_is_whitespace).length())
+func _read_indentation() -> void:
+	_add_indentation(_read_while(_is_whitespace).length())
 
 
 func _read_whitespace() -> void:
@@ -229,6 +231,11 @@ func _read_node_path() -> void:
 		_stream.get_next()
 	
 	_add_node_path(str)
+
+
+func _read_annotation() -> void:
+	_stream.get_next()  # skip @ prefix
+	_add_annotation("@" + _read_while(_is_valid_identifier))
 
 
 func _read_operator() -> void:
@@ -293,11 +300,11 @@ func _is_digit(char : String) -> bool:
 
 func _is_valid_identifier(char : String) -> bool:
 	return TextServerManager.get_primary_interface().is_valid_letter(char.unicode_at(0)) or IDENTIFIER_CHARACTERS.contains(char)
-	#return char.is_valid_unicode_identifier() or char == "@" #TODO: Godot 4.4
+	#return char.is_valid_unicode_identifier() #TODO: Godot 4.4
 
 
 func _is_keyword(token : String) -> bool:
-	return KEYWORDS.has(token) or token.begins_with("@export")
+	return KEYWORDS.has(token)
 
 
 func _is_literal(token : String) -> bool:
@@ -335,6 +342,10 @@ func _add_node_path(str : String) -> void:
 	_add_token(Token.Type.NODE_PATH, str)
 
 
+func _add_annotation(str : String) -> void:
+	_add_token(Token.Type.ANNOTATION, str)
+
+
 func _add_punctuator(punctuator : String) -> void:
 	_add_token(Token.Type.PUNCTUATOR, punctuator)
 
@@ -351,8 +362,8 @@ func _add_whitespace(str : String) -> void:
 	_add_token(Token.Type.WHITESPACE, str, false)
 
 
-func _add_identation(identation : int) -> void:
-	_add_token(Token.Type.IDENTATION, "\t".repeat(identation))
+func _add_indentation(indentation : int) -> void:
+	_add_token(Token.Type.INDENTATION, "\t".repeat(indentation))
 
 
 func _add_line_break() -> void:
@@ -400,11 +411,11 @@ class Line:
 	func get_hint_args(hint : String) -> String:
 		return hints.get(hint, "")
 	
-	func get_identation() -> int:
-		return 0 if !tokens or tokens[0].type != Token.Type.IDENTATION else tokens[0].get_value().length()
+	func get_indentation() -> int:
+		return 0 if !tokens or tokens[0].type != Token.Type.INDENTATION else tokens[0].get_value().length()
 	
 	func has_statement() -> bool:
-		var t : int = 0 if get_identation() == 0 else 1
+		var t : int = 0 if get_indentation() == 0 else 1
 		return tokens.size() >= t + 1 and !tokens[t].is_comment() and !tokens[t].is_line_break()
 	
 	func has_token_value(value : String) -> bool:
