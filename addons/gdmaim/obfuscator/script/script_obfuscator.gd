@@ -384,7 +384,7 @@ func _combine_statement_lines() -> void:
 			line.remove_token(0)
 		
 		# Some keywords (like export in certain scenarios or @export_group) MUST end in a new line
-		var standalone_annotations := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "@export_group"]
+		var standalone_annotations := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "@export_group", "@export_subgroup"]
 		# Search for unfinished statements, such as @annotations that dont follow the statement they're annotating in the same line or keywords like `extends` and `class_name`
 		var top_level_class_annotation := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "class_name", "@tool", "@icon"]
 		var is_line_extending_prev_line = top_level_class_annotation or prev_line_decorator
