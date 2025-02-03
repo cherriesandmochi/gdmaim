@@ -36,7 +36,7 @@ func get_class_symbol() -> SymbolTable.Symbol:
 	return _class_symbol 
 
 
-func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
+func _parse_block_with_callback(parent : AST.ASTNode, indentation : int, token_process: Callable) -> AST.Sequence:
 	var ast := AST.Sequence.new(parent)
 	ast.token_from = _tokenizer.peek(1)
 	
@@ -56,15 +56,27 @@ func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
 		else:
 			prev_line = line
 		
+		if !token_process.call(ast, line, token, indentation):
+			break
+	
+	ast.token_to = _tokenizer.peek(0)
+	
+	return ast
+
+
+func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
+	return _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, identation : int):
 		if parent is AST.Match and token.is_punctuator(":") and line.get_indentation() == indentation + 1:
 			ast.statements.append(_parse_block(ast, indentation + 1))
 		else:
 			var statement : AST.ASTNode = _parse_statement(ast)
 			if statement:
 				ast.statements.append(statement)
-
+		return true
+		)
+	
 	ast.token_to = _tokenizer.peek(0)
-
+	
 	return ast
 
 
@@ -540,6 +552,8 @@ func _parse_const(parent : AST.ASTNode) -> AST.Const:
 	
 	var ast := AST.Const.new(parent)
 	ast.symbol = _symbol_table.create_symbol(ast, token.get_value(), _parse_var_type(ast))
+	ast.default = _parse_var_default(ast)
+	ast.getset = _parse_var_getset(ast)
 	
 	token.link_symbol(ast.symbol)
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
@@ -566,6 +580,9 @@ func _parse_var(parent : AST.ASTNode) -> AST.Var:
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
+	ast.default = _parse_var_default(ast)
+	ast.getset = _parse_var_getset(ast)
+	
 	if _class_symbol and (_is_autoload or is_static):
 		_class_symbol.add_child(ast.symbol)
 	
@@ -584,6 +601,9 @@ func _parse_export_var(parent : AST.ASTNode) -> AST.ExportVar:
 	token.link_symbol(ast.symbol)
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
+	
+	ast.default = _parse_var_default(ast)
+	ast.getset = _parse_var_getset(ast)
 	
 	if _class_symbol and _is_autoload:
 		_class_symbol.add_child(ast.symbol)
@@ -611,6 +631,9 @@ func _parse_export_node_path_var(parent : AST.ASTNode) -> AST.ExportNodePathVar:
 	token.link_symbol(ast.symbol)
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
+	
+	ast.default = _parse_var_default(ast)
+	ast.getset = _parse_var_getset(ast)
 	
 	if _class_symbol and _is_autoload:
 		_class_symbol.add_child(ast.symbol)
@@ -744,11 +767,87 @@ func _parse_func_type(ast : AST.ASTNode) -> String:
 
 func _parse_var_type(ast : AST.ASTNode) -> String:
 	if _tokenizer.peek(1).is_punctuator(":") and !_tokenizer.peek(2).is_operator("="):
+		# Check that this isn't a getter setter
+		var i : int = 2
+		while !_tokenizer.is_eof(i):
+			match _tokenizer.peek(i).type:
+				Token.Type.SYMBOL:
+					break
+				Token.Type.LINE_BREAK:
+					return ""
+		
 		_tokenizer.get_next()
 		var path : SymbolTable.SymbolPath = _parse_symbol_path(ast)
 		return str(path)
 	
 	return ""
+
+
+func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
+	if _tokenizer.peek(2) and (_tokenizer.peek(1).is_punctuator(":") and _tokenizer.peek(2).is_operator("=")) or _tokenizer.peek(1).is_operator("="):
+		if _tokenizer.peek(1).is_punctuator(":"):
+			_tokenizer.get_next()
+		_tokenizer.get_next()
+		
+		var indentation : int = _current_indentation
+		var bracket_lock : int = _bracket_lock
+		
+		_bracket_lock = 0
+		
+		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, identation : int):
+			match token.type:
+				Token.Type.SYMBOL:
+					var symbol : AST.ASTNode = _parse_symbol(ast)
+					if symbol:
+						ast.statements.append(symbol)
+				Token.Type.PUNCTUATOR:
+					if token.get_value() == ':' and _bracket_lock <= 0:
+						return false
+					else:
+						_parse_punctuator()
+				_:
+					if not _parse_and_process_indentation():
+						_tokenizer.get_next()
+			return true
+		)
+		
+		_bracket_lock += bracket_lock
+		if bracket_lock:
+			_current_indentation = indentation
+		
+		return ast
+	
+	return null
+
+
+func _parse_var_getset(parent : AST.ASTNode) -> AST.Sequence:
+	if _tokenizer.peek(1) and _tokenizer.peek(1).is_punctuator(":"):
+		var indentation : int = _current_indentation
+		var bracket_lock : int = _bracket_lock
+		
+		_bracket_lock = 0
+		
+		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, identation : int):
+			if token.is_symbol("get") or token.is_symbol("set"):
+				var function : AST.Func = _parse_func(ast)
+				if function:
+					_symbol_table.lock_symbol(function.symbol)
+					ast.statements.append(function)
+				if _tokenizer.peek() and _tokenizer.peek().is_punctuator(',') and _bracket_lock == 0 and not _statement_break:
+					_tokenizer.get_next()
+			else:
+				if not _parse_and_process_indentation():
+					_tokenizer.get_next()
+			return true
+		)
+		
+		_bracket_lock += bracket_lock
+		if bracket_lock:
+			_current_indentation = indentation
+		
+		return ast
+	
+	return null
 
 
 func _skip_brackets(brackets_in : String, brackets_out : String) -> void:

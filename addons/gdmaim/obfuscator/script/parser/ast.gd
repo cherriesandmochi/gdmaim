@@ -117,8 +117,10 @@ class EnumDef extends SymbolDeclaration:
 
 
 class Var extends SymbolDeclaration:
-	var default : String
+	var default : Sequence
+	var getset : Sequence
 	func _to_string() -> String: return "var " + str(symbol)
+	func get_children() -> Array[ASTNode]: return (default.statements if default else ([] as Array[ASTNode])) + (getset.statements if getset else ([] as Array[ASTNode]))
 
 
 class Const extends Var:
