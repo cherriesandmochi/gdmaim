@@ -19,6 +19,7 @@ var _tokens : Array[Token]
 var _idx : int
 var _line : int
 var _output : Array[Line]
+var _can_be_nodepath : bool = true
 
 
 func read(source_code : String) -> void:
@@ -142,6 +143,7 @@ func _read_next_token() -> bool:
 		_add_line_break()
 		line_count += 1
 		_output.append(Line.new())
+		_can_be_nodepath = true
 		return true
 	
 	var char : String = _stream.peek()
@@ -158,16 +160,16 @@ func _read_next_token() -> bool:
 	elif _is_punctuator(char):
 		# Punctuator
 		_add_punctuator(_stream.get_next())
-	elif _is_operator(char):
-		# Operator
-		_read_operator()
 	elif "\"'".contains(char):
 		# String(literal)
 		_read_string()
-	elif char == "$":
+	elif char == "$" or (char == "%" and _can_be_nodepath):
 		_read_node_path()
 	elif char == "@":
 		_read_annotation()
+	elif _is_operator(char):
+		# Operator
+		_read_operator()
 	elif _is_digit(char):
 		# Number(literal)
 		_read_number()
@@ -213,6 +215,7 @@ func _read_string() -> void:
 		str += char
 	
 	_add_string_literal(end + str + end)
+	_can_be_nodepath = false
 
 
 func _read_node_path() -> void:
@@ -225,35 +228,46 @@ func _read_node_path() -> void:
 			break
 		if char == "'" or char == '"':
 			str_char = ""
-			if str == "$":
+			if str == "$" or str == "%":
 				str_char = char
 		str += char
 		_stream.get_next()
 	
+	if str == '%':
+		_add_operator(str)
+		return
+	
 	_add_node_path(str)
+	_can_be_nodepath = false
 
 
 func _read_annotation() -> void:
 	_stream.get_next()  # skip @ prefix
 	_add_annotation("@" + _read_while(_is_valid_identifier))
+	_can_be_nodepath = false
 
 
 func _read_operator() -> void:
 	_add_operator(_read_while(_is_operator))
+	_can_be_nodepath = true
 
 
 func _read_number() -> void:
 	_add_number_literal(_read_while(_is_digit))
+	_can_be_nodepath = false
 
 
 func _read_identifier() -> void:
 	var id : String = _read_while(_is_valid_identifier)
 	if _is_keyword(id):
 		_add_keyword(id)
+		_can_be_nodepath = true
 	elif _is_literal(id):
 		_add_literal(id)
+		_can_be_nodepath = false
 	else:
 		_add_symbol(id)
+		_can_be_nodepath = false
 
 
 func _read_while(condition : Callable) -> String:
