@@ -54,10 +54,25 @@ func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
 			var statement : AST.ASTNode = _parse_statement(ast)
 			if statement:
 				ast.statements.append(statement)
-	
+
 	ast.token_to = _tokenizer.peek(0)
-	
+
 	return ast
+
+
+func _parse_and_process_indentation() -> bool:
+	var token : Token = _tokenizer.peek()
+	match token.type:
+		Token.Type.LINE_BREAK: #TODO remove
+			_parse_line_break()
+			return true
+		Token.Type.INDENTATION: #TODO remove
+			_parse_indentation()
+			return true
+		Token.Type.WHITESPACE:
+			_tokenizer.get_next()
+			return true
+	return false
 
 
 func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
@@ -65,24 +80,25 @@ func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 	
 	#TODO skip and consume indentation here
 	
+	if _parse_and_process_indentation():
+		return null
+	
+	var node : AST.ASTNode = null
+	
 	match token.type:
-		Token.Type.LINE_BREAK: #TODO remove
-			_parse_line_break()
-			return null
-		Token.Type.INDENTATION: #TODO remove
-			_parse_indentation()
-			return null
 		Token.Type.SYMBOL:
-			return _parse_symbol(parent)
+			node = _parse_symbol(parent)
 			#return _parse_call(parent) if _is_call() else _parse_assignment(parent)
 		Token.Type.KEYWORD:
-			return _parse_keyword(parent)
-	
+			node = _parse_keyword(parent)
+		Token.Type.ANNOTATION:
+			node = _parse_annotation(parent)
+		_:
 	_tokenizer.get_next()
 	
 	#TODO skip line break here, unless we've got a semicolon coming up next
 	
-	return null
+	return node
 
 
 func _parse_line_break() -> void:
@@ -95,12 +111,43 @@ func _parse_indentation() -> void:
 	_current_indentation = token.get_value().length()
 
 
+
+func _parse_annotation(parent : AST.ASTNode) -> AST.ASTNode:
+	var token : Token = _tokenizer.get_next()
+
+	if token.get_value().begins_with("@export_node_path") and _tokenizer.peek().is_punctuator("("):
+		return _parse_export_node_path_var(parent)
+	
+	if token.get_value().begins_with("@export"):
+		if _tokenizer.peek().is_punctuator("("):
+			_skip_brackets("(", ")")
+		while _tokenizer.get_next().get_value() != "var":
+			pass
+		return _parse_export_var(parent)
+	
+	return null
+
+
 func _parse_symbol(parent : AST.ASTNode) -> AST.Symbol:
 	var ast := AST.Symbol.new(parent)
 	
 	ast.path = _parse_symbol_path(ast)
 	
 	return ast
+
+
+func _parse_string_symbol(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
+	var path : SymbolTable.SymbolPath = _symbol_table.create_symbol_path(ast_node)
+	path.maybe_local = !_tokenizer.peek(0) or !_tokenizer.peek(0).is_punctuator(".")
+	path.set_log(_Logger.current_log)
+	path.line = _tokenizer.peek().line
+	
+	var token : Token = _tokenizer.peek()
+	var symbol : SymbolTable.Symbol = path.add(token.get_value(false))
+	token.link_symbol(symbol)
+	
+	_tokenizer.get_next()
+	return path
 
 
 func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
@@ -173,13 +220,6 @@ func _parse_expression(parent : AST.ASTNode, end : String = "") -> AST.Expr:
 
 func _parse_keyword(parent : AST.ASTNode) -> AST.ASTNode:
 	var token : Token = _tokenizer.get_next()
-	
-	if token.get_value().begins_with("@export"):
-		if _tokenizer.peek().is_punctuator("("):
-			_skip_brackets("(", ")")
-		while _tokenizer.get_next().get_value() != "var":
-			pass
-		return _parse_export_var(parent)
 	
 	match token.get_value():
 		"class_name":
@@ -515,6 +555,60 @@ func _parse_export_var(parent : AST.ASTNode) -> AST.ExportVar:
 		_class_symbol.add_child(ast.symbol)
 	
 	return ast
+
+
+func _parse_export_node_path_var(parent : AST.ASTNode) -> AST.ExportNodePathVar:
+	var token : Token = _tokenizer.get_next()
+
+	var ast := AST.ExportNodePathVar.new(parent)
+	ast.types = _parse_string_symbol_array(ast)
+	
+	while _tokenizer.get_next().get_value() != "var":
+		pass
+
+	token = _tokenizer.get_next()
+
+	if !token.is_symbol():
+		_Logger.write("ERROR: Parser._parse_export_node_path_var() - Symbol expected!")
+		return null
+	
+	ast.symbol = _symbol_table.create_export_symbol(token.get_value(), _parse_var_type(ast))
+	
+	token.link_symbol(ast.symbol)
+	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+		_symbol_table.lock_symbol(ast.symbol)
+	
+	if _class_symbol and _is_autoload:
+		_class_symbol.add_child(ast.symbol)
+	
+	return ast
+
+
+func _parse_string_symbol_array(parent : AST.ASTNode) -> Array[AST.StringSymbol]:
+	var result : Array[AST.StringSymbol] = []
+
+	var token : Token
+
+	var pth : int = 0
+	while !_tokenizer.is_eof():
+		token = _tokenizer.peek()
+	
+		if token.is_string_literal():
+			var ast := AST.StringSymbol.new(parent)
+			ast.path = _parse_string_symbol(ast)
+			result.append(ast)
+			continue
+	
+		if token.is_punctuator():
+			if token.get_value() == "(":
+				pth += 1
+			elif token.get_value() == ")":
+				pth -= 1
+				if pth <= 0:
+					break
+		_tokenizer.get_next()
+
+	return result
 
 
 func _parse_func(parent : AST.ASTNode) -> AST.Func:

@@ -129,6 +129,11 @@ class ExportVar extends Var:
 	func _to_string() -> String: return "@export var " + str(symbol)
 
 
+class ExportNodePathVar extends ExportVar:
+	var types : Array[StringSymbol]
+	func _to_string() -> String: return "@export_node_path var " + str(symbol)
+
+
 class Parameter extends Var:
 	func _to_string() -> String: return "param " + str(symbol)
 
@@ -136,6 +141,11 @@ class Parameter extends Var:
 class Symbol extends ASTNode:
 	var path : SymbolTable.SymbolPath
 	func _to_string() -> String: return "symbol " + str(path)
+
+
+class StringSymbol extends ASTNode:
+	var path : SymbolTable.SymbolPath
+	func _to_string() -> String: return "quoted symbol " + str(path)
 
 
 class Call extends Symbol:

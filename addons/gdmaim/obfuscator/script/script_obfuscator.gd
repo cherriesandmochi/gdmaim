@@ -102,8 +102,8 @@ func _string_obfuscation(token : Token) -> void:
 	if !token.is_string_literal():
 		return
 	
-	var str : String = token.get_value()
-	token.set_value(str[0] + _symbol_table.obfuscate_string_global(str.substr(1, str.length() - 2)) + str[-1])
+	var str : String = token.get_value(false)
+	token.set_value(_symbol_table.obfuscate_string_global(str))
 
 
 func _string_param_obfuscation(token : Token, next_token : Token) -> void:
@@ -131,8 +131,8 @@ func _string_param_obfuscation(token : Token, next_token : Token) -> void:
 				maybe_str_param = true
 			continue
 		elif maybe_str_param and token.is_string_literal() and symbol.is_string_param(param):
-			var str : String = token.get_value()
-			token.set_value(str[0] + _symbol_table.obfuscate_string_global(str.substr(1, str.length() - 2)) + str[-1])
+			var str : String = token.get_value(false)
+			token.set_value(_symbol_table.obfuscate_string_global(str))
 		maybe_str_param = false
 
 

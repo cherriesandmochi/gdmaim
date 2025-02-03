@@ -24,15 +24,17 @@ const SymbolTable := preload("../../symbol_table.gd")
 var type : Type
 var idx : int
 var line : int
+var decorator : String
 var symbol : SymbolTable.Symbol
 
 var _value := StringRef.new()
 
 
-func _init(type : Type, value : String, idx : int, line : int) -> void:
+func _init(type : Type, value : String, idx : int, line : int, decorator : String = "") -> void:
 	self.type = type
 	self.idx = idx
 	self.line = line
+	self.decorator = decorator
 	_value.set_value(value)
 
 
@@ -41,11 +43,13 @@ func _to_string() -> String:
 
 
 func set_value(new_val : String) -> void:
-	_value.set_value(new_val)
+	_value.set_value(new_val.substr(len(decorator), len(new_val)-len(decorator)) if decorator else new_val)
 
 
-func get_value() -> String:
+func get_value(decorated : bool = true) -> String:
+	if !decorated:
 	return str(_value)
+	return decorator + str(_value) + decorator
 
 
 func link_value(root : StringRef) -> void:

@@ -214,7 +214,7 @@ func _read_string() -> void:
 			break
 		str += char
 	
-	_add_string_literal(end + str + end)
+	_add_string_literal(str, end)
 	_can_be_nodepath = false
 
 
@@ -325,8 +325,8 @@ func _is_literal(token : String) -> bool:
 	return LITERALS.has(token)
 
 
-func _add_token(type : Token.Type, value : String, readable : bool = true) -> void:
-	var token := Token.new(type, value, _tokens.size(), _output.size()-1)
+func _add_token(type : Token.Type, value : String, readable : bool = true, deco : String = "") -> void:
+	var token := Token.new(type, value, _tokens.size(), _output.size()-1, deco)
 	_output.back().add_token(token)
 	if readable:
 		_tokens.append(token)
@@ -348,8 +348,8 @@ func _add_number_literal(number : String) -> void:
 	_add_token(Token.Type.NUMBER_LITERAL, number)
 
 
-func _add_string_literal(str : String) -> void:
-	_add_token(Token.Type.STRING_LITERAL, str)
+func _add_string_literal(str : String, deco : String) -> void:
+	_add_token(Token.Type.STRING_LITERAL, str, true, deco)
 
 
 func _add_node_path(str : String) -> void:
