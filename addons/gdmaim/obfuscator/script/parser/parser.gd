@@ -14,6 +14,8 @@ var _symbol_table : SymbolTable
 var _class_symbol : SymbolTable.Symbol
 var _is_autoload : bool
 var _current_indentation : int
+var _bracket_lock : int = 0
+var _statement_break : bool = false
 
 
 func read(tokenizer : Tokenizer, symbol_table : SymbolTable, autoload_symbol : SymbolTable.Symbol = null) -> AST.ASTNode:
@@ -43,7 +45,13 @@ func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
 		var token : Token = _tokenizer.peek(1)
 		var line : Tokenizer.Line = _tokenizer.get_output_line(token.line)
 		
-		if prev_line and prev_line != line and line.has_statement() and line.get_indentation() <= indentation:
+		if _bracket_lock < 0:
+			break
+		
+		if _bracket_lock == 0 and token.is_punctuator(','):
+			break
+		
+		if prev_line and prev_line != line and line.has_statement() and line.get_indentation() <= indentation and _bracket_lock == 0 and not _statement_break:
 			break
 		else:
 			prev_line = line
@@ -69,6 +77,9 @@ func _parse_and_process_indentation() -> bool:
 		Token.Type.INDENTATION: #TODO remove
 			_parse_indentation()
 			return true
+		Token.Type.STATEMENT_BREAK:
+			_parse_statement_break()
+			return true
 		Token.Type.WHITESPACE:
 			_tokenizer.get_next()
 			return true
@@ -86,6 +97,8 @@ func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 	var node : AST.ASTNode = null
 	
 	match token.type:
+		Token.Type.PUNCTUATOR:
+			_parse_punctuator()
 		Token.Type.SYMBOL:
 			node = _parse_symbol(parent)
 			#return _parse_call(parent) if _is_call() else _parse_assignment(parent)
@@ -94,22 +107,42 @@ func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 		Token.Type.ANNOTATION:
 			node = _parse_annotation(parent)
 		_:
-	_tokenizer.get_next()
+			_tokenizer.get_next()
+	
+	_statement_break = false  # Statement break persists until next non-whitespace token
 	
 	#TODO skip line break here, unless we've got a semicolon coming up next
 	
 	return node
 
 
+func _parse_statement_break() -> void:
+	_tokenizer.get_next()
+	_statement_break = true
+
+
 func _parse_line_break() -> void:
 	_tokenizer.get_next()
+	if _bracket_lock > 0 or _statement_break:
+		return
 	_current_indentation = 0
 
 
 func _parse_indentation() -> void:
 	var token : Token = _tokenizer.get_next()
+	if _bracket_lock > 0 or _statement_break:
+		return
 	_current_indentation = token.get_value().length()
 
+
+func _parse_punctuator() -> void:
+	var token : Token = _tokenizer.get_next()
+	
+	match token.get_value():
+		'(', '[', '{':
+			_bracket_lock += 1
+		')', ']', '}':
+			_bracket_lock -= 1
 
 
 func _parse_annotation(parent : AST.ASTNode) -> AST.ASTNode:
@@ -463,6 +496,7 @@ func _parse_enum(parent : AST.ASTNode) -> AST.EnumDef:
 		elif token.is_punctuator(","):
 			expect_key = true
 		elif token.is_punctuator("}"):
+			_tokenizer.get_next()
 			break
 		_tokenizer.get_next()
 	
@@ -624,12 +658,15 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 		is_static = _tokenizer.peek(-2).is_keyword("static")
 	
 	var indentation : int = _current_indentation
+	var bracket_lock : int = _bracket_lock
 	
 	var ast := AST.Func.new(parent)
 	
 	var params : Array[AST.Parameter] = _parse_params(ast)
 	var type : String = _parse_func_type(ast)
 	
+	_bracket_lock = 0
+
 	ast.symbol = _symbol_table.create_symbol(ast, name, type)
 	ast.params = params
 	ast.body = _parse_block(ast, indentation)
@@ -646,6 +683,10 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	
 	if _class_symbol and (_is_autoload or is_static):
 		_class_symbol.add_child(ast.symbol)
+	
+	_bracket_lock += bracket_lock
+	if bracket_lock:
+		_current_indentation = indentation
 	
 	return ast
 

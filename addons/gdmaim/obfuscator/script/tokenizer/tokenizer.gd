@@ -132,12 +132,7 @@ func _read_next_token() -> bool:
 	if _stream.is_eof():
 		return false
 	
-	if _stream.peek(1) == "\\" and _stream.peek(2) == "\n":
-		# Multi-line statement
-		_stream.get_next()
-		_stream.get_next()
-		return true
-	elif _stream.peek() == "\n":
+	if _stream.peek() == "\n":
 		# Line break
 		_stream.get_next()
 		_add_line_break()
@@ -147,7 +142,11 @@ func _read_next_token() -> bool:
 		return true
 	
 	var char : String = _stream.peek()
-	if _is_whitespace(char):
+	if char == '\\':
+		# Statement break
+		_stream.get_next()
+		_add_statement_break()
+	elif _is_whitespace(char):
 		if _stream.get_column_pos() == 0:
 			# Identation
 			_read_indentation()
@@ -382,6 +381,10 @@ func _add_indentation(indentation : int) -> void:
 
 func _add_line_break() -> void:
 	_add_token(Token.Type.LINE_BREAK, "\n")
+
+
+func _add_statement_break() -> void:
+	_add_token(Token.Type.STATEMENT_BREAK, "\\")
 
 
 class Line:

@@ -16,6 +16,7 @@ enum Type {
 	WHITESPACE = 2**10,
 	INDENTATION = 2**11,
 	LINE_BREAK = 2**12,
+	STATEMENT_BREAK = 2**13,
 }
 
 const StringRef := preload("../../string_ref.gd")
@@ -48,7 +49,7 @@ func set_value(new_val : String) -> void:
 
 func get_value(decorated : bool = true) -> String:
 	if !decorated:
-	return str(_value)
+		return str(_value)
 	return decorator + str(_value) + decorator
 
 
@@ -115,6 +116,10 @@ func is_indentation(value : String = "") -> bool:
 
 func is_line_break(value : String = "") -> bool:
 	return type == Type.LINE_BREAK and (!value or get_value() == value)
+
+
+func is_statement_break(value : String = "") -> bool:
+	return type == Type.STATEMENT_BREAK and (!value or get_value() == value)
 
 
 func is_of_type(type_bitflags : int) -> bool:
