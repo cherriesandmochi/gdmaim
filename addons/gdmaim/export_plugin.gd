@@ -342,7 +342,7 @@ func _obfuscate_script(path : String) -> String:
 				if token.get_value() == "_enter_tree":
 					found_func = true
 					break
-				if found_func and token.type == Token.Type.IDENTATION:
+				if found_func and token.type == Token.Type.INDENTATION:
 					line.insert_token(i + 1, Token.new(Token.Type.LITERAL, injection_code, -1, -1))
 					did_inject = true
 					break

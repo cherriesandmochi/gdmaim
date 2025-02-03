@@ -13,7 +13,7 @@ var _tokenizer : Tokenizer
 var _symbol_table : SymbolTable
 var _class_symbol : SymbolTable.Symbol
 var _is_autoload : bool
-var _current_identation : int
+var _current_indentation : int
 
 
 func read(tokenizer : Tokenizer, symbol_table : SymbolTable, autoload_symbol : SymbolTable.Symbol = null) -> AST.ASTNode:
@@ -34,7 +34,7 @@ func get_class_symbol() -> SymbolTable.Symbol:
 	return _class_symbol 
 
 
-func _parse_block(parent : AST.ASTNode, identation : int) -> AST.Sequence:
+func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
 	var ast := AST.Sequence.new(parent)
 	ast.token_from = _tokenizer.peek(1)
 	
@@ -43,13 +43,13 @@ func _parse_block(parent : AST.ASTNode, identation : int) -> AST.Sequence:
 		var token : Token = _tokenizer.peek(1)
 		var line : Tokenizer.Line = _tokenizer.get_output_line(token.line)
 		
-		if prev_line and prev_line != line and line.has_statement() and line.get_identation() <= identation:
+		if prev_line and prev_line != line and line.has_statement() and line.get_indentation() <= indentation:
 			break
 		else:
 			prev_line = line
 		
-		if parent is AST.Match and token.is_punctuator(":") and line.get_identation() == identation + 1:
-			ast.statements.append(_parse_block(ast, identation + 1))
+		if parent is AST.Match and token.is_punctuator(":") and line.get_indentation() == indentation + 1:
+			ast.statements.append(_parse_block(ast, indentation + 1))
 		else:
 			var statement : AST.ASTNode = _parse_statement(ast)
 			if statement:
@@ -63,14 +63,14 @@ func _parse_block(parent : AST.ASTNode, identation : int) -> AST.Sequence:
 func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 	var token : Token = _tokenizer.peek()
 	
-	#TODO skip and consume identation here
+	#TODO skip and consume indentation here
 	
 	match token.type:
 		Token.Type.LINE_BREAK: #TODO remove
 			_parse_line_break()
 			return null
-		Token.Type.IDENTATION: #TODO remove
-			_parse_identation()
+		Token.Type.INDENTATION: #TODO remove
+			_parse_indentation()
 			return null
 		Token.Type.SYMBOL:
 			return _parse_symbol(parent)
@@ -87,12 +87,12 @@ func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 
 func _parse_line_break() -> void:
 	_tokenizer.get_next()
-	_current_identation = 0
+	_current_indentation = 0
 
 
-func _parse_identation() -> void:
+func _parse_indentation() -> void:
 	var token : Token = _tokenizer.get_next()
-	_current_identation = token.get_value().length()
+	_current_indentation = token.get_value().length()
 
 
 func _parse_symbol(parent : AST.ASTNode) -> AST.Symbol:
@@ -215,42 +215,42 @@ func _parse_keyword(parent : AST.ASTNode) -> AST.ASTNode:
 
 
 func _parse_if(parent : AST.ASTNode) -> AST.If:
-	if _tokenizer.peek(-1).type != Token.Type.IDENTATION:
+	if _tokenizer.peek(-1).type != Token.Type.INDENTATION:
 		return null # Don't parse inline conditionals
 	
 	var ast := AST.If.new(parent)
 	
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	
 	ast.condition = _parse_expression(ast, ":")
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	return ast
 
 
 func _parse_else(parent : AST.ASTNode) -> AST.Else:
-	if _tokenizer.peek(-1).type != Token.Type.IDENTATION:
+	if _tokenizer.peek(-1).type != Token.Type.INDENTATION:
 		return null # Don't parse inline conditionals
 	
 	var ast := AST.Else.new(parent)
 	
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	return ast
 
 
 func _parse_elif(parent : AST.ASTNode) -> AST.Elif:
-	if _tokenizer.peek(-1).type != Token.Type.IDENTATION:
+	if _tokenizer.peek(-1).type != Token.Type.INDENTATION:
 		return null # do not parse inline conditionals
 	
 	var ast := AST.Elif.new(parent)
 	
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	
 	ast.condition = _parse_expression(ast, ":")
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	return ast
 
@@ -258,8 +258,8 @@ func _parse_elif(parent : AST.ASTNode) -> AST.Elif:
 func _parse_match(parent : AST.ASTNode) -> AST.Match:
 	var ast := AST.Match.new(parent)
 	
-	ast.body = _parse_block(ast, _current_identation)
-	#var identation : int = _current_identation
+	ast.body = _parse_block(ast, _current_indentation)
+	#var indentation : int = _current_indentation
 	#
 	#while !_tokenizer.is_eof():
 		#var token : Token = _tokenizer.peek()
@@ -277,14 +277,14 @@ func _parse_match(parent : AST.ASTNode) -> AST.Match:
 		#var line : Tokenizer.Line = _tokenizer.get_output_line(token.line)
 		#if !line.has_statement():
 			#_tokenizer.skip_to("\n")
-		#elif line.get_identation() <= identation:
+		#elif line.get_indentation() <= indentation:
 			#break
 		#else:
 			#_tokenizer.get_next()
 			#if _tokenizer.peek().is_symbol():
 				#ast.symbols.append(_parse_symbol(ast))
 			#_tokenizer.skip_to("\n")
-			#ast.patterns.append(_parse_block(ast, identation + 1))
+			#ast.patterns.append(_parse_block(ast, indentation + 1))
 	
 	return ast
 
@@ -292,7 +292,7 @@ func _parse_match(parent : AST.ASTNode) -> AST.Match:
 func _parse_for(parent : AST.ASTNode) -> AST.For:
 	var ast := AST.For.new(parent)
 	
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	var symbol_token : Token = _tokenizer.get_next()
 	
 	var iterator := AST.Iterator.new(ast)
@@ -300,7 +300,7 @@ func _parse_for(parent : AST.ASTNode) -> AST.For:
 	
 	ast.iterator = iterator
 	ast.expr = _parse_expression(ast, ":")
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	symbol_token.link_symbol(iterator.symbol)
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
@@ -312,10 +312,10 @@ func _parse_for(parent : AST.ASTNode) -> AST.For:
 func _parse_while(parent : AST.ASTNode) -> AST.While:
 	var ast := AST.While.new(parent)
 	
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	
 	ast.condition = _parse_expression(ast, ":")
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	return ast
 
@@ -358,14 +358,14 @@ func _parse_class(parent : AST.ASTNode) -> AST.Class:
 	var ast := AST.Class.new(parent)
 	
 	var name : String = token.get_value()
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	
 	if _tokenizer.peek().is_keyword("extends"):
 		_tokenizer.get_next()
 		ast.ext = _parse_symbol_path(ast)
 	
 	ast.symbol = _symbol_table.create_global_symbol(name)
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	token.link_symbol(ast.symbol)
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
@@ -529,7 +529,7 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 		name = token.get_value()
 		is_static = _tokenizer.peek(-2).is_keyword("static")
 	
-	var identation : int = _current_identation
+	var indentation : int = _current_indentation
 	
 	var ast := AST.Func.new(parent)
 	
@@ -538,7 +538,7 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	
 	ast.symbol = _symbol_table.create_symbol(ast, name, type)
 	ast.params = params
-	ast.body = _parse_block(ast, identation)
+	ast.body = _parse_block(ast, indentation)
 	
 	if token.is_symbol():
 		token.link_symbol(ast.symbol)
@@ -655,4 +655,4 @@ func _is_call() -> bool:
 
 
 func _is_statement(token : Token) -> bool:
-	return token and token.type != Token.Type.COMMENT and token.type != Token.Type.WHITESPACE and token.type != Token.Type.IDENTATION and token.type != Token.Type.LINE_BREAK 
+	return token and token.type != Token.Type.COMMENT and token.type != Token.Type.WHITESPACE and token.type != Token.Type.INDENTATION and token.type != Token.Type.LINE_BREAK 

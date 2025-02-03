@@ -215,7 +215,9 @@ func _setup_syntax_highlighter() -> void:
 	for keyword in ["if", "else", "elif", "for", "in", "while", "return", "continue", "break", "pass", "match", "case"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#ff8ccc"))
 	
-	for keyword in ["tool", "export", "export_range", "onready", "rpc"]:
+	for keyword in [
+		"export", "export_category", "export_color_no_alpha", "export_custom", "export_dir", "export_enum", "export_exp_easing", "export_file", "export_flags", "export_global_dir", "export_global_file", "export_group",
+		"export_multiline", "export_node_path", "export_placeholder", "export_range", "export_storage", "export_subgroup", "icon", "onready", "rpc", "static_unload", "tool", "warning_ignore"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#ffb373"))
 	
 	for keyword in ["void", "bool", "int", "float", "String", "Array", "Dictionary", "Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i", "Transform2D", "Transform3D", "Quaternion", "Basis"]:
