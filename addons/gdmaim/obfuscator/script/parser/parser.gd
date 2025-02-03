@@ -74,10 +74,6 @@ func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
 				ast.statements.append(statement)
 		return true
 		)
-	
-	ast.token_to = _tokenizer.peek(0)
-	
-	return ast
 
 
 func _parse_and_process_indentation() -> bool:
