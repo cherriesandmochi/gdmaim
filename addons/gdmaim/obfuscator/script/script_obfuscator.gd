@@ -301,9 +301,11 @@ func _combine_statement_lines() -> void:
 	if lines.is_empty(): return
 	
 	var active_line : Tokenizer.Line = lines[0]
+	var active_break_line : Tokenizer.Line = null
 	var start_new_scope : bool = false
 	var require_separate_line : bool = false
 	var i : int = 1
+	var allow_putting_semicolons : bool = false
 	
 	var scope_indents : Array[String] = []
 	var scope_start_idx : Array[int] = []
@@ -314,8 +316,28 @@ func _combine_statement_lines() -> void:
 	var prev_line_brackets_count : int = 0
 	var prev_line_decorator : bool = false
 	
+	# Initial check whether to allow to put semicolons (so that @tool does not end in one)
+	for token in lines[0].tokens:
+		if token.is_keyword():  # Any keyword will do: extends, var, func, ...
+			allow_putting_semicolons = true
+			break
+	
+	# UNLESS the line is opening a new scope, such as a first line function
+	# Then we need to deny this again
+	if allow_putting_semicolons:
+		for token_i in range(len(lines[0].tokens)-1, -1, -1):
+			var token : Token = lines[0].tokens[token_i]
+			if token.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION | Token.Type.LINE_BREAK | Token.Type.COMMENT):
+				continue
+			elif token.is_punctuator(":"):
+				allow_putting_semicolons = false
+				start_new_scope = true
+				active_line = null
+			else:
+				break
+	
 	# Check if the file starts with "extends" to handle the inconsistent requirement it has
-	if active_line.tokens[0].is_keyword() and active_line.tokens[0].get_value() == "extends":
+	if active_line and active_line.tokens[0].is_keyword() and active_line.tokens[0].get_value() == "extends":
 		active_line = null
 	
 	while i <= lines.size():
@@ -338,10 +360,56 @@ func _combine_statement_lines() -> void:
 		
 		var current_indent : String = first_token.get_value() if !line_empty else current_scope
 		
+		# If the statement was broken into more than one line, combine them (if the line isn't empty and is part of the statement)
+		if not line_empty and active_break_line:
+			# Everything after \, including new line
+			while not active_break_line.tokens.is_empty() and !active_break_line.tokens[active_break_line.tokens.size() - 1].is_statement_break():
+				active_break_line.remove_token(active_break_line.tokens.size() - 1)
+			
+			# Convert the \ into a space
+			var slash_token : Token = active_break_line.tokens.back()
+			slash_token.type = Token.Type.WHITESPACE
+			slash_token.set_value(' ')
+
+			# Remove leading indentation if exists
+			if first_token.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION):
+				line.remove_token(0)
+		
+			# Keep clean tokenizer data by adding tokens to the active_line
+			for token in line.tokens:
+				token.line = first_token.line
+				active_break_line.add_token(token)
+			if !end_of_file:
+				i -= 1
+				tokenizer.remove_output_line(i)
+			
+			i -= 1
+			active_break_line = null
+			continue
+			pass
+		
+		# Check for statement breaks \
+		active_break_line = null
+		var prev_line_statement_break : bool = last_token.is_statement_break()
+		if prev_line_statement_break:
+			# Look ahead if we can merge statements in the next line (is not empty or comment)
+			var next_line : Tokenizer.Line = lines[i] if lines.size() > i else Tokenizer.Line.new([Token.new(Token.Type.WHITESPACE, '', 0, i)])
+			var next_line_empty := true
+			for token in next_line.tokens:
+				if !token.is_of_type(Token.Type.LINE_BREAK | Token.Type.WHITESPACE | Token.Type.INDENTATION | Token.Type.COMMENT):
+					next_line_empty = false
+					break
+			
+			# If is not empty, we merge
+			if not next_line_empty:
+				active_break_line = line
+				continue  # quick skip ahead to combine statements
+		
 		var process_curent_line : bool = true
 		
 		# Start of a new anchor line, which will kept being expanded
 		if active_line == null:
+			allow_putting_semicolons = true
 			active_line = line
 			if is_indented and current_scope.length() < current_indent.length():  # If it's indented more (not less), track the indent
 				scope_indents.append(current_indent)
@@ -380,7 +448,7 @@ func _combine_statement_lines() -> void:
 			process_curent_line = false
 		
 		# Clear leading indent
-		if process_curent_line and is_indented:
+		if process_curent_line and is_indented and not line_empty:
 			line.remove_token(0)
 		
 		# Some keywords (like export in certain scenarios or @export_group) MUST end in a new line
@@ -388,7 +456,7 @@ func _combine_statement_lines() -> void:
 		# Search for unfinished statements, such as @annotations that dont follow the statement they're annotating in the same line or keywords like `extends` and `class_name`
 		var top_level_class_annotation := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "class_name", "@tool", "@icon"]
 		var is_line_extending_prev_line = top_level_class_annotation or prev_line_decorator
-		
+
 		# Whitespace tracking
 		var line_still_indenting := true
 		# Control tracking
@@ -443,8 +511,13 @@ func _combine_statement_lines() -> void:
 			# Don't add semicolons if inside of a bracket structure, just remove newline
 			# (it's affecting the active_line, which is before this current line, so use prev_line_brackets_count)
 			if prev_line_brackets_count == 0 and not is_line_extending_prev_line:
-				newline_token.type = Token.Type.PUNCTUATOR
-				newline_token.set_value(';')
+				# In certain cases a semicolon cannot be placed, such as right after @tool when there is no extends
+				if not allow_putting_semicolons:
+					newline_token.type = Token.Type.WHITESPACE
+					newline_token.set_value(' ')
+				else:
+					newline_token.type = Token.Type.PUNCTUATOR
+					newline_token.set_value(';')
 			# GDScript top level decorators should just be separated by space
 			# Additionally check if the previous line ends in a punctuator, such as a ). Then don't run this as this will add a space, the else will remove any whitespace
 			elif is_line_extending_prev_line and (active_line.tokens.size() >= 2 and not active_line.tokens[active_line.tokens.size()-2].is_punctuator()):
@@ -494,6 +567,13 @@ func _combine_statement_lines() -> void:
 				elif token.is_punctuator('('): _open_annotation_brackets += 1
 				elif token.is_punctuator(')'): _open_annotation_brackets -= 1
 				elif _open_annotation_brackets == 0: prev_line_decorator = false; break
+		
+		# Track when to put semicolons (so that @tool does not end in one)
+		if not allow_putting_semicolons:
+			for token in line.tokens:
+				if token.is_keyword():  # Any keyword will do: extends, var, func, ...
+					allow_putting_semicolons = true
+					break
 		
 		prev_line_brackets_count = scope_brackets_count
 		
