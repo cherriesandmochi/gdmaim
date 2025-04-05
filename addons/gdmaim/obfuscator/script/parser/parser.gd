@@ -479,24 +479,27 @@ func _parse_signal(parent : AST.ASTNode) -> AST.SignalDef:
 
 
 func _parse_enum(parent : AST.ASTNode) -> AST.EnumDef:
+	var ast : AST.EnumDef
+	
+	# Check if enum is Named
 	var token : Token = _tokenizer.get_next()
-	if !token.is_symbol():
-		_Logger.write("ERROR: Parser._parse_enum() - Symbol expected!")
-		return null
-	
-	var ast := AST.EnumDef.new(parent)
-	ast.symbol = _symbol_table.create_global_symbol(token.get_value())
-	
-	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
-		_symbol_table.lock_symbol(ast.symbol)
+	if token.is_symbol():
+		ast = AST.EnumDef.new(parent)
+		ast.symbol = _symbol_table.create_global_symbol(token.get_value())
+		
+		token.link_symbol(ast.symbol)
+		if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+			_symbol_table.lock_symbol(ast.symbol)
 	
 	var expect_key : bool = true
 	while !_tokenizer.is_eof():
 		token = _tokenizer.peek()
 		if token.is_symbol():
 			if expect_key:
-				ast.keys.append(_parse_enum_key(ast))
+				if ast:
+					ast.keys.append(_parse_enum_key(ast))
+				else:
+					parent.statements.append(_parse_enum_key(parent))
 				expect_key = false
 				continue
 			else:
@@ -508,13 +511,13 @@ func _parse_enum(parent : AST.ASTNode) -> AST.EnumDef:
 			break
 		_tokenizer.get_next()
 	
-	if _class_symbol:
+	if _class_symbol and ast:
 		_class_symbol.add_child(ast.symbol)
 	
 	return ast
 
 
-func _parse_enum_key(parent : AST.EnumDef) -> AST.EnumDef.KeyDef:
+func _parse_enum_key(parent : AST.ASTNode) -> AST.EnumDef.KeyDef:
 	var token : Token = _tokenizer.get_next()
 	if !token.is_symbol():
 		_Logger.write("ERROR: Parser._parse_enum_key() - Symbol expected!")
@@ -528,7 +531,10 @@ func _parse_enum_key(parent : AST.EnumDef) -> AST.EnumDef.KeyDef:
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(key.symbol)
 	
-	parent.symbol.add_child(key.symbol)
+	if parent is AST.SymbolDeclaration and parent.symbol:
+		parent.symbol.add_child(key.symbol)
+	else:
+		_class_symbol.add_child(key.symbol)
 	
 	token = _tokenizer.peek()
 	if token.is_operator("="):
