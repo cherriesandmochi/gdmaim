@@ -292,19 +292,19 @@ func _strip_code() -> void:
 			continue
 
 
-func _combine_statement_lines() -> void:
-	if not _Settings.current.inline_statements: return
+func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "") -> int:
+	if not _Settings.current.inline_statements: return starting_line
 	
 	# Note: Use AST for more confident algorithm
 	
 	var lines : Array[Tokenizer.Line] = tokenizer.get_output_lines()
-	if lines.is_empty(): return
+	if lines.is_empty(): return starting_line
 	
-	var active_line : Tokenizer.Line = lines[0]
+	var active_line : Tokenizer.Line = lines[starting_line-1]
 	var active_break_line : Tokenizer.Line = null
 	var start_new_scope : bool = false
 	var require_separate_line : bool = false
-	var i : int = 1
+	var i : int = starting_line
 	var allow_putting_semicolons : bool = false
 	
 	var scope_indents : Array[String] = []
@@ -312,9 +312,16 @@ func _combine_statement_lines() -> void:
 	var scope_can_inline : Array[bool] = []
 	var scope_brackets_count : int = 0
 	
+	if scope_indent != "":
+		active_line = null
+		scope_indents.append(scope_indent)
+		scope_start_idx.append(starting_line)
+		scope_can_inline.append(false)
+	
 	var empty_line_counter : int = 0
 	var prev_line_brackets_count : int = 0
 	var prev_line_decorator : bool = false
+	var prev_line_lambda : bool = false
 	
 	# Initial check whether to allow to put semicolons (so that @tool does not end in one)
 	for token in lines[0].tokens:
@@ -407,6 +414,10 @@ func _combine_statement_lines() -> void:
 		
 		var process_curent_line : bool = true
 		
+		# Don't process line if it's the first line in a recursive call
+		if starting_line != 1 and i - 1 == starting_line:
+			process_curent_line = false
+		
 		# Start of a new anchor line, which will kept being expanded
 		if active_line == null:
 			allow_putting_semicolons = true
@@ -415,6 +426,46 @@ func _combine_statement_lines() -> void:
 				scope_indents.append(current_indent)
 				scope_start_idx.append(i-1)
 				scope_can_inline.append(not require_separate_line)
+				
+				# If this is a lambda line, process it recursively, to avoid any bracket scope issues
+				# It needs to be non-inline, so we check if we scoped in here
+				if prev_line_lambda:
+					i = _combine_statement_lines(i-1, current_indent) - 1
+					print('\n\n\n\n\n\n\n')
+					print(tokenizer.generate_source_code())
+					
+					var internal_indent_index = scope_indents.size()-1
+					var current_scope_start_idx := scope_start_idx[internal_indent_index]
+					var head_line : Tokenizer.Line = lines[current_scope_start_idx-1]
+					# Make sure if we will merge, it will not be into a comment!
+					# Also check if we're allowed to inline this scope, not all scopes can
+					if i - current_scope_start_idx - empty_line_counter == 1 and (head_line.tokens.size() > 2 and not head_line.tokens[head_line.tokens.size()-2].is_comment()) and scope_can_inline[internal_indent_index]:
+						# If so, we can merge them without any separator
+						head_line.remove_token(head_line.tokens.size() - 1)
+						for token_idx in range(1, lines[current_scope_start_idx].tokens.size()):  # We skip the first token aka indent
+							var token : Token = lines[current_scope_start_idx].tokens[token_idx]
+							token.line = head_line.tokens[0].line
+							head_line.add_token(token)
+						# Remove line from tokenizer to keep sanitary data
+						tokenizer.remove_output_line(current_scope_start_idx)
+						i -= 1
+					
+					scope_indents.pop_back()
+					scope_start_idx.pop_back()
+					scope_can_inline.pop_back()
+					
+					prev_line_lambda = false
+					# Only allow merging into this line if the next symbol is a punctuator and we're inside of brackets right now
+					active_line = lines[i-1]
+					for token in lines[i].tokens:
+						if token.is_punctuator() and token.get_value() in "]}),({[": break
+						elif token.is_whitespace() or token.is_comment() or token.is_indentation(): continue
+						else:
+							active_line = null
+							break
+					
+					continue
+			
 			process_curent_line = false
 		
 		# Scope change (whilst not in brackets) => Reducing indents
@@ -447,6 +498,10 @@ func _combine_statement_lines() -> void:
 				internal_indent_index -= 1
 			process_curent_line = false
 		
+		# End function early if the scope is below the base indent (recursive end)
+		if scope_indent != "" and (not is_indented or current_indent.length() < scope_indent.length()):
+			return i
+		
 		# Clear leading indent
 		if process_curent_line and is_indented and not line_empty:
 			line.remove_token(0)
@@ -462,6 +517,8 @@ func _combine_statement_lines() -> void:
 		# Control tracking
 		var line_has_control := false
 		var line_has_inline_control := false
+		var line_has_lambda_func := false
+		var line_has_possible_static_func := false
 		# Get set tracking
 		var line_getset_conditions := 0  # 0: nothing, 1: 'var' keyword
 		var line_has_getset := false
@@ -486,8 +543,13 @@ func _combine_statement_lines() -> void:
 				line_getset_conditions = 0
 				line_getset_function_conditions = 0
 			
+			elif token.type == Token.Type.KEYWORD and token.has_value("static") and line_still_indenting:
+				line_has_possible_static_func = true
+			
 			elif token.type == Token.Type.KEYWORD and token.get_value() in ["if", "else", "elif", "while", "for", "match", "func"]:
 				line_has_control = true
+				if token.has_value("func") and ((not line_still_indenting or scope_brackets_count > 0) and !line_has_possible_static_func):
+					line_has_lambda_func = true
 			elif token.type == Token.Type.KEYWORD and token.get_value() == 'var':
 				line_getset_conditions = 1
 			elif token.type == Token.Type.KEYWORD and token.get_value() == 'class':
@@ -497,7 +559,7 @@ func _combine_statement_lines() -> void:
 			elif token.type == Token.Type.SYMBOL and token.get_value() == 'set':
 				if line_still_indenting: line_getset_function_conditions = 1
 			
-			if line_still_indenting and (!token.is_whitespace() and token.is_indentation()):
+			if line_still_indenting and (!token.is_whitespace() and !token.is_indentation()):
 				line_still_indenting = false
 		
 		# The next scope defines a getter or setter if the line starts with a 'get' or 'set' and has a colon
@@ -550,7 +612,7 @@ func _combine_statement_lines() -> void:
 		
 		# The statement opens a new scope -> it needs to be indented so it can be exited
 		# Also check for in-line control statements as to prevent statements from flooding into the inline scope
-		if (scope_brackets_count == 0 and last_token.is_punctuator(':')) or line_has_inline_control or line_has_getset_function:
+		if (scope_brackets_count == 0 and last_token.is_punctuator(':')) or line_has_inline_control or line_has_getset_function or line_has_lambda_func:
 			active_line = null
 			start_new_scope = true
 		
@@ -581,3 +643,7 @@ func _combine_statement_lines() -> void:
 			empty_line_counter += 1
 		else:
 			empty_line_counter = 0
+		
+		prev_line_lambda = line_has_lambda_func
+	
+	return i
