@@ -533,7 +533,7 @@ func _parse_enum_key(parent : AST.ASTNode) -> AST.EnumDef.KeyDef:
 	
 	if parent is AST.SymbolDeclaration and parent.symbol:
 		parent.symbol.add_child(key.symbol)
-	else:
+	elif _class_symbol:
 		_class_symbol.add_child(key.symbol)
 	
 	token = _tokenizer.peek()
