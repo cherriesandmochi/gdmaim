@@ -431,8 +431,6 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				# It needs to be non-inline, so we check if we scoped in here
 				if prev_line_lambda:
 					i = _combine_statement_lines(i-1, current_indent) - 1
-					print('\n\n\n\n\n\n\n')
-					print(tokenizer.generate_source_code())
 					
 					var internal_indent_index = scope_indents.size()-1
 					var current_scope_start_idx := scope_start_idx[internal_indent_index]
