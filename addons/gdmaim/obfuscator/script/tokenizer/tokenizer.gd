@@ -416,7 +416,7 @@ class Line:
 	func clear_tokens(keep_identation : bool = true) -> void:
 		for i in range(tokens.size() - 1, -1, -1):
 			var token : Token = tokens[i]
-			if !token.is_line_break() and (!keep_identation or !token.is_identation()):
+			if !token.is_line_break() and (!keep_identation or !token.is_indentation()):
 				tokens.remove_at(i)
 	
 	func add_hint(hint : String, args : String) -> void:
