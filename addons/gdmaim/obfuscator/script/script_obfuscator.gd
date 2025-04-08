@@ -373,10 +373,16 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			while not active_break_line.tokens.is_empty() and !active_break_line.tokens[active_break_line.tokens.size() - 1].is_statement_break():
 				active_break_line.remove_token(active_break_line.tokens.size() - 1)
 			
-			# Convert the \ into a space
+			var before_newline_token : Token = active_break_line.tokens[active_break_line.tokens.size() - 2] if active_break_line.tokens.size() > 1 else null
 			var slash_token : Token = active_break_line.tokens.back()
-			slash_token.type = Token.Type.WHITESPACE
-			slash_token.set_value(' ')
+			
+			# Convert the \ into a space
+			# Optimise: dont convert to space if the space is already there
+			if before_newline_token and before_newline_token.is_whitespace():
+				active_break_line.tokens.remove_at(active_break_line.tokens.size() - 1)
+			else:
+				slash_token.type = Token.Type.WHITESPACE
+				slash_token.set_value(' ')
 
 			# Remove leading indentation if exists
 			if first_token.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION):
