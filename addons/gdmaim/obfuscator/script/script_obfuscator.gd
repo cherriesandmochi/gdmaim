@@ -574,19 +574,28 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		# Done like this so lines that start a scope can still count brackets and be checked if they themselves open a scope
 		if process_curent_line and not line_empty:
 			var newline_token : Token = active_line.tokens[active_line.tokens.size() - 1]
+			var before_newline_token : Token = active_line.tokens[active_line.tokens.size() - 2] if active_line.tokens.size() > 1 else null
 			# Don't add semicolons if inside of a bracket structure, just remove newline
 			# (it's affecting the active_line, which is before this current line, so use prev_line_brackets_count)
 			if prev_line_brackets_count == 0 and not is_line_extending_prev_line:
 				# In certain cases a semicolon cannot be placed, such as right after @tool when there is no extends
 				if not allow_putting_semicolons:
-					newline_token.type = Token.Type.WHITESPACE
-					newline_token.set_value(' ')
+					# Optimise: omit space if last token is a punctuator
+					if before_newline_token and before_newline_token.is_punctuator() and before_newline_token.get_value() in "{[(,)]}":
+						active_line.remove_token(active_line.tokens.size() - 1)
+					else:
+						newline_token.type = Token.Type.WHITESPACE
+						newline_token.set_value(' ')
 				else:
-					newline_token.type = Token.Type.PUNCTUATOR
-					newline_token.set_value(';')
+					# Optimise: avoid double semicolons
+					if before_newline_token and before_newline_token.is_punctuator(';'):
+						active_line.remove_token(active_line.tokens.size() - 1)
+					else:
+						newline_token.type = Token.Type.PUNCTUATOR
+						newline_token.set_value(';')
 			# GDScript top level decorators should just be separated by space
 			# Additionally check if the previous line ends in a punctuator, such as a ). Then don't run this as this will add a space, the else will remove any whitespace
-			elif is_line_extending_prev_line and (active_line.tokens.size() >= 2 and not active_line.tokens[active_line.tokens.size()-2].is_punctuator()):
+			elif is_line_extending_prev_line and !(before_newline_token and before_newline_token.is_punctuator() and before_newline_token.get_value() in "{[(,)]}"):
 				newline_token.type = Token.Type.WHITESPACE
 				newline_token.set_value(' ')
 			else:
