@@ -516,6 +516,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		var line_has_control := false
 		var line_has_inline_control := false
 		var line_has_lambda_func := false
+		var line_has_lambda_func_open := false
 		var line_has_possible_static_func := false
 		# Get set tracking
 		var line_getset_conditions := 0  # 0: nothing, 1: 'var' keyword
@@ -534,6 +535,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				scope_brackets_count -= 1
 			
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() == ":":
+				if line_has_lambda_func: line_has_lambda_func_open = true
 				if scope_brackets_count > 0: continue
 				if line_has_control: line_has_inline_control = true
 				if line_getset_function_conditions == 2: line_has_getset_function = true
@@ -556,6 +558,10 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				if line_still_indenting: line_getset_function_conditions = 2
 			elif token.type == Token.Type.SYMBOL and token.get_value() == 'set':
 				if line_still_indenting: line_getset_function_conditions = 1
+			
+			if line_has_lambda_func_open and !token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.COMMENT):
+				line_has_lambda_func_open = false
+				line_has_lambda_func = false
 			
 			if line_still_indenting and (!token.is_whitespace() and !token.is_indentation()):
 				line_still_indenting = false
@@ -659,6 +665,6 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		else:
 			empty_line_counter = 0
 		
-		prev_line_lambda = line_has_lambda_func
+		prev_line_lambda = line_has_lambda_func_open
 	
 	return i
