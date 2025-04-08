@@ -628,6 +628,23 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				elif token.is_punctuator(')'): _open_annotation_brackets -= 1
 				elif _open_annotation_brackets == 0: prev_line_decorator = false; break
 		
+		# If the new line is going to be decorated with a warning ignore or ignore start, mark it
+		# It needs to be the first nonwhitespace token (that is not in brackets) from the end of the line
+		if !prev_line_decorator:
+			var _warning_braclets := 0
+			for dec_i in range(line.tokens.size()-1, -1, -1):
+				var token : Token = line.tokens[dec_i]
+				if token.type == Token.Type.ANNOTATION and token.get_value() in ["@warning_ignore"]:
+					prev_line_decorator = true
+					break
+				elif token.type == Token.Type.ANNOTATION and token.get_value() in ["@warning_ignore_start", "@warning_ignore_restore"]:
+					active_line = null
+					break
+				elif token.is_punctuator('('): _warning_braclets -= 1
+				elif token.is_punctuator(')'): _warning_braclets += 1
+				elif token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK): continue
+				elif _warning_braclets == 0: break
+		
 		# Track when to put semicolons (so that @tool does not end in one)
 		if not allow_putting_semicolons:
 			for token in line.tokens:
