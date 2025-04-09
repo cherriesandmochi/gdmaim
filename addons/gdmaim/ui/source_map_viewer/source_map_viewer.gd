@@ -218,7 +218,9 @@ func _setup_syntax_highlighter() -> void:
 	for keyword in ["tool", "export", "export_range", "onready", "rpc"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#ffb373"))
 	
-	for keyword in ["void", "bool", "int", "float", "String", "Array", "Dictionary", "Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i", "Transform2D", "Transform3D", "Quaternion", "Basis"]:
+	for keyword in ["void", "bool", "int", "float", "String", "Array", "Dictionary", "Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i", "Transform2D", "Transform3D", "Quaternion", "Basis", "Callable",
+		"Variant", "PackedInt32Array", "PackedInt64Array", "PackedVector2Array", "PackedVector3Array", "PackedVector4Array", "PackedStringArray", "PackedByteArray", "PackedColorArray", "PackedFloat32Array",
+		"PackedFloat64Array", "AABB", "Color", "NodePath", "Plane", "Projection", "Rect2", "Rect2i", "RID", "Signal", "StringName", "Object"]:
 		syntax_highlighter.add_keyword_color(keyword, Color("#42ffc2"))
 	
 	source_code.syntax_highlighter = syntax_highlighter
