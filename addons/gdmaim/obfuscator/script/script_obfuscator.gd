@@ -311,6 +311,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	var scope_start_idx : Array[int] = []
 	var scope_can_inline : Array[bool] = []
 	var scope_brackets_count : int = 0
+	var scope_bracket_lambda_args : Array[bool] = []
 	
 	if scope_indent != "":
 		active_line = null
@@ -321,6 +322,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	var empty_line_counter : int = 0
 	var prev_line_brackets_count : int = 0
 	var prev_line_decorator : bool = false
+	var prev_line_pending_lambda : bool = false
 	var prev_line_lambda : bool = false
 	
 	# Initial check whether to allow to put semicolons (so that @tool does not end in one)
@@ -515,15 +517,15 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		# Search for unfinished statements, such as @annotations that dont follow the statement they're annotating in the same line or keywords like `extends` and `class_name`
 		var top_level_class_annotation := (first_token.is_keyword() or first_token.is_annotation()) and first_token.get_value() in ["extends", "class_name", "@tool", "@icon"]
 		var is_line_extending_prev_line = top_level_class_annotation or prev_line_decorator
-
+		
 		# Whitespace tracking
 		var line_still_indenting := true
 		# Control tracking
 		var line_has_control := false
 		var line_has_inline_control := false
 		var line_has_lambda_func := false
-		var line_has_lambda_func_open := false
 		var line_has_possible_static_func := false
+		var line_ends_lambda_args := false
 		# Get set tracking
 		var line_getset_conditions := 0  # 0: nothing, 1: 'var' keyword
 		var line_has_getset := false
@@ -536,12 +538,14 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		for token in line.tokens:
 			if token.type == Token.Type.PUNCTUATOR and token.get_value() in "[{(":
 				scope_brackets_count += 1
+				scope_bracket_lambda_args.append(prev_line_pending_lambda)
 				if line_getset_function_conditions == 1: line_getset_function_conditions = 2
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() in ")}]":
 				scope_brackets_count -= 1
+				line_ends_lambda_args = scope_bracket_lambda_args.pop_back() == true  # Null check
 			
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() == ":":
-				if line_has_lambda_func: line_has_lambda_func_open = true
+				if line_ends_lambda_args: line_has_lambda_func = true
 				if scope_brackets_count > 0: continue
 				if line_has_control: line_has_inline_control = true
 				if line_getset_function_conditions == 2: line_has_getset_function = true
@@ -555,7 +559,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			elif token.type == Token.Type.KEYWORD and token.get_value() in ["if", "else", "elif", "while", "for", "match", "func"]:
 				line_has_control = true
 				if token.has_value("func") and ((not line_still_indenting or scope_brackets_count > 0) and !line_has_possible_static_func):
-					line_has_lambda_func = true
+					prev_line_pending_lambda = true
 			elif token.type == Token.Type.KEYWORD and token.get_value() == 'var':
 				line_getset_conditions = 1
 			elif token.type == Token.Type.KEYWORD and token.get_value() == 'class':
@@ -565,8 +569,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			elif token.type == Token.Type.SYMBOL and token.get_value() == 'set':
 				if line_still_indenting: line_getset_function_conditions = 1
 			
-			if line_has_lambda_func_open and !token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.COMMENT):
-				line_has_lambda_func_open = false
+			if line_has_lambda_func and !token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.COMMENT):
 				line_has_lambda_func = false
 			
 			if line_still_indenting and (!token.is_whitespace() and !token.is_indentation()):
@@ -680,6 +683,6 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		else:
 			empty_line_counter = 0
 		
-		prev_line_lambda = line_has_lambda_func_open
+		prev_line_lambda = line_has_lambda_func
 	
 	return i
