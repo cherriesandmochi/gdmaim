@@ -311,7 +311,8 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	var scope_start_idx : Array[int] = []
 	var scope_can_inline : Array[bool] = []
 	var scope_brackets_count : int = 0
-	var scope_bracket_lambda_args : Array[bool] = []
+	var scope_bracket_func_args : Array[bool] = []
+	var scope_bracket_func_is_lambda : Array[bool] = []
 	
 	if scope_indent != "":
 		active_line = null
@@ -322,7 +323,9 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	var empty_line_counter : int = 0
 	var prev_line_brackets_count : int = 0
 	var prev_line_decorator : bool = false
+	var prev_line_pending_func : bool = false
 	var prev_line_pending_lambda : bool = false
+	var prev_line_func : bool = false
 	var prev_line_lambda : bool = false
 	
 	# Initial check whether to allow to put semicolons (so that @tool does not end in one)
@@ -437,7 +440,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				
 				# If this is a lambda line, process it recursively, to avoid any bracket scope issues
 				# It needs to be non-inline, so we check if we scoped in here
-				if prev_line_lambda:
+				if prev_line_func and prev_line_lambda:
 					i = _combine_statement_lines(i-1, current_indent) - 1
 					
 					var internal_indent_index = scope_indents.size()-1
@@ -520,11 +523,15 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		
 		# Whitespace tracking
 		var line_still_indenting := true
+		# Statement tracking
+		var line_statement_start := true
 		# Control tracking
 		var line_has_control := false
 		var line_has_inline_control := false
+		var line_has_func := false
 		var line_has_lambda_func := false
 		var line_has_possible_static_func := false
+		var line_ends_func_args := false
 		var line_ends_lambda_args := false
 		# Get set tracking
 		var line_getset_conditions := 0  # 0: nothing, 1: 'var' keyword
@@ -538,15 +545,29 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		for token in line.tokens:
 			if token.type == Token.Type.PUNCTUATOR and token.get_value() in "[{(":
 				scope_brackets_count += 1
-				scope_bracket_lambda_args.append(prev_line_pending_lambda)
+				if scope_brackets_count > 0: scope_brackets.append(token.get_value())
+				scope_bracket_func_args.append(prev_line_pending_func)
+				scope_bracket_func_is_lambda.append(prev_line_pending_lambda)
+				prev_line_pending_func = false
+				prev_line_pending_lambda = false
 				if line_getset_function_conditions == 1: line_getset_function_conditions = 2
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() in ")}]":
 				scope_brackets_count -= 1
-				line_ends_lambda_args = scope_bracket_lambda_args.pop_back() == true  # Null check
+				if scope_brackets_count >= 0: scope_brackets.pop_back()
+				line_ends_func_args = scope_bracket_func_args.pop_back() == true  # Null check
+				line_ends_lambda_args = scope_bracket_func_is_lambda.pop_back() == true  # Null check
 			
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() == ":":
-				if line_ends_lambda_args: line_has_lambda_func = true
-				if scope_brackets_count > 0: continue
+				if line_ends_func_args:
+					if line_ends_lambda_args:
+						line_has_lambda_func = true
+					line_has_func = true
+				if scope_brackets_count > 0:
+					if scope_brackets.back() == "{" and not line_ends_func_args:
+						line_statement_start = true
+					line_ends_func_args = false
+					continue
+				line_ends_func_args = false
 				if line_has_control: line_has_inline_control = true
 				if line_getset_function_conditions == 2: line_has_getset_function = true
 			elif token.type == Token.Type.PUNCTUATOR and token.get_value() == ";":
@@ -558,8 +579,13 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			
 			elif token.type == Token.Type.KEYWORD and token.get_value() in ["if", "else", "elif", "while", "for", "match", "func"]:
 				line_has_control = true
-				if token.has_value("func") and ((not line_still_indenting or scope_brackets_count > 0) and !line_has_possible_static_func):
-					prev_line_pending_lambda = true
+				if token.has_value("func"):
+					prev_line_pending_lambda = false
+					prev_line_pending_func = true
+					
+					if (not line_statement_start or scope_brackets_count > 0) and !line_has_possible_static_func:
+						prev_line_pending_lambda = true
+			
 			elif token.type == Token.Type.KEYWORD and token.get_value() == 'var':
 				line_getset_conditions = 1
 			elif token.type == Token.Type.KEYWORD and token.get_value() == 'class':
@@ -569,11 +595,17 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			elif token.type == Token.Type.SYMBOL and token.get_value() == 'set':
 				if line_still_indenting: line_getset_function_conditions = 1
 			
-			if line_has_lambda_func and !token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.COMMENT):
-				line_has_lambda_func = false
+			if line_has_func and !token.is_of_type(Token.Type.WHITESPACE | Token.Type.LINE_BREAK | Token.Type.COMMENT):
+				line_has_func = false
 			
-			if line_still_indenting and (!token.is_whitespace() and !token.is_indentation()):
+			if line_statement_start and (!token.is_whitespace() and !token.is_indentation()):
 				line_still_indenting = false
+				line_statement_start = false
+			
+			if token.type == Token.Type.PUNCTUATOR and \
+					(token.get_value() == ":" and scope_brackets_count > 0 and scope_brackets.back() == "{") or \
+					(token.get_value() == "," and scope_brackets_count > 0):
+				line_statement_start = true
 		
 		# The next scope defines a getter or setter if the line starts with a 'get' or 'set' and has a colon
 		if scope_brackets_count == 0 and line_getset_conditions == 1 and last_token.is_punctuator(':'):
@@ -581,7 +613,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		
 		# If the line is the start of a new scope, do not run this because it will try to add to a previous scope
 		# Done like this so lines that start a scope can still count brackets and be checked if they themselves open a scope
-		if process_curent_line and not line_empty:
+		if active_line and process_curent_line and not line_empty:
 			var newline_token : Token = active_line.tokens[active_line.tokens.size() - 1]
 			var before_newline_token : Token = active_line.tokens[active_line.tokens.size() - 2] if active_line.tokens.size() > 1 else null
 			# Don't add semicolons if inside of a bracket structure, just remove newline
@@ -634,7 +666,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		
 		# The statement opens a new scope -> it needs to be indented so it can be exited
 		# Also check for in-line control statements as to prevent statements from flooding into the inline scope
-		if (scope_brackets_count == 0 and last_token.is_punctuator(':')) or line_has_inline_control or line_has_getset_function or line_has_lambda_func:
+		if (scope_brackets_count == 0 and last_token.is_punctuator(':')) or line_has_inline_control or line_has_getset_function or line_has_func:
 			active_line = null
 			start_new_scope = true
 		
