@@ -148,7 +148,7 @@ func _read_next_token() -> bool:
 		_add_statement_break()
 	elif _is_whitespace(char):
 		if _stream.get_column_pos() == 0:
-			# Identation
+			# Indentation
 			_read_indentation()
 		else:
 			# Whitespace
@@ -390,7 +390,7 @@ func _add_statement_break() -> void:
 class Line:
 	var tokens : Array[Token]
 	var hints : Dictionary
-	var identation : int
+	var indentation : int
 	
 	func _init(tokens : Array[Token] = []) -> void:
 		self.tokens = tokens
@@ -413,10 +413,10 @@ class Line:
 	func erase_token(token : Token) -> void:
 		tokens.erase(token)
 	
-	func clear_tokens(keep_identation : bool = true) -> void:
+	func clear_tokens(keep_indentation : bool = true) -> void:
 		for i in range(tokens.size() - 1, -1, -1):
 			var token : Token = tokens[i]
-			if !token.is_line_break() and (!keep_identation or !token.is_indentation()):
+			if !token.is_line_break() and (!keep_indentation or !token.is_indentation()):
 				tokens.remove_at(i)
 	
 	func add_hint(hint : String, args : String) -> void:

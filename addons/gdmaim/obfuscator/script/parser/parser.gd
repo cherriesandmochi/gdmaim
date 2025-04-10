@@ -65,7 +65,7 @@ func _parse_block_with_callback(parent : AST.ASTNode, indentation : int, token_p
 
 
 func _parse_block(parent : AST.ASTNode, indentation : int) -> AST.Sequence:
-	return _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, identation : int):
+	return _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, indentation : int):
 		if parent is AST.Match and token.is_punctuator(":") and line.get_indentation() == indentation + 1:
 			ast.statements.append(_parse_block(ast, indentation + 1))
 		else:
@@ -796,7 +796,7 @@ func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
 		
 		_bracket_lock = 0
 		
-		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, identation : int):
+		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, indentation : int):
 			match token.type:
 				Token.Type.KEYWORD:
 					_tokenizer.get_next()
@@ -835,7 +835,7 @@ func _parse_var_getset(parent : AST.ASTNode) -> AST.Sequence:
 		
 		_bracket_lock = 0
 		
-		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, identation : int):
+		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, indentation : int):
 			if token.is_symbol("get") or token.is_symbol("set"):
 				var function : AST.Func = _parse_func(ast)
 				if function:

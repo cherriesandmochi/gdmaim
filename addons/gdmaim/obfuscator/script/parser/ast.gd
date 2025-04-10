@@ -13,10 +13,10 @@ class ASTNode:
 	func _to_string() -> String: return "pass" if parent else "root"
 	func get_parent() -> ASTNode: return parent.get_ref() as ASTNode if parent else null
 	func get_children() -> Array[ASTNode]: return children
-	func print_tree(identation : int = 0, identation_str : String = ">   ") -> String:
-		var str : String = "\n" + (identation_str.repeat(identation) if identation > 0 else "") + str(self)
+	func print_tree(indentation : int = 0, indentation_str : String = ">   ") -> String:
+		var str : String = "\n" + (indentation_str.repeat(indentation) if indentation > 0 else "") + str(self)
 		for child in get_children():
-			str += child.print_tree(identation + 1)
+			str += child.print_tree(indentation + 1)
 		return str
 
 
