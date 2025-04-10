@@ -739,5 +739,15 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		
 		prev_line_func = line_has_func
 		prev_line_lambda = line_has_lambda_func
+		
+		# End recursive call if this line contains a comman when this call assumes to be out of brackets
+		# Similarly end if we're in negative brackets
+		if scope_brackets_count < 0: return i
+		var _temp_scope_bracket_count : int = 0
+		for punc_i in range(0, line.tokens.size()):
+			var token : Token = line.tokens[punc_i]
+			if token.is_punctuator('('): _temp_scope_bracket_count += 1
+			elif token.is_punctuator(')'): _temp_scope_bracket_count -= 1
+			elif token.is_punctuator(',') and (scope_brackets_count + maxi(_temp_scope_bracket_count, 0)) == 0: return i
 	
 	return i
