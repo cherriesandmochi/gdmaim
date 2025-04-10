@@ -310,6 +310,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	var scope_indents : Array[String] = []
 	var scope_start_idx : Array[int] = []
 	var scope_can_inline : Array[bool] = []
+	var scope_brackets : Array[String] = []
 	var scope_brackets_count : int = 0
 	var scope_bracket_func_args : Array[bool] = []
 	var scope_bracket_func_is_lambda : Array[bool] = []
@@ -327,6 +328,9 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	var prev_line_pending_lambda : bool = false
 	var prev_line_func : bool = false
 	var prev_line_lambda : bool = false
+	
+	# Dicts can temporarily offset their scope
+	var temporary_statement_scope_count : int = 0
 	
 	# Initial check whether to allow to put semicolons (so that @tool does not end in one)
 	for token in lines[0].tokens:
@@ -438,6 +442,10 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				scope_start_idx.append(i-1)
 				scope_can_inline.append(not require_separate_line)
 				
+				# Dicts can have temporary scopes
+				if !scope_brackets.is_empty() and scope_brackets.back() == '{':
+					temporary_statement_scope_count += 1
+				
 				# If this is a lambda line, process it recursively, to avoid any bracket scope issues
 				# It needs to be non-inline, so we check if we scoped in here
 				if prev_line_func and prev_line_lambda:
@@ -476,6 +484,15 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 					continue
 			
 			process_curent_line = false
+		
+		# Collections usually have indentation rules that follows the element's head's indentation, such as in the case of lambdas
+		# Dicts can split the head into two parts, keep track of it
+		if !scope_brackets.is_empty() and scope_brackets.back() == '{':
+			while temporary_statement_scope_count > 0 and !scope_indents.is_empty() and current_indent != current_scope and not start_new_scope:
+				scope_indents.pop_back()
+				scope_start_idx.pop_back()
+				scope_can_inline.pop_back()
+				temporary_statement_scope_count -= 1
 		
 		# Scope change (whilst not in brackets) => Reducing indents
 		if prev_line_brackets_count == 0 and !scope_indents.is_empty() and current_indent != current_scope and not start_new_scope:
