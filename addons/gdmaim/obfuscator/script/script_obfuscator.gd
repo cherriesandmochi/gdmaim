@@ -511,6 +511,11 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		if scope_indent != "" and (not is_indented or current_indent.length() < scope_indent.length()):
 			return i
 		
+		# Don't merge scope if it contains warning ignore and would merge into one line with func def
+		for token in line.tokens:
+			if token.type == Token.Type.ANNOTATION and token.has_value("@warning_ignore") and scope_start_idx.back() + 1 < i:
+				scope_can_inline[scope_can_inline.size()-1] = false
+		
 		# Clear leading indent
 		if process_curent_line and is_indented and not line_empty:
 			line.remove_token(0)
@@ -715,6 +720,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		else:
 			empty_line_counter = 0
 		
+		prev_line_func = line_has_func
 		prev_line_lambda = line_has_lambda_func
 	
 	return i
