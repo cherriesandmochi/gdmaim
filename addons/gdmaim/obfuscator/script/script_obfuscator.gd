@@ -505,9 +505,55 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				#    so the condition still checks out on a difference of 2
 				var current_scope_start_idx := scope_start_idx[internal_indent_index]
 				var head_line : Tokenizer.Line = lines[current_scope_start_idx-1]
+				
+				# Additional check: else statements will else the last IF in the line
+				# So to avoid a change in syntax tree structure we first check if we have an else statement
+				var scope_change_contains_else : bool = false
+				var else_lookahead_line_idx : int = i-1
+				var else_lookahead_line : Tokenizer.Line = Tokenizer.Line.new([Token.new(Token.Type.WHITESPACE, '', 0, i-1)])
+				var else_lookahead_indent : String = ""
+				
+				# Find the next line that could contain an else keyword
+				while else_lookahead_line_idx < lines.size():
+					var else_lookahead_line_empty : bool = true
+					else_lookahead_line = lines[else_lookahead_line_idx]
+					
+					for else_lookahead_line_token in else_lookahead_line.tokens:
+						if else_lookahead_line_token.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION | Token.Type.COMMENT): continue
+						else: else_lookahead_line_empty = false; break
+					
+					if not else_lookahead_line_empty: break
+					
+					else_lookahead_line_idx += 1
+				
+				# Check if it has an else keyword
+				for else_lookahead in else_lookahead_line.tokens:
+					if else_lookahead.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION): else_lookahead_indent += else_lookahead.get_value(false)
+					elif else_lookahead.is_keyword("else"): scope_change_contains_else = true; break
+					else: break
+				
+				# Check if the scope we just exited contains any if statements
+				var inner_scope_has_if : bool = false
+				for inner_scope_line_idx in range(current_scope_start_idx, mini(i, lines.size())):
+					var inner_scope_line : Tokenizer.Line = lines[inner_scope_line_idx]
+					for inner_scope_if_lookahead in inner_scope_line.tokens:
+						if inner_scope_if_lookahead.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION): continue
+						elif inner_scope_if_lookahead.is_keyword("if"): inner_scope_has_if = true; break
+						else: break
+				
+				# Also optimise by checking which IF this ELSE belongs to
+				var if_indent : String = "" if scope_indents.size() < 1 else scope_indents[internal_indent_index-1]
+				var if_and_else_match_scope : bool = else_lookahead_indent == if_indent
+				
 				# Make sure if we will merge, it will not be into a comment!
 				# Also check if we're allowed to inline this scope, not all scopes can
-				if i - current_scope_start_idx - empty_line_counter == 2 and (head_line.tokens.size() > 2 and not head_line.tokens[head_line.tokens.size()-2].is_comment()) and scope_can_inline[internal_indent_index]:
+				if i - current_scope_start_idx - empty_line_counter == 2 and \
+						(head_line.tokens.size() > 2 and \
+						not head_line.tokens[head_line.tokens.size()-2].is_comment()) and \
+						scope_can_inline[internal_indent_index] and \
+						# Additional check for nested IFs and high level ELSE statements
+						not (scope_change_contains_else and inner_scope_has_if and if_and_else_match_scope):
+					
 					# If so, we can merge them without any separator
 					head_line.remove_token(head_line.tokens.size() - 1)
 					for token_idx in range(1, lines[current_scope_start_idx].tokens.size()):  # We skip the first token aka indent
