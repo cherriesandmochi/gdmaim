@@ -40,7 +40,7 @@ func _init(type : Type, value : String, idx : int, line : int, decorator : Strin
 
 
 func _to_string() -> String:
-	return str(_value)
+	return str(get_value())
 
 
 func set_value(new_val : String) -> void:
