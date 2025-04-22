@@ -529,6 +529,8 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 					scope_indents.pop_back()
 					scope_start_idx.pop_back()
 					scope_can_inline.pop_back()
+					if scope_brackets.back() == '{':
+						temporary_statement_scope_count -= 1
 					
 					prev_line_lambda = false
 					# Only allow merging into this line if the next symbol is a punctuator and we're inside of brackets right now
