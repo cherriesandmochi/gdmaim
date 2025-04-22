@@ -332,29 +332,67 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 	# Dicts can temporarily offset their scope
 	var temporary_statement_scope_count : int = 0
 	
+	# Find first non-empty line
+	var first_line : Tokenizer.Line = lines[starting_line-1]
+	var _first_line_idx : int = starting_line-1
+	var _first_line_found : bool = false
+	while _first_line_idx < lines.size() and not _first_line_found:
+		for token in first_line.tokens:
+			if token.is_of_type(Token.Type.COMMENT | Token.Type.LINE_BREAK | Token.Type.WHITESPACE | Token.Type.INDENTATION | Token.Type.STRING_LITERAL): continue
+			else:
+				_first_line_found = true
+				break
+			
+			_first_line_idx += 1
+			first_line = lines[_first_line_idx]
+	
 	# Initial check whether to allow to put semicolons (so that @tool does not end in one)
-	for token in lines[0].tokens:
+	for token in first_line.tokens:
 		if token.is_keyword():  # Any keyword will do: extends, var, func, ...
 			allow_putting_semicolons = true
 			break
 	
-	# UNLESS the line is opening a new scope, such as a first line function
+	# UNLESS the line is opening a new scope, such as a first line function or a collection of any type
 	# Then we need to deny this again
 	if allow_putting_semicolons:
-		for token_i in range(len(lines[0].tokens)-1, -1, -1):
-			var token : Token = lines[0].tokens[token_i]
+		for token_i in range(len(first_line.tokens)-1, -1, -1):
+			var token : Token = first_line.tokens[token_i]
 			if token.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION | Token.Type.LINE_BREAK | Token.Type.COMMENT):
 				continue
 			elif token.is_punctuator(":"):
 				allow_putting_semicolons = false
 				start_new_scope = true
 				active_line = null
-			else:
-				break
+			elif token.is_punctuator() and token.get_value() in '[{(' and starting_line == 1:
+				scope_brackets.append(token.get_value())
+				scope_brackets_count += 1
+			elif token.is_punctuator() and token.get_value() in ')}]' and starting_line == 1:
+				scope_brackets.pop_back()
+				scope_brackets_count -= 1
+		
+		# First line variable collections should be tracked
+		if scope_brackets_count != 0:
+			prev_line_brackets_count = scope_brackets_count
 	
 	# Check if the file starts with "extends" to handle the inconsistent requirement it has
 	if active_line and active_line.tokens[0].is_keyword() and active_line.tokens[0].get_value() == "extends":
 		active_line = null
+	
+	# First line statement break check
+	var first_line_statement_break : bool = first_line.tokens.size() > 1 and first_line.tokens[first_line.tokens.size()-2].is_statement_break()
+	if first_line_statement_break:
+		# Look ahead if we can merge statements in the next line (is not empty or comment)
+		var next_line : Tokenizer.Line = lines[_first_line_idx+1] if lines.size() > _first_line_idx+1 else Tokenizer.Line.new([Token.new(Token.Type.WHITESPACE, '', 0, _first_line_idx+1)])
+		var next_line_empty := true
+		for token in next_line.tokens:
+			if !token.is_of_type(Token.Type.LINE_BREAK | Token.Type.WHITESPACE | Token.Type.INDENTATION | Token.Type.COMMENT):
+				next_line_empty = false
+				break
+		
+		# If is not empty, we merge
+		if not next_line_empty:
+			active_break_line = first_line
+			pass
 	
 	while i <= lines.size():
 		var end_of_file : bool = i >= lines.size()
@@ -392,11 +430,11 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			else:
 				slash_token.type = Token.Type.WHITESPACE
 				slash_token.set_value(' ')
-
+			
 			# Remove leading indentation if exists
 			if first_token.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION):
 				line.remove_token(0)
-		
+			
 			# Keep clean tokenizer data by adding tokens to the active_line
 			for token in line.tokens:
 				token.line = first_token.line
@@ -426,6 +464,27 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 			if not next_line_empty:
 				active_break_line = line
 				continue  # quick skip ahead to combine statements
+		
+		# Don't actually run this line if we stopped doing statement breaks and we're back checking the first line
+		if i == 1:
+			# Still track brackets (reset it because first line)
+			scope_brackets_count = 0
+			scope_brackets.clear()
+			
+			for token in line.tokens:
+				if token.is_punctuator(":"):
+					allow_putting_semicolons = false
+					start_new_scope = true
+					active_line = null
+				elif token.is_punctuator() and token.get_value() in '[{(':
+					scope_brackets.append(token.get_value())
+					scope_brackets_count += 1
+				elif token.is_punctuator() and token.get_value() in ')}]':
+					scope_brackets.pop_back()
+					scope_brackets_count -= 1
+				
+				prev_line_brackets_count = scope_brackets_count
+			continue
 		
 		var process_curent_line : bool = true
 		
@@ -776,8 +835,6 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 					allow_putting_semicolons = true
 					break
 		
-		prev_line_brackets_count = scope_brackets_count
-		
 		if line_empty:
 			empty_line_counter += 1
 		else:
@@ -789,11 +846,16 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 		# End recursive call if this line contains a comman when this call assumes to be out of brackets
 		# Similarly end if we're in negative brackets
 		if scope_brackets_count < 0: return i
-		var _temp_scope_bracket_count : int = 0
+		var _temp_scope_bracket_count : int = prev_line_brackets_count
 		for punc_i in range(0, line.tokens.size()):
 			var token : Token = line.tokens[punc_i]
-			if token.is_punctuator('('): _temp_scope_bracket_count += 1
-			elif token.is_punctuator(')'): _temp_scope_bracket_count -= 1
-			elif token.is_punctuator(',') and (scope_brackets_count + maxi(_temp_scope_bracket_count, 0)) == 0: return i
+			if token.is_punctuator() and token.get_value() in '[{(':
+				_temp_scope_bracket_count += 1
+			elif token.is_punctuator() and token.get_value() in ')}]':
+				_temp_scope_bracket_count -= 1
+			elif token.is_punctuator(',') and (scope_brackets_count + maxi(_temp_scope_bracket_count, 0)) == 0:
+				return i
+		
+		prev_line_brackets_count = scope_brackets_count
 	
 	return i
