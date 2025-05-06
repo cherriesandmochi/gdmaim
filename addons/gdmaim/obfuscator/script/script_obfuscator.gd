@@ -590,7 +590,7 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				# Check if it has an else keyword
 				for else_lookahead in else_lookahead_line.tokens:
 					if else_lookahead.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION): else_lookahead_indent += else_lookahead.get_value(false)
-					elif else_lookahead.is_keyword("else"): scope_change_contains_else = true; break
+					elif else_lookahead.is_keyword("else") or else_lookahead.is_keyword("elif"): scope_change_contains_else = true; break
 					else: break
 				
 				# Check if the scope we just exited contains any if statements
