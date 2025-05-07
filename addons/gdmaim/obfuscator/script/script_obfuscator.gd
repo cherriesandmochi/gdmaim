@@ -597,10 +597,12 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 				var inner_scope_has_if : bool = false
 				for inner_scope_line_idx in range(current_scope_start_idx, mini(i, lines.size())):
 					var inner_scope_line : Tokenizer.Line = lines[inner_scope_line_idx]
+					var inner_scope_line_statement_reset : bool = true
 					for inner_scope_if_lookahead in inner_scope_line.tokens:
 						if inner_scope_if_lookahead.is_of_type(Token.Type.WHITESPACE | Token.Type.INDENTATION): continue
-						elif inner_scope_if_lookahead.is_keyword("if"): inner_scope_has_if = true; break
-						else: break
+						elif inner_scope_if_lookahead.is_keyword("if") and inner_scope_line_statement_reset: inner_scope_has_if = true; break
+						elif inner_scope_if_lookahead.is_punctuator(";"): inner_scope_line_statement_reset = true
+						else: inner_scope_line_statement_reset = false
 				
 				# Also optimise by checking which IF this ELSE belongs to
 				var if_indent : String = "" if scope_indents.size() < 1 else scope_indents[internal_indent_index-1]
