@@ -1,17 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://db3glsa3pdia3"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dqyw0"]
-content_margin_left = 7.0
-content_margin_bottom = 1.0
-bg_color = Color(0.298039, 0.321569, 0.368627, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
+[gd_scene format=3 uid="uid://db3glsa3pdia3"]
 
 [node name="Category" type="Label"]
-theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("StyleBoxFlat_dqyw0")
 text = "Category"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Background" type="Panel" parent="."]
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
