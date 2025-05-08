@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://ctelo3fmr1bcm"]
 
-[ext_resource type="Script" path="res://addons/gdmaim/ui/dock/setting.gd" id="1_w54pe"]
+[ext_resource type="Script" uid="uid://j2b37qg48ayj" path="res://addons/gdmaim/ui/dock/setting.gd" id="1_w54pe"]
 
 [node name="LineEdit" type="LineEdit"]
 anchors_preset = 6

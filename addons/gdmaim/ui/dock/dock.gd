@@ -19,6 +19,14 @@ func _ready() -> void:
 	for category in settings.get_categories():
 		var label : Label = preload("dock_category.tscn").instantiate()
 		label.text = category.visible_name
+		var label_background: Panel = label.get_node("Background")
+		label.visibility_changed.connect(
+			func() -> void:
+				if label.visible:
+					label_background.add_theme_stylebox_override("panel", label.get_theme_stylebox("hover", "Button"))
+				else:
+					label_background.remove_theme_stylebox_override("panel")
+		)
 		$ScrollContainer/VBoxContainer.add_child(label)
 		for entry in category.entries:
 			if entry.visible_name:

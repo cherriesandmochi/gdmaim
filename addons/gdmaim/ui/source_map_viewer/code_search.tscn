@@ -1,9 +1,6 @@
-[gd_scene load_steps=8 format=3 uid="uid://crvfxjbaqfxn2"]
+[gd_scene load_steps=7 format=3 uid="uid://crvfxjbaqfxn2"]
 
-[ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer/code_search.gd" id="1_4mnsc"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s0j7j"]
-bg_color = Color(0.0745098, 0.0862745, 0.101961, 1)
+[ext_resource type="Script" uid="uid://c10h567mcr352" path="res://addons/gdmaim/ui/source_map_viewer/code_search.gd" id="1_4mnsc"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_58b8g"]
 
@@ -17,7 +14,6 @@ bg_color = Color(0.0745098, 0.0862745, 0.101961, 1)
 
 [node name="CodeSearch" type="Panel"]
 custom_minimum_size = Vector2(0, 30)
-theme_override_styles/panel = SubResource("StyleBoxFlat_s0j7j")
 script = ExtResource("1_4mnsc")
 
 [node name="VBoxContainer" type="HBoxContainer" parent="."]

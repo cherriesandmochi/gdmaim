@@ -1,9 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://co43s08djflp5"]
+[gd_scene load_steps=2 format=3 uid="uid://co43s08djflp5"]
 
-[ext_resource type="Script" path="res://addons/gdmaim/ui/dock/dock.gd" id="1_se4hh"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2vjsg"]
-bg_color = Color(0.129412, 0.14902, 0.180392, 1)
+[ext_resource type="Script" uid="uid://cljd6yfhsbpnt" path="res://addons/gdmaim/ui/dock/dock.gd" id="1_se4hh"]
 
 [node name="GDMaim" type="Panel"]
 anchors_preset = 15
@@ -11,7 +8,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_2vjsg")
 script = ExtResource("1_se4hh")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
