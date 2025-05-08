@@ -513,6 +513,14 @@ func _combine_statement_lines(starting_line: int = 1, scope_indent: String = "")
 					var internal_indent_index = scope_indents.size()-1
 					var current_scope_start_idx := scope_start_idx[internal_indent_index]
 					var head_line : Tokenizer.Line = lines[current_scope_start_idx-1]
+					
+					# Don't merge scope if it contains warning ignore and would merge into one line with func def
+					if i - current_scope_start_idx - empty_line_counter == 1:
+						for token in lines[i-1].tokens:
+							if token.type == Token.Type.ANNOTATION and token.has_value("@warning_ignore"):
+								scope_can_inline[scope_can_inline.size()-1] = false
+								break
+					
 					# Make sure if we will merge, it will not be into a comment!
 					# Also check if we're allowed to inline this scope, not all scopes can
 					if i - current_scope_start_idx - empty_line_counter == 1 and (head_line.tokens.size() > 2 and not head_line.tokens[head_line.tokens.size()-2].is_comment()) and scope_can_inline[internal_indent_index]:
