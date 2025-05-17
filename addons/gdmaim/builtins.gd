@@ -1053,6 +1053,10 @@ const VARIANTS : Array[Dictionary] = [
 	},
 	{
 		"class": "Vector2i",
+		"constants": [
+			"MIN",
+			"MAX",
+		],
 	},
 	{
 		"class": "Vector3",
