@@ -151,6 +151,9 @@ const GLOBALS : Array[String] = [
 ]
 const VARIANTS : Array[Dictionary] = [
 	{
+		{
+			"class": "Key",
+		},
 		"class": "AABB",
 		"properties": [
 			"end",
