@@ -224,14 +224,17 @@ func parse_global_script_class_cache(path : String = "") -> void:
 	var cfg : ConfigFile = ConfigFile.new()
 	cfg.load(path)
 
-	var data : Array[Dictionary] = cfg.get_value("", "list", [])
+	var data : Array = cfg.get_value("", "list", [])
 	if data.size() > 0:
 		#SAVE TEMP
 		cfg.save(str(path, ".tmp"))
 
 		if obfuscate_path_callback.is_valid():
 			for x in range(data.size()):
-				var value : Dictionary = data[x]
+				var variant : Variant = data[x]
+				if !(variant is Dictionary):
+					continue
+				var value : Dictionary = variant
 				#DATA EXPECTED
 				var base : StringName = value["base"]
 				var src_class : StringName = value["class"]
