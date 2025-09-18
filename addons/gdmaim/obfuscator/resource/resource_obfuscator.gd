@@ -46,6 +46,20 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 						line = _replace_first(line, name, str(new_symbol.name))
 						_Logger.write(str(i+1) + " found symbol '" + name + "' = " + str(new_symbol.name))
 		
+		
+	
+		if line.begins_with("[gd_resource"):
+			var script_class : String = 'script_class="'
+			var finder : int = line.find(script_class)
+			if finder > -1:
+				var start : int = finder + script_class.length()
+				var end : int = line.find('"', start)
+				var to_replace : String = line.substr(start, end - start)
+				var new_symbol : SymbolTable.Symbol = symbol_table.find_global_symbol(to_replace)
+				if new_symbol:
+					line = line.replace('script_class="{0}"'.format([to_replace]),'script_class="{0}"'.format([new_symbol.name]))
+					_Logger.write(str(i+1) + " found script_class = '" + to_replace)
+					
 		_data += line + "\n"
 		i += 1
 		
