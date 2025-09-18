@@ -34,6 +34,20 @@ var _godot_files : GodotFiles
 var _compiler
 var _compress_mode : int
 
+#region addon_path
+static var _addon_path : String = "res://addons/gdmaim/"
+
+func _get_addon_path() -> String:
+	var script : Script = get_script()
+	if !script:
+		return _addon_path
+		
+	var new_path : String = script.resource_path
+	if new_path.is_empty():
+		return _addon_path
+		
+	return new_path.get_base_dir().path_join("")
+#endregion
 
 func _get_name() -> String:
 	return "gdmaim"
@@ -47,6 +61,9 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_enabled = !features.has("no_gdmaim")
 	if !_enabled:
 		return
+		
+	# Get current addon folder
+	_addon_path = _get_addon_path()
 	
 	_convert_text_resources_to_binary = ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", false)
 	if _convert_text_resources_to_binary:
@@ -224,6 +241,9 @@ func _export_end() -> void:
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
+		return
+		
+	if path.begins_with(_addon_path):
 		return
 	
 	var ext : String = path.get_extension()
@@ -406,7 +426,10 @@ static func _get_files(path : String, ext : String) -> PackedStringArray:
 		var dir : String = dirs.pop_front()
 		for sub_dir in DirAccess.get_directories_at(dir):
 			if !sub_dir.begins_with("."):
-				dirs.append(dir.path_join(sub_dir))
+				var new_dir : String = dir.path_join(sub_dir)
+				if new_dir.begins_with(_addon_path):
+					continue
+				dirs.append(new_dir)
 		for file in DirAccess.get_files_at(dir):
 			if file.replace(".remap", "").ends_with(ext):
 				files.append(dir.path_join(file))
