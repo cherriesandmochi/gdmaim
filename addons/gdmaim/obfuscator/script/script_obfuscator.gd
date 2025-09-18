@@ -260,7 +260,7 @@ func _strip_code() -> void:
 	for l in range(lines.size() - 1, -1, -1):
 		var line : Tokenizer.Line = lines[l]
 		
-		if _Settings.current.strip_comments or _Settings.current.strip_extraneous_spacing:
+		if _Settings.current.strip_comments or _Settings.current.strip_extraneous_spacing or _Settings.current.strip_editor_annotations:
 			for i in range(line.tokens.size() - 1, -1, -1):
 				var token : Token = line.tokens[i]
 				
@@ -279,6 +279,25 @@ func _strip_code() -> void:
 						var next_type : int = line.tokens[i+1].type if i+1 < line.tokens.size() else Token.Type.NONE
 						if i == 0 or prev_type == Token.Type.OPERATOR or prev_type == Token.Type.PUNCTUATOR or next_type == Token.Type.OPERATOR or next_type == Token.Type.PUNCTUATOR:
 							line.remove_token(i)
+							continue
+				
+				# Strip annotations used exclusively by the editor
+				if _Settings.current.strip_editor_annotations:
+					if token.is_annotation():
+						# These annotations can only be on their own line
+						if token.get_value() in ["@export_category", "@export_group", "@export_subgroup"]:
+							tokenizer.remove_output_line(l)
+							continue
+						# Other @export's and a few others might have parenthesis after them, with whitespace possibly after the parenthesis
+						elif token.get_value().contains("@export") or token.get_value() in ["@icon", "@tool", "@warning_ignore"]:
+							line.remove_token(i)
+							if line.tokens.size() > i and line.tokens[i].is_punctuator("("):
+								var last_token: Token
+								while line.tokens.size() > i:
+									last_token = line.tokens[i]
+									line.remove_token(i)
+									if last_token.is_punctuator(")"): break
+							while line.tokens.size() > i and line.tokens[i].is_whitespace(): line.remove_token(i)
 							continue
 		
 		# Strip empty lines

@@ -24,6 +24,7 @@ var symbol_dynamic_seed : bool = false
 var strip_comments : bool = true
 var strip_empty_lines : bool = true
 var strip_extraneous_spacing : bool = true
+var strip_editor_annotations : bool = true
 var feature_filters : bool = true
 var regex_filter_enabled : bool = true
 var regex_filter : String = ""
@@ -62,6 +63,7 @@ func _init() -> void:
 	add_entry("strip_comments", "strip_comments", "Strip Comments", "If true, remove all comments.")
 	add_entry("strip_empty_lines", "strip_empty_lines", "Strip Empty Lines", "If true, remove all empty lines.")
 	add_entry("strip_extraneous_spacing", "strip_extraneous_spacing", "Strip Extraneous Spacing", "If true, remove all irrelevant spaces and tabs.")
+	add_entry("strip_editor_annotations", "strip_editor_annotations", "Strip Editor Annotations", "If true, remove all annotations used by the editor.")
 	add_entry("regex_filter_enabled", "regex_filter_enabled", "Strip Lines Matching RegEx", "If true, any lines matching the regular expression will be removed from the obfuscated code.")
 	add_entry("regex_filter", "regex_filter", "", "Enter Regular Expression")
 	add_entry("feature_filters", "feature_filters", "Process Feature Filters", "If true, export template feature tags may be used to filter code.")
