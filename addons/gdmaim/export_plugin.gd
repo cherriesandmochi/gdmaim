@@ -134,7 +134,8 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	var class_cache := ConfigFile.new()
 	var class_cache_src : PackedByteArray = FileAccess.get_file_as_bytes(GODOT_CLASS_CACHE_PATH)
 	class_cache.parse(class_cache_src.get_string_from_utf8())
-	var classes : Array[Dictionary] = class_cache.get_value("", "list")
+	var classes : Array[Dictionary] = []
+	classes.assign(class_cache.get_value("", "list"))
 	for class_data : Dictionary in classes:
 		if _class_symbols.has(class_data.class):
 			class_data.class = StringName(_class_symbols[class_data.class].get_name())
@@ -342,7 +343,7 @@ func _obfuscate_script(path : String) -> String:
 				if token.get_value() == "_enter_tree":
 					found_func = true
 					break
-				if found_func and token.type == Token.Type.IDENTATION:
+				if found_func and token.type == Token.Type.INDENTATION:
 					line.insert_token(i + 1, Token.new(Token.Type.LITERAL, injection_code, -1, -1))
 					did_inject = true
 					break

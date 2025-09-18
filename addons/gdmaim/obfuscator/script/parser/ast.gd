@@ -13,10 +13,10 @@ class ASTNode:
 	func _to_string() -> String: return "pass" if parent else "root"
 	func get_parent() -> ASTNode: return parent.get_ref() as ASTNode if parent else null
 	func get_children() -> Array[ASTNode]: return children
-	func print_tree(identation : int = 0, identation_str : String = ">   ") -> String:
-		var str : String = "\n" + (identation_str.repeat(identation) if identation > 0 else "") + str(self)
+	func print_tree(indentation : int = 0, indentation_str : String = ">   ") -> String:
+		var str : String = "\n" + (indentation_str.repeat(indentation) if indentation > 0 else "") + str(self)
 		for child in get_children():
-			str += child.print_tree(identation + 1)
+			str += child.print_tree(indentation + 1)
 		return str
 
 
@@ -117,8 +117,10 @@ class EnumDef extends SymbolDeclaration:
 
 
 class Var extends SymbolDeclaration:
-	var default : String
+	var default : Sequence
+	var getset : Sequence
 	func _to_string() -> String: return "var " + str(symbol)
+	func get_children() -> Array[ASTNode]: return (default.statements if default else ([] as Array[ASTNode])) + (getset.statements if getset else ([] as Array[ASTNode]))
 
 
 class Const extends Var:
@@ -129,6 +131,12 @@ class ExportVar extends Var:
 	func _to_string() -> String: return "@export var " + str(symbol)
 
 
+class ExportNodePathVar extends ExportVar:
+	var types : Array[StringSymbol]
+	func _to_string() -> String: return "@export_node_path var " + str(symbol)
+	func get_children() -> Array: return types + super()
+
+
 class Parameter extends Var:
 	func _to_string() -> String: return "param " + str(symbol)
 
@@ -136,6 +144,11 @@ class Parameter extends Var:
 class Symbol extends ASTNode:
 	var path : SymbolTable.SymbolPath
 	func _to_string() -> String: return "symbol " + str(path)
+
+
+class StringSymbol extends ASTNode:
+	var path : SymbolTable.SymbolPath
+	func _to_string() -> String: return 'symbol "' + str(path) + '"'
 
 
 class Call extends Symbol:

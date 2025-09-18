@@ -72,6 +72,8 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Shuffle Top-Level Declarations`: Shuffles the line positions of top-level declarations, such as variables, functions and classes.
 
+`Inline Statements`: If enabled, aggressively compresses multiple lines of code into as little lines as possible.
+
 `Inline Constants`: If enabled, accesses to constants will be replaced with hardcoded values. Declarations of constants get removed.
 
 `Inline enums`: If enabled, accesses to enum keys will be replaced with hardcoded values. Declarations of enums get removed.
