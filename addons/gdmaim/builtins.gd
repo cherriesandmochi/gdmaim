@@ -1092,6 +1092,9 @@ const VARIANTS : Array[Dictionary] = [
 	{
 		"class": "Vector4i",
 	},
+	{
+		"class": "Key",
+	},
 ]
 
 
