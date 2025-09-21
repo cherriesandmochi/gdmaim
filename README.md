@@ -22,6 +22,7 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 	- [Preprocessor hints](#preprocessor-hints)
 - [Limitations and caveats](#limitations-and-caveats-)
 - [Stability](#stability-)
+- [External Libraries](#external-libraries-)
 - [Issues](#issues-)
 - [Troubleshooting](#troubleshooting-)
 - [Roadmap](#roadmap-)
@@ -356,6 +357,9 @@ I also successfully exported the following 4 projects, after doing some minor tw
 * [GDQuest's Third Person Shooter Demo](https://github.com/gdquest-demos/godot-4-3d-third-person-controller/)
 * [Official 3D Platformer Demo](https://github.com/godotengine/godot-demo-projects/tree/master/3d/platformer)
 * [Godot 4 FPS Prototype](https://github.com/Dodoveloper/godot4-fps-prototype)
+
+## External Libraries [↑](#table-of-contents)
+This plugin currently uses **gdbc** to convert scripts to bytecode, you can find the repository at [Github Repository](https://github.com/Ayzurus/gdbc)
 
 ## Issues [↑](#table-of-contents)
 
