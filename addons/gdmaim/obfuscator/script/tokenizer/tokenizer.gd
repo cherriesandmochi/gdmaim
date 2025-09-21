@@ -6,7 +6,7 @@ const _Settings := preload("../../../settings.gd")
 const Token := preload("token.gd")
 const Stream := preload("stream.gd")
 
-const KEYWORDS : Array[String] = ["extends", "class_name", "setget", "const", "signal", "enum", "static", "var", "func", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not"]
+const KEYWORDS : Array[String] = ["extends", "class_name", "setget", "const", "signal", "enum", "static", "var", "func", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not", "when"]
 const LITERALS : Array[String] = ["true", "false", "null", "self", "PI", "TAU", "NAN", "INF"]
 const OPERATORS : String = "+-*^/%=<>!&|"
 const PUNCTUATORS : String = "()[]{},;:."
@@ -293,7 +293,6 @@ func _read_until(delimeters : String) -> String:
 		_stream.get_next()
 	
 	return str
-
 
 func _is_whitespace(char : String) -> bool:
 	return char == " " or char == "\t"
