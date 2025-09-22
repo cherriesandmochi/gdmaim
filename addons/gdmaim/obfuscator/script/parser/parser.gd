@@ -197,6 +197,7 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	path.set_log(_Logger.current_log)
 	path.line = _tokenizer.peek().line
 	
+	var _base_token_sub_secuence_idx : int = -1
 	while !_tokenizer.is_eof():
 		var token : Token = _tokenizer.peek()
 		if token.is_punctuator("."):
@@ -207,7 +208,15 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 			var symbol : SymbolTable.Symbol = path.add(token.get_value())
 			token.link_symbol(symbol)
 			continue
+		elif token.is_punctuator(","):
+			if _base_token_sub_secuence_idx == -1:
+				_base_token_sub_secuence_idx = _tokenizer._idx
+			_tokenizer.get_next()
+			continue
 		break
+		
+	if _base_token_sub_secuence_idx > -1:
+		_tokenizer._idx = _base_token_sub_secuence_idx
 	
 	path.is_call = _tokenizer.peek().is_punctuator("(")
 	
