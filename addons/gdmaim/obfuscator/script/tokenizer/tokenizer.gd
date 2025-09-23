@@ -8,7 +8,7 @@ const Stream := preload("stream.gd")
 
 const KEYWORDS : Array[String] = ["extends", "class_name", "setget", "const", "signal", "enum", "static", "var", "func", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not", "when"]
 const LITERALS : Array[String] = ["true", "false", "null", "self", "PI", "TAU", "NAN", "INF"]
-const OPERATORS : String = "+-*^/%=<>!&|"
+const OPERATORS : String = "+-*^/%=<>!&|~"
 const PUNCTUATORS : String = "()[]{},;:."
 const IDENTIFIER_CHARACTERS : String = "1234567890_"
 
