@@ -66,6 +66,7 @@ func _input(event : InputEvent) -> void:
 			source_code_search.open()
 		elif exported_code.has_focus():
 			exported_code_search.open()
+		get_viewport().set_input_as_handled()
 
 
 func _load_source_map(path : String) -> void:
