@@ -13,6 +13,7 @@ var _export_mappings : Dictionary
 var _file_tree_items : Dictionary
 var _caret_lock : bool = false
 var _prev_preprocessor_hint : String
+var _prev_theme : Theme
 
 @onready var current_file : Label = $Panel/CurrentFile
 @onready var console : TextEdit = %Console
@@ -34,7 +35,14 @@ func _ready() -> void:
 	_setup_syntax_highlighter()
 	_load_script("")
 	
+	var fix_font_colors: Callable = func() -> void:
+		exported_code.add_theme_color_override("font_readonly_color", exported_code.get_theme_color("font_color"))
+		source_code.add_theme_color_override("font_readonly_color", source_code.get_theme_color("font_color"))
+	fix_font_colors.call()
+	theme_changed.connect(fix_font_colors)
+
 	visibility_changed.connect(_on_visibility_changed)
+	theme_changed.connect(_setup_syntax_highlighter)
 	
 	var popup : PopupMenu = $Panel/HBoxContainer/MenuButton.get_popup()
 	popup.index_pressed.connect(_on_search_option_selected)
@@ -193,38 +201,41 @@ func _on_file_tree_item_activated() -> void:
 
 
 func _setup_syntax_highlighter() -> void:
-	if _prev_preprocessor_hint == _Settings.current.preprocessor_prefix:
+	if _prev_preprocessor_hint == _Settings.current.preprocessor_prefix and _prev_theme == EditorInterface.get_editor_theme():
 		return
 	
 	_prev_preprocessor_hint = _Settings.current.preprocessor_prefix
+	_prev_theme = EditorInterface.get_editor_theme()
+	
+	var editor_settings: EditorSettings = EditorInterface.get_editor_settings()
 	
 	var syntax_highlighter := CodeHighlighter.new()
-	syntax_highlighter.function_color = Color("#66e6ff")
-	syntax_highlighter.member_variable_color = Color("#bce0ff")
-	syntax_highlighter.number_color = Color("#a1ffe0")
-	syntax_highlighter.symbol_color = Color("#abc9ff")
+	syntax_highlighter.function_color = editor_settings.get_setting("text_editor/theme/highlighting/function_color")
+	syntax_highlighter.member_variable_color = editor_settings.get_setting("text_editor/theme/highlighting/member_variable_color")
+	syntax_highlighter.number_color = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
+	syntax_highlighter.symbol_color = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
 	
-	syntax_highlighter.add_color_region("'", "'", Color("#ffeda1"))
-	syntax_highlighter.add_color_region('"', '"', Color("#ffeda1"))
+	syntax_highlighter.add_color_region("'", "'", editor_settings.get_setting("text_editor/theme/highlighting/string_color"))
+	syntax_highlighter.add_color_region('"', '"', editor_settings.get_setting("text_editor/theme/highlighting/string_color"))
 	
-	syntax_highlighter.add_color_region("#", "", Color("#cdcfd280"))
-	syntax_highlighter.add_color_region(_prev_preprocessor_hint, "", Color("#7945c1")) #99b3cccc
+	syntax_highlighter.add_color_region("#", "", editor_settings.get_setting("text_editor/theme/highlighting/comment_color"))
+	syntax_highlighter.add_color_region(_prev_preprocessor_hint, "", editor_settings.get_setting("text_editor/theme/highlighting/doc_comment_color"))
 	
 	for keyword in ["var", "func", "signal", "enum", "const", "class", "class_name", "extends", "static", "self", "await", "super", "and", "or", "not", "is", "true", "false", "null", "load", "preload", "print", "prints"]:
-		syntax_highlighter.add_keyword_color(keyword, Color("#ff7085"))
+		syntax_highlighter.add_keyword_color(keyword, editor_settings.get_setting("text_editor/theme/highlighting/keyword_color"))
 	
 	for keyword in ["if", "else", "elif", "for", "in", "while", "return", "continue", "break", "pass", "match", "case"]:
-		syntax_highlighter.add_keyword_color(keyword, Color("#ff8ccc"))
+		syntax_highlighter.add_keyword_color(keyword, editor_settings.get_setting("text_editor/theme/highlighting/control_flow_keyword_color"))
 	
 	for keyword in [
 		"export", "export_category", "export_color_no_alpha", "export_custom", "export_dir", "export_enum", "export_exp_easing", "export_file", "export_flags", "export_global_dir", "export_global_file", "export_group",
 		"export_multiline", "export_node_path", "export_placeholder", "export_range", "export_storage", "export_subgroup", "icon", "onready", "rpc", "static_unload", "tool", "warning_ignore"]:
-		syntax_highlighter.add_keyword_color(keyword, Color("#ffb373"))
+		syntax_highlighter.add_keyword_color(keyword, editor_settings.get_setting("text_editor/theme/highlighting/gdscript/annotation_color"))
 	
 	for keyword in ["void", "bool", "int", "float", "String", "Array", "Dictionary", "Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i", "Transform2D", "Transform3D", "Quaternion", "Basis", "Callable",
 		"Variant", "PackedInt32Array", "PackedInt64Array", "PackedVector2Array", "PackedVector3Array", "PackedVector4Array", "PackedStringArray", "PackedByteArray", "PackedColorArray", "PackedFloat32Array",
 		"PackedFloat64Array", "AABB", "Color", "NodePath", "Plane", "Projection", "Rect2", "Rect2i", "RID", "Signal", "StringName", "Object"]:
-		syntax_highlighter.add_keyword_color(keyword, Color("#42ffc2"))
+		syntax_highlighter.add_keyword_color(keyword, editor_settings.get_setting("text_editor/theme/highlighting/base_type_color"))
 	
 	source_code.syntax_highlighter = syntax_highlighter
 	exported_code.syntax_highlighter = syntax_highlighter.duplicate()
