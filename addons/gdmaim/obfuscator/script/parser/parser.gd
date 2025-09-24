@@ -573,7 +573,7 @@ func _parse_var(parent : AST.ASTNode) -> AST.Var:
 		_Logger.write("ERROR: Parser._parse_var() - Symbol expected!")
 		return null
 	
-	var is_static : bool = _tokenizer.peek(-2).is_keyword("static")
+	var is_static : bool = _tokenizer.peek(-2).is_keyword("static") if _tokenizer.peek(-2) else false
 	
 	var ast := AST.Var.new(parent)
 	ast.symbol = _symbol_table.create_symbol(ast, token.get_value(), _parse_var_type(ast))
@@ -680,7 +680,7 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	if token.is_symbol():
 		_tokenizer.get_next()
 		name = token.get_value()
-		is_static = _tokenizer.peek(-2).is_keyword("static")
+		is_static = _tokenizer.peek(-2).is_keyword("static") if _tokenizer.peek(-2) else false
 	
 	var indentation : int = _current_indentation
 	var bracket_lock : int = _bracket_lock
