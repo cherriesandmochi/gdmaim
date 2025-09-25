@@ -777,7 +777,7 @@ func _parse_var_type(ast : AST.ASTNode) -> String:
 					break
 				Token.Type.LINE_BREAK:
 					return ""
-		
+			i += 1
 		_tokenizer.get_next()
 		var path : SymbolTable.SymbolPath = _parse_symbol_path(ast)
 		return str(path)
