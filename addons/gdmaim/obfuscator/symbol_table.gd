@@ -143,7 +143,7 @@ func _search_symbol(ast_node : AST.ASTNode, name : String, is_func : bool) -> Sy
 		for child in ast_node.get_children():
 			if child == origin:
 				break
-			elif child is AST.SymbolDeclaration and child.symbol.get_name() == name and (child is AST.Func == is_func):
+			elif child is AST.SymbolDeclaration and child.symbol and child.symbol.get_name() == name and (child is AST.Func == is_func):
 				return child.symbol
 		
 		ast_node = ast_node.get_parent()

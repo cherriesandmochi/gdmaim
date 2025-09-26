@@ -30,8 +30,6 @@ var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
 var _rgx : RegEx = null
-var _rgx_sanitizer : RegEx = null
-var _rgx_rebuilder : RegEx = null
 var _godot_files : GodotFiles
 var _compiler
 var _compress_mode : int
@@ -318,14 +316,12 @@ func _parse_script(path : String) -> void:
 		var file : FileAccess = FileAccess.open(path, FileAccess.READ)
 		var data : String = file.get_as_text()
 		if null == _rgx:
-			_rgx = RegEx.create_from_string('(?m)script\\/source\\s*=\\s*"((?:\\\\.|[^"\\\\])*)"')
-			_rgx_sanitizer = RegEx.create_from_string("([^\\\\])\\\\\\\"|^\\\\\\\"")
-			_rgx_rebuilder = RegEx.create_from_string("([^\\\\])\\\"|^\\\"")
+			_rgx = RegEx.create_from_string('(?m)script\\/source\\s*=\\s*"((?:\\\\.|[^"\\\\])*)\n"')
 		var r_matchs : Array[RegExMatch] = _rgx.search_all(data)
 		if r_matchs.size() > 0:
 			for r_match : RegExMatch in r_matchs:
 				if null != r_match and r_match.strings.size() > 1:
-					source_codes.append(_rgx_sanitizer.sub(r_match.strings[1], "$1\"", true))
+					source_codes.append(r_match.strings[1].replace("\\\"", "\""))
 		file.close()
 		
 		as_embedded = source_codes.size() > 0
@@ -422,7 +418,7 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	var data : String = obfuscator.get_data()
 	if codes.size() > 0:
 		for code : String in codes:
-			data = _rgx.sub(data, str("[__SRC__] = \"", _rgx_rebuilder.sub(code, "$1\\\"", true),"\n\""), false)
+			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").strip_edges(),"\n\""))# _rgx_rebuilder.sub(code, "x\\\"", true),"\n\""), false)
 
 	obfuscator.set_data(data.replace("[__SRC__]", "script/source"))
 	return obfuscator.get_data()
