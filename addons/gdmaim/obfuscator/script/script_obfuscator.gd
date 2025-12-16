@@ -9,6 +9,7 @@ const Parser := preload("parser/parser.gd")
 const Token := preload("tokenizer/token.gd")
 const Tokenizer := preload("tokenizer/tokenizer.gd")
 const AST := preload("parser/ast.gd")
+const Builtins = preload("../../builtins.gd")
 
 var path : String
 var source_code : String
@@ -208,7 +209,7 @@ func _shuffle_toplevel() -> void:
 		var prev_line : Tokenizer.Line = lines[i - 1] if i >= 1 else null
 		var starter_token : Token = line.tokens[0] if line.tokens else null
 		var prev_starter_token : Token = prev_line.tokens[0] if prev_line and prev_line.tokens else null
-		if starter_token and ["@icon", "@tool", "class_name", "extends"].has(starter_token.get_value()):
+		if starter_token and Builtins.STARTER_TOKENS.has(starter_token.get_value()):
 			top_block.append(line)
 			continue
 		if starter_token and starter_token.get_value() == "@onready":
@@ -285,11 +286,11 @@ func _strip_code() -> void:
 				if _Settings.current.strip_editor_annotations:
 					if token.is_annotation():
 						# These annotations can only be on their own line
-						if token.get_value() in ["@export_category", "@export_group", "@export_subgroup"]:
+						if token.get_value() in Builtins.ATTRIBUTES:
 							tokenizer.remove_output_line(l)
 							continue
 						# Other @export's and a few others might have parenthesis after them, with whitespace possibly after the parenthesis
-						elif token.get_value().contains("@export") or token.get_value() in ["@icon", "@tool", "@warning_ignore"]:
+						elif token.get_value().contains("@export") or token.get_value() in Builtins.ANNOTATIONS:
 							line.remove_token(i)
 							if line.tokens.size() > i and line.tokens[i].is_punctuator("("):
 								var last_token: Token
