@@ -11,7 +11,6 @@ enum GDScriptExportMode {
 
 var obfuscation_enabled : bool = true
 var shuffle_top_level : bool = true
-var inline_statements : bool = true
 var inline_constants : bool = true
 var inline_enums : bool = true
 var obfuscate_export_vars : bool = true
@@ -54,7 +53,6 @@ func _init() -> void:
 	add_entry("obfuscate_export_vars", "export_vars", "Obfuscate Export Vars", "If true, obfuscate export variables.\nNote: Requires scenes and resources which modify custom export vars to be saved as '*.tscn' and '*.tres', respectively.")
 	#add_entry("obfuscate_signals", "signals", "Obfuscate Signals", "If true, obfuscate signals.")
 	add_entry("shuffle_top_level", "shuffle_top_level", "Shuffle Top-Level Declarations", "If true, shuffles all top-level declarations of variables, functions, signals, etc.")
-	add_entry("inline_statements", "inline_code", "Inline Statements", "If true, aggressively merge multiple lines of statements into single lines")
 	add_entry("inline_constants", "inline_consts", "Inline Constants", "If true, replace constants with hardcoded values.\nNote: Only bool, int, float, Color, Vector(2/3/4)(i) and NodePath are supported.").disabled = true
 	add_entry("inline_enums", "inline_enums", "Inline Enums", "If true, replace enums with hardcoded values.").disabled = true
 	add_entry("preprocessor_prefix", "preprocessor_prefix", "Preprocessor Prefix", "Sets the prefix to use for preprocessor hints.")
