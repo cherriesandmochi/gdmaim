@@ -1104,7 +1104,8 @@ const STARTER_TOKENS : PackedStringArray = [
 	"@icon", 
 	"@tool", 
 	"class_name", 
-	"extends"
+	"extends",
+	"@abstract" 
 ]
 const ATTRIBUTES : PackedStringArray = [
 	"@export_category", 
@@ -1116,7 +1117,8 @@ const ANNOTATIONS : PackedStringArray = [
 	"@tool", 
 	"@warning_ignore", 
 	"@warning_ignore_start", 
-	"@warning_ignore_restore"
+	"@warning_ignore_restore",
+	"@abstract" 
 ]
 
 static func to_list_of_methods(raw : String) -> String:

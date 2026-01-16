@@ -209,8 +209,17 @@ func _shuffle_toplevel() -> void:
 		var starter_token : Token = line.tokens[0] if line.tokens else null
 		var prev_starter_token : Token = prev_line.tokens[0] if prev_line and prev_line.tokens else null
 		if starter_token and Builtins.STARTER_TOKENS.has(starter_token.get_value()):
-			top_block.append(line)
-			continue
+			var custom : bool = false
+			if starter_token.get_value() == "@abstract":
+				for itoken in range(1, line.tokens.size(), 1):
+					var value : String = line.tokens[itoken].get_value()
+					if !value.strip_edges().is_empty():
+						if value == "class":
+							custom = true
+						break
+			if !custom:
+				top_block.append(line)
+				continue
 		if starter_token and starter_token.get_value() == "@onready":
 			add_block.call(current_block, current_is_onready)
 			current_block = []
