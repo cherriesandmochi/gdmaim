@@ -182,21 +182,8 @@ func _on_close_requested() -> void:
 
 
 func _on_open_file_pressed() -> void:
-	if is_running_i3():
-		DisplayServer.file_dialog_show(
-			tr("Open File"), "", "", false, 
-			DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, 
-			$FileDialog.filters, _on_i3_file_dialog_file_selected
-		)	
-	else:
-		$FileDialog.popup_centered_clamped()
-		
-func _on_i3_file_dialog_file_selected(status: bool, selected_paths: PackedStringArray, selected_filter_index: int) -> void:
-	if status and selected_paths.size() > 0:
-		for x : String in selected_paths:
-			if !x.is_empty():
-				_on_file_dialog_file_selected(x)
-				return
+	$FileDialog.popup_centered_clamped()
+
 
 func _on_file_dialog_file_selected(path: String) -> void:
 	_load_source_map(path)
@@ -339,6 +326,3 @@ func _on_search_option_selected(idx : int) -> void:
 			source_code_search.open()
 		1:
 			exported_code_search.open()
-
-func is_running_i3() -> bool:
-	return OS.get_name() != "Linux" and ("i3" in OS.get_environment("XDG_CURRENT_DESKTOP").to_lower() or "i3" in OS.get_environment("DESKTOP_SESSION").to_lower())
