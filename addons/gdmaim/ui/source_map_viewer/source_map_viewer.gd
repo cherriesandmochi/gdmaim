@@ -341,4 +341,4 @@ func _on_search_option_selected(idx : int) -> void:
 			exported_code_search.open()
 
 func is_running_i3() -> bool:
-	return OS.get_name() != "Linux" and ("i3" in OS.get_environment("XDG_CURRENT_DESKTOP").to_lower() or "i3" in OS.get_environment("DESKTOP_SESSION").to_lower())
+	return OS.get_name() == "Linux" and ("i3" in OS.get_environment("XDG_CURRENT_DESKTOP").to_lower() or "i3" in OS.get_environment("DESKTOP_SESSION").to_lower())
