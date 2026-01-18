@@ -1121,6 +1121,10 @@ const ANNOTATIONS : PackedStringArray = [
 	"@abstract" 
 ]
 
+const DECORATORS : PackedStringArray = [
+	"@abstract"
+]
+
 static func to_list_of_methods(raw : String) -> String:
 	var methods : String
 	

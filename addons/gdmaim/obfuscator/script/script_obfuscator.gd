@@ -210,7 +210,7 @@ func _shuffle_toplevel() -> void:
 		var prev_starter_token : Token = prev_line.tokens[0] if prev_line and prev_line.tokens else null
 		if starter_token and Builtins.STARTER_TOKENS.has(starter_token.get_value()):
 			var custom : bool = false
-			if starter_token.get_value() == "@abstract":
+			if starter_token.get_value() in Builtins.DECORATORS:
 				for itoken in range(1, line.tokens.size(), 1):
 					var value : String = line.tokens[itoken].get_value()
 					if !value.strip_edges().is_empty():
@@ -296,6 +296,8 @@ func _strip_code() -> void:
 						# These annotations can only be on their own line
 						if token.get_value() in Builtins.ATTRIBUTES:
 							tokenizer.remove_output_line(l)
+							continue
+						elif token.get_value() in Builtins.DECORATORS:
 							continue
 						# Other @export's and a few others might have parenthesis after them, with whitespace possibly after the parenthesis
 						elif token.get_value().contains("@export") or token.get_value() in Builtins.ANNOTATIONS:
