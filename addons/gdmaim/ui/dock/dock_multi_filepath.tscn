@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://bjtrd20uvj4uc"]
+
+[ext_resource type="Script" uid="uid://bxo3yqp4cqs21" path="res://addons/gdmaim/ui/dock/setting_multifile.gd" id="1_7ba2y"]
+
+[node name="DockMultiFilepath" type="HBoxContainer" unique_id=91181815]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -149.0
+offset_bottom = 32.0
+grow_horizontal = 0
+size_flags_horizontal = 10
+script = ExtResource("1_7ba2y")
+node_var = "files"
+
+[node name="LineEdit" type="LineEdit" parent="." unique_id=2068458492]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Paths must be separated by \";\"
+
+Example:
+path/to/my_file_1;path/to/my_file_2;path/to;my_folder"
+placeholder_text = "Paths separated by ;"
+clear_button_enabled = true
+
+[node name="Button" type="Button" parent="." unique_id=999548338]
+layout_mode = 2
+tooltip_text = "Start to search files/folders"
+text = "Search"
+
+[node name="FileDialog" type="FileDialog" parent="." unique_id=48826486]
+oversampling_override = 1.0
+title = "Open File(s)"
+position = Vector2i(0, 36)
+file_mode = 1
+display_mode = 1
+filters = PackedStringArray("*.gd")

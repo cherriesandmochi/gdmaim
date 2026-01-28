@@ -37,13 +37,19 @@ var debug_resources : PackedStringArray
 var obfuscate_debug_only : bool = false
 var export_mode : int = GDScriptExportMode.TEXT
 
+var exclude_files : PackedStringArray = []
+var _exclude_files : String = "":
+	set(value):
+		_exclude_files = value
+		exclude_files.clear()
+		for _str : String in value.split(";"):
+			exclude_files.append(_str.strip_edges())
+		
 var _cfg := ConfigFile.new()
 var _entries : Dictionary
 var _categories : Array[Category]
 
-
 static var current : _Settings
-
 
 func _init() -> void:
 	current = self
@@ -79,6 +85,9 @@ func _init() -> void:
 	add_entry("source_map_max_files", "max_files", "Max Files", "Sets the maximum amount of source map files allowed.")
 	add_entry("source_map_compress", "compress", "Compress", "If true, source maps will be compressed upon export.")
 	add_entry("source_map_inject_name", "inject_name", "Inject Name", "If true, upon export, injects a print statement of the associated source map's filename into the first enabled autoload. This does not affect your source code. Makes selecting the right source map very easy, when a player/user reports an error and shares their logfile.")
+	
+	set_category("exclude_files_category", "Exclusion")
+	add_entry("_exclude_files", "multi_filepath", "Path", "Select files or folders to be excluded from obfuscation; excluded scripts will maintain compatibility with the other obfuscated scripts.").set_custom_type(Entry.CustomType.MULTI_FILE_PATH, "")
 	
 	#set_category("debug", "Debug")
 	#add_entry("debug_scripts", debug_scripts", "", "")
@@ -143,6 +152,7 @@ class Entry:
 	enum CustomType {
 		NONE = 0,
 		OPTIONS,
+		MULTI_FILE_PATH
 	}
 	
 	var var_name : String
