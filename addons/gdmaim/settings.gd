@@ -43,7 +43,10 @@ var _exclude_files : String = "":
 		_exclude_files = value
 		exclude_files.clear()
 		for _str : String in value.split(";"):
-			exclude_files.append(_str.strip_edges())
+			_str = _str.strip_edges()
+			if _str.is_empty():
+				continue
+			exclude_files.append(_str)
 		
 var _cfg := ConfigFile.new()
 var _entries : Dictionary
