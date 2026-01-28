@@ -376,7 +376,7 @@ I also successfully exported the following 4 projects, after doing some minor tw
 * [Godot 4 FPS Prototype](https://github.com/Dodoveloper/godot4-fps-prototype)
 
 ## External Libraries [↑](#table-of-contents)
-This plugin currently uses **gdbc** to convert scripts to bytecode, you can find the repository at [Github Repository](https://github.com/Ayzurus/gdbc)
+This plugin currently uses **gdbc** to convert scripts to bytecode, you can find the repository at [Github Repository](https://github.com/CodeNameTwister/gdbc)
 
 ## Issues [↑](#table-of-contents)
 
