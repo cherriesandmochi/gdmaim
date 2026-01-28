@@ -47,6 +47,13 @@ func _ready() -> void:
 						options.item_selected.connect(_on_options_button_item_selected)
 						label.add_child(options)
 						register_setting(options)
+					entry.CustomType.MULTI_FILE_PATH:
+						var options : Control = preload("dock_multi_filepath.tscn").instantiate()
+						options.settings_var = entry.var_name
+						label.add_child(options)
+						label.custom_minimum_size.y = max(options.custom_minimum_size.y, 32.0)
+						options.text_changed.connect(_on_line_edit_text_changed)
+						register_setting(options)
 			else:
 				match typeof(settings.get(entry.var_name)):
 					TYPE_BOOL:

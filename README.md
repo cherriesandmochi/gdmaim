@@ -123,6 +123,11 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Inject Name`: If true, searches for the first enabled autoload during export and inserts a print statement into its `_enter_tree` method(or creates a new one if it does not exist). The print statement contains the filename of the associated source map that got generated during the export of that build.
 
+### Exclusion
+
+`Path` : Files/Folders to prevent their obfuscation, the paths must be separated by ";"
+> Example: `path/to/my_file_1;path/to/my_file_2;path/to/my_exclude_folder`
+
 ## Usage [↑](#table-of-contents)
 
 > Please read [limitations and caveats](#limitations-and-caveats-) to make sure your project can export properly.
@@ -214,6 +219,18 @@ func __U5iZ(name : String, value) -> void:
 
 var __rEyW : int
 __U5iZ("__rEyW", 3)
+```
+
+`##EXCLUDE_FILE`: Prevent obfuscation of the script file and it maintains match compatibility throughout the project for the scripts that can use it. put in wherever you want in your script, as a good practice, place it at the beginning of the file.
+
+```js
+##EXCLUDE_FILE
+class MyCustomClassNode extends Node
+
+func _ready() -> void:
+  print("Hello to a safer world")
+
+# ...
 ```
 
 __Feature filters__

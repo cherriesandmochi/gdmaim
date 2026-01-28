@@ -163,8 +163,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	
 	# Apply changes made to Godot's internal export files
 	_godot_files.flush()
-
-
+	
 func _export_end() -> void:
 	if !_enabled:
 		return
@@ -310,6 +309,7 @@ func _parse_script(path : String) -> void:
 	if path.ends_with(".gd"):
 		var script : Script = load(path)
 		source_code = str(script.source_code.strip_edges(), "\n")
+		
 	elif path.ends_with(".tscn"):
 		#SOURCE
 		var source_codes : Array[String] = []
@@ -340,6 +340,7 @@ func _parse_script(path : String) -> void:
 
 
 			obfuscator.parse(_source_code, _symbols, _symbols.create_global_symbol(_autoloads[embedded_path]) if _autoloads.has(embedded_path) else null)
+			obfuscator.check_exclusion_source(path, _source_code)
 
 			_Logger.write("\nAbstract Syntax Tree\n" + obfuscator._ast.print_tree(-1))
 
@@ -356,6 +357,8 @@ func _parse_script(path : String) -> void:
 	_Logger.write("---------- " + " Parsing script " + path + " ----------")
 	
 	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
+	obfuscator.check_exclusion_source(path, source_code)
+	
 	if obfuscator.get_class_symbol():
 		_class_symbols[obfuscator.get_class_symbol().to_string()] = obfuscator.get_class_symbol()
 	

@@ -33,7 +33,6 @@ func parse(source_code : String, symbol_table : SymbolTable, autoload_symbol : S
 	parser = Parser.new()
 	_ast = parser.read(tokenizer, symbol_table, autoload_symbol)
 
-
 func run(features : PackedStringArray) -> bool:
 	if !parser:
 		_Logger.write("ERROR: ScriptObfuscator.run() - No parsed data!")
@@ -320,3 +319,34 @@ func _strip_code() -> void:
 		if regex.is_valid() and regex.search(str(line)):
 			tokenizer.remove_output_line(l)
 			continue
+			
+func _is_exclude_required(src : String) -> bool:
+	var _str : String = "{0}{1}".format([_Settings.current.preprocessor_prefix, PreprocessorHints.EXCLUDE_HINT])
+	var x : int = src.find(_str)
+	
+	if x < 0:
+		return false
+	
+	x += _str.length()
+	
+	if src.length() < x:
+		return false
+		
+	return src.length() == x or src[x] in ["\n","\t"," "]
+
+func _is_exclude_path(path : String) -> bool:
+	for value : String in _Settings.current.exclude_files:
+		if path.begins_with(value):
+			return true
+	return false
+
+func check_exclusion_source(path : String, source_code : String) -> void:
+	if !_is_exclude_path(path) and !_is_exclude_required(source_code):
+		return
+	tokenizer.reset()
+	var token : Token = tokenizer.get_next()
+	while token:
+		if token.symbol and token.is_symbol():
+			_symbol_table.lock_symbol(token.symbol)
+		token = tokenizer.get_next()
+	tokenizer.reset()
