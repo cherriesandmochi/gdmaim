@@ -23,7 +23,7 @@ func _set_files(value : String) -> void:
 	
 func _open_dialog() -> void:
 	if !file_dialog.visible:
-		file_dialog.popup_centered()
+		file_dialog.popup_centered_clamped()
 		
 func _on_text_change(txt : String) -> void:
 	text_changed.emit(txt)
