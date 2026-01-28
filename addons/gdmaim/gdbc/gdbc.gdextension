@@ -1,12 +1,57 @@
 [configuration]
 
 entry_symbol = "gdbc_init"
-compatibility_minimum = "4.1"
+compatibility_minimum = "4.4"
 
 [libraries]
+; Remember use only the release version with gdmaim for you sweet build project.
+; source: https://github.com/CodeNameTwister/gdbc
+macos.single.debug = "./macos/libgdbc.macos.template_release.dylib"
+macos.double.debug = "./macos/libgdbc.macos.template_release.double.dylib"
+macos.single.release = "./macos/libgdbc.macos.template_release.dylib"
+macos.double.release = "./macos/libgdbc.macos.template_release.double.dylib"
 
-macos.editor = "res://addons/gdmaim/gdbc/macos/macos.framework/libgdbc.macos.editor"
-windows.editor.x86_64 = "res://addons/gdmaim/gdbc/windows/libgdbc.windows.editor.x86_64.dll"
-linux.editor.x86_64 = "res://addons/gdmaim/gdbc/linux/libgdbc.linux.editor.x86_64.so"
-android.editor.x86_64 = "res://addons/gdmaim/gdbc/android/libgdbc.android.editor.x86_64.so"
-android.editor.arm64 = "res://addons/gdmaim/gdbc/android/libgdbc.android.editor.arm64.so"
+ios.arm64.single.debug = "./ios/libgdbc.ios.template_release.arm64.dylib"
+ios.arm64.double.debug = "./ios/libgdbc.ios.template_release.arm64.double.dylib"
+ios.arm64.single.release = "./ios/libgdbc.ios.template_release.arm64.dylib"
+ios.arm64.double.release = "./ios/libgdbc.ios.template_release.arm64.double.dylib"
+
+windows.x86_32.single.debug = "./windows/gdbc.windows.template_release.x86_32.dll"
+windows.x86_32.double.debug = "./windows/gdbc.windows.template_release.x86_32.double.dll"
+windows.x86_32.single.release = "./windows/gdbc.windows.template_release.x86_32.dll"
+windows.x86_32.double.release = "./windows/gdbc.windows.template_release.x86_32.double.dll"
+
+windows.x86_64.single.debug = "./windows/gdbc.windows.template_release.x86_64.dll"
+windows.x86_64.double.debug = "./windows/gdbc.windows.template_release.x86_64.double.dll"
+windows.x86_64.single.release = "./windows/gdbc.windows.template_release.x86_64.dll"
+windows.x86_64.double.release = "./windows/gdbc.windows.template_release.x86_64.double.dll"
+
+linux.x86_64.single.debug = "./linux/libgdbc.linux.template_release.x86_64.so"
+linux.x86_64.double.debug = "./linux/libgdbc.linux.template_release.x86_64.double.so"
+linux.x86_64.single.release = "./linux/libgdbc.linux.template_release.x86_64.so"
+linux.x86_64.double.release = "./linux/libgdbc.linux.template_release.x86_64.double.so"
+
+linux.arm64.single.debug = "./linux/libgdbc.linux.template_release.arm64.so"
+linux.arm64.double.debug = "./linux/libgdbc.linux.template_release.arm64.double.so"
+linux.arm64.single.release = "./linux/libgdbc.linux.template_release.arm64.so"
+linux.arm64.double.release = "./linux/libgdbc.linux.template_release.arm64.double.so"
+
+linux.rv64.single.debug = "./linux/libgdbc.linux.template_release.rv64.so"
+linux.rv64.double.debug = "./linux/libgdbc.linux.template_release.rv64.double.so"
+linux.rv64.single.release = "./linux/libgdbc.linux.template_release.rv64.so"
+linux.rv64.double.release = "./linux/libgdbc.linux.template_release.rv64.double.so"
+
+android.x86_64.single.debug = "./android/libgdbc.android.template_release.x86_64.so"
+android.x86_64.double.debug = "./android/libgdbc.android.template_release.x86_64.double.so"
+android.x86_64.single.release = "./android/libgdbc.android.template_release.x86_64.so"
+android.x86_64.double.release = "./android/libgdbc.android.template_release.x86_64.double.so"
+
+android.arm64.single.debug = "./android/libgdbc.android.template_release.arm64.so"
+android.arm64.double.debug = "./android/libgdbc.android.template_release.arm64.double.so"
+android.arm64.single.release = "./android/libgdbc.android.template_release.arm64.so"
+android.arm64.double.release = "./android/libgdbc.android.template_release.arm64.double.so"
+
+web.wasm32.single.debug = "./web/libgdbc.web.template_release.wasm32.nothreads.wasm"
+web.wasm32.double.debug = "./web/libgdbc.web.template_release.wasm32.double.nothreads.wasm"
+web.wasm32.single.release = "./web/libgdbc.web.template_release.wasm32.nothreads.wasm"
+web.wasm32.double.release = "./web/libgdbc.web.template_release.wasm32.double.nothreads.wasm"

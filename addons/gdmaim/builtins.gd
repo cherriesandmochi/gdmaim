@@ -1100,7 +1100,30 @@ const VARIANTS : Array[Dictionary] = [
 		"class": "Key",
 	},
 ]
+const STARTER_TOKENS : PackedStringArray = [
+	"@icon", 
+	"@tool", 
+	"class_name", 
+	"extends",
+	"@abstract" 
+]
+const ATTRIBUTES : PackedStringArray = [
+	"@export_category", 
+	"@export_group", 
+	"@export_subgroup"
+]
+const ANNOTATIONS : PackedStringArray = [
+	"@icon", 
+	"@tool", 
+	"@warning_ignore", 
+	"@warning_ignore_start", 
+	"@warning_ignore_restore",
+	"@abstract" 
+]
 
+const DECORATORS : PackedStringArray = [
+	"@abstract"
+]
 
 static func to_list_of_methods(raw : String) -> String:
 	var methods : String

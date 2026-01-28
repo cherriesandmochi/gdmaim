@@ -35,7 +35,6 @@ func lock_symbol(symbol : Symbol) -> void:
 	else:
 		lock_symbol_name(symbol.get_name())
 
-
 func create_symbol(ast_node : AST.ASTNode, name : String, type : String = "") -> Symbol:
 	if ast_node.get_parent() is AST.Sequence and ast_node.get_parent().get_parent() is AST.Class:
 		return create_global_symbol(name, type)
@@ -124,7 +123,8 @@ func resolve_symbol_paths() -> void:
 
 func obfuscate_symbols() -> void:
 	for symbol in _local_symbols:
-		rename_symbol(symbol, _generate_symbol_name(symbol.get_name(), true))
+		if !_locked_symbols.has(symbol.get_name()):
+			rename_symbol(symbol, _generate_symbol_name(symbol.get_name(), true))
 	
 	for symbol in _global_symbols.values():
 		if !_locked_symbols.has(symbol.get_name()):
@@ -143,7 +143,7 @@ func _search_symbol(ast_node : AST.ASTNode, name : String, is_func : bool) -> Sy
 		for child in ast_node.get_children():
 			if child == origin:
 				break
-			elif child is AST.SymbolDeclaration and child.symbol.get_name() == name and (child is AST.Func == is_func):
+			elif child is AST.SymbolDeclaration and child.symbol and child.symbol.get_name() == name and (child is AST.Func == is_func):
 				return child.symbol
 		
 		ast_node = ast_node.get_parent()
