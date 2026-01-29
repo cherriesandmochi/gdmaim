@@ -37,8 +37,11 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	remove_export_plugin(script_processor)
 	
-	dock._write_cfg(true)
-	dock.queue_free()
+	if is_instance_valid(dock):
+		dock._write_cfg(true)
+		
+		remove_control_from_docks(dock)
+		dock.queue_free()
 	
 	if is_instance_valid(source_map_viewer):
 		source_map_viewer.queue_free()
