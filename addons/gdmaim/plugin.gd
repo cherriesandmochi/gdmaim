@@ -4,6 +4,7 @@ extends EditorPlugin
 
 const GodotFiles := preload("godot_files.gd")
 const _Settings := preload("settings.gd")
+const Util = preload("util/util.gd")
 
 var settings : _Settings
 var script_processor : EditorExportPlugin
@@ -17,6 +18,8 @@ func _enter_tree() -> void:
 	
 	GodotFiles.check_backups()
 	settings = _Settings.new()
+	
+	Util.initialize()
 	
 	script_processor = preload("export_plugin.gd").new()
 	script_processor.settings = settings

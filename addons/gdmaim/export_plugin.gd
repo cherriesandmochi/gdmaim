@@ -14,6 +14,8 @@ const SOURCE_MAP_EXT : String = ".gd.map"
 const GODOT_CLASS_CACHE_PATH : String = "res://.godot/global_script_class_cache.cfg"
 const GODOT_EXTENSION_LIST_PATH : String = "res://.godot/extension_list.cfg"
 
+const Util = preload("util/util.gd")
+
 var settings : _Settings
 
 var _enabled : bool
@@ -115,6 +117,10 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	for class_ in ClassDB.get_class_list():
 		for symbol in _get_class_symbols(class_):
 			_symbols.lock_symbol_name(symbol)
+			
+	# User custom symbols
+	for token in Util.get_custom_user_tokens():
+		_symbols.lock_symbol_name(token)
 	
 	# Parse scripts and gather their symbols
 	for paths in [scripts, _get_files("res://", ".tscn")]:
