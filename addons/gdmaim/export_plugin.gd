@@ -421,7 +421,7 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	var data : String = obfuscator.get_data()
 	if codes.size() > 0:
 		for code : String in codes:
-			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").replace("$", "[__CNT__]").strip_edges(),"\n\""))# _rgx_rebuilder.sub(code, "x\\\"", true),"\n\""), false)
+			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").replace("$", "[__CNT__]").strip_edges(),"\n\""))
 
 	obfuscator.set_data(data.replace("[__SRC__]", "script/source").replace("[__CNT__]", "$"))
 	return obfuscator.get_data()
