@@ -458,6 +458,8 @@ static func _get_files(path : String, ext : String) -> PackedStringArray:
 				var new_dir : String = dir.path_join(sub_dir)
 				if new_dir.begins_with(_addon_path):
 					continue
+				elif FileAccess.file_exists(new_dir.path_join(".gdignore")):
+					continue
 				dirs.append(new_dir)
 		for file in DirAccess.get_files_at(dir):
 			if file.replace(".remap", "").ends_with(ext):
