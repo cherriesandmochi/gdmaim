@@ -51,7 +51,5 @@ android.arm64.double.debug = "./android/libgdbc.android.template_release.arm64.d
 android.arm64.single.release = "./android/libgdbc.android.template_release.arm64.so"
 android.arm64.double.release = "./android/libgdbc.android.template_release.arm64.double.so"
 
-web.wasm32.single.debug = "./web/libgdbc.web.template_release.wasm32.nothreads.wasm"
-web.wasm32.double.debug = "./web/libgdbc.web.template_release.wasm32.double.nothreads.wasm"
-web.wasm32.single.release = "./web/libgdbc.web.template_release.wasm32.nothreads.wasm"
-web.wasm32.double.release = "./web/libgdbc.web.template_release.wasm32.double.nothreads.wasm"
+web.debug.wasm32 = "./web/libgdbc.web.template_debug.wasm32.wasm"
+web.release.wasm32 = "./web/libgdbc.web.template_release.wasm32.wasm"
