@@ -47,6 +47,7 @@ var _exclude_files : String = "":
 			if _str.is_empty():
 				continue
 			exclude_files.append(_str)
+var exclude_resources : bool = false
 		
 var _cfg := ConfigFile.new()
 var _entries : Dictionary
@@ -91,6 +92,7 @@ func _init() -> void:
 	
 	set_category("exclude_files_category", "Exclusion")
 	add_entry("_exclude_files", "multi_filepath", "Path", "Select files or folders to be excluded from obfuscation; excluded scripts will maintain compatibility with the other obfuscated scripts.").set_custom_type(Entry.CustomType.MULTI_FILE_PATH, "")
+	add_entry("exclude_resources", "resources", "Exclude Resources", "If true, resources like PackedScenes will be ignored during scanning.\nThis is useful if you typically have a lot of embedded resources in your resources and causing problems such as freezing.\n\n(WARNING) This could cause errors if you reference scripts within your packaged scenes, such as signals or exported variables. (Source of embedded scripts are the exception)\n\nRemember that this can be solved by following the best practices recommended in the official repository.")
 	
 	#set_category("debug", "Debug")
 	#add_entry("debug_scripts", debug_scripts", "", "")

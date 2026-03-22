@@ -427,7 +427,7 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	var data : String = obfuscator.get_data()
 	if codes.size() > 0:
 		for code : String in codes:
-			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").replace("$", "[__CNT__]").strip_edges(),"\n\""))# _rgx_rebuilder.sub(code, "x\\\"", true),"\n\""), false)
+			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").replace("$", "[__CNT__]").strip_edges(),"\n\""))
 
 	obfuscator.set_data(data.replace("[__SRC__]", "script/source").replace("[__CNT__]", "$"))
 	return obfuscator.get_data()
@@ -463,6 +463,8 @@ static func _get_files(path : String, ext : String) -> PackedStringArray:
 			if !sub_dir.begins_with("."):
 				var new_dir : String = dir.path_join(sub_dir)
 				if new_dir.begins_with(_addon_path):
+					continue
+				elif FileAccess.file_exists(new_dir.path_join(".gdignore")):
 					continue
 				dirs.append(new_dir)
 		for file in DirAccess.get_files_at(dir):

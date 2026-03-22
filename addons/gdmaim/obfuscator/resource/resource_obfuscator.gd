@@ -19,6 +19,10 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 	_source_data = source_data
 	_data = ""
 	
+	if symbol_table.settings.exclude_resources:
+		_data = source_data
+		return true
+	
 	var lines : PackedStringArray = source_data.split("\n")
 	var i : int = 0
 	while i < lines.size():

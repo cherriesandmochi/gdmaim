@@ -48,12 +48,17 @@ func set_files(value : String) -> void:
 	_set_files(current)
 
 func _on_selection(value : Variant) -> void:
+	var size : int = line_edit.text.length()
+	
 	if value is String:
 		set_files(value)
 	elif value is PackedStringArray:
 		set_files(";".join(value))
 	else:
 		printerr("Error, not valid value type!")
+	
+	if size != line_edit.text.length():
+		line_edit.caret_column = line_edit.text.length()
 		
 	text_changed.emit(_get_files())
 
