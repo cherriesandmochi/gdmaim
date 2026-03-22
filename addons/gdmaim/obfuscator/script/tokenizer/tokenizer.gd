@@ -159,31 +159,16 @@ func _read_next_token() -> bool:
 	elif _is_punctuator(char):
 		# Punctuator
 		_add_punctuator(_stream.get_next())
-	elif "\"" == char:
+	elif "\"'".contains(char):
 		var multi : bool = false
 		
 		for x : int in range(2, 4, 1):
-			if _stream.peek(x) == "\"":
-				if x == 3 and _stream.peek(x + 1) != "\"":
+			if _stream.peek(x) == char:
+				if x == 3 and _stream.peek(x + 1) != char:
 					multi = true
 				continue
 			break
 			
-		if multi:
-			_read_multi_string()
-		else:		
-			# String(literal)
-			_read_string()
-	elif "'" == (char):
-		var multi : bool = false
-		
-		for x : int in range(2, 4, 1):
-			if _stream.peek(x) == "'":
-				if x == 3 and _stream.peek(x + 1) != "'":
-					multi = true
-				continue
-			break
-					
 		if multi:
 			_read_multi_string()
 		else:		
@@ -283,7 +268,7 @@ func _read_multi_string() -> void:
 	if comment:
 		_add_comment(str("\"",str, "\""))
 	else:
-		_add_string_literal(str, end)
+		_add_string_multi_line(str, end)
 		
 	_can_be_nodepath = false
 
