@@ -421,7 +421,7 @@ func _obfuscate_resource(path : String, source_data : String) -> String:
 	var data : String = obfuscator.get_data()
 	if codes.size() > 0:
 		for code : String in codes:
-			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").replace("$", "[__CNT__]").strip_edges(),"\n\""))# _rgx_rebuilder.sub(code, "x\\\"", true),"\n\""), false)
+			data = _rgx.sub(data, str("[__SRC__] = \"",code.replace("\"", "\\\"").replace("$", "[__CNT__]").strip_edges(),"\n\""))
 
 	obfuscator.set_data(data.replace("[__SRC__]", "script/source").replace("[__CNT__]", "$"))
 	return obfuscator.get_data()
@@ -451,13 +451,17 @@ static func _multi_split(source : String, delimeters : String) -> PackedStringAr
 static func _get_files(path : String, ext : String) -> PackedStringArray:
 	var files : PackedStringArray
 	var dirs : Array[String] = [path]
+	var addon_path : String = _addon_path.trim_suffix("/")
 	while dirs:
 		var dir : String = dirs.pop_front()
 		for sub_dir in DirAccess.get_directories_at(dir):
 			if !sub_dir.begins_with("."):
 				var new_dir : String = dir.path_join(sub_dir)
-				if new_dir.begins_with(_addon_path):
+				if FileAccess.file_exists(new_dir.path_join(".gdignore")):
 					continue
+				elif new_dir.begins_with(addon_path):
+					if new_dir.trim_suffix("/") == addon_path:
+						continue
 				dirs.append(new_dir)
 		for file in DirAccess.get_files_at(dir):
 			if file.replace(".remap", "").ends_with(ext):
