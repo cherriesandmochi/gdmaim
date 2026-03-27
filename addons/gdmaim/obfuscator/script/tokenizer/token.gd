@@ -8,15 +8,16 @@ enum Type {
 	LITERAL = 2**2,
 	NUMBER_LITERAL = 2**3,
 	STRING_LITERAL = 2**4,
-	NODE_PATH = 2**5,
-	ANNOTATION = 2**6,
-	PUNCTUATOR = 2**7,
-	OPERATOR = 2**8,
-	COMMENT = 2**9,
-	WHITESPACE = 2**10,
-	INDENTATION = 2**11,
-	LINE_BREAK = 2**12,
-	STATEMENT_BREAK = 2**13,
+	STRING_MULTI_LINE = 2**5,
+	NODE_PATH = 2**6,
+	ANNOTATION = 2**7,
+	PUNCTUATOR = 2**8,
+	OPERATOR = 2**9,
+	COMMENT = 2**10,
+	WHITESPACE = 2**11,
+	INDENTATION = 2**12,
+	LINE_BREAK = 2**13,
+	STATEMENT_BREAK = 2**14,
 }
 
 const StringRef := preload("../../string_ref.gd")
@@ -83,7 +84,10 @@ func is_number_literal(value : String = "") -> bool:
 
 
 func is_string_literal(value : String = "") -> bool:
-	return type == Type.STRING_LITERAL and (!value or get_value() == value)
+	return (type == Type.STRING_LITERAL or type == Type.STRING_MULTI_LINE) and (!value or get_value() == value)
+
+func is_string_multiline(value : String = "") -> bool:
+	return type == Type.STRING_MULTI_LINE and (!value or get_value() == value)
 
 
 func is_node_path(value : String = "") -> bool:
