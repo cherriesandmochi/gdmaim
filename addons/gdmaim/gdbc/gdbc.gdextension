@@ -26,6 +26,11 @@ windows.x86_64.double.debug = "./windows/gdbc.windows.template_release.x86_64.do
 windows.x86_64.single.release = "./windows/gdbc.windows.template_release.x86_64.dll"
 windows.x86_64.double.release = "./windows/gdbc.windows.template_release.x86_64.double.dll"
 
+windows.arm64.single.debug = "./windows/gdbc.windows.template_release.arm64.dll"
+windows.arm64.double.debug = "./windows/gdbc.windows.template_release.arm64.double.dll"
+windows.arm64.single.release = "./windows/gdbc.windows.template_release.arm64.dll"
+windows.arm64.double.release = "./windows/gdbc.windows.template_release.arm64.double.dll"
+
 linux.x86_64.single.debug = "./linux/libgdbc.linux.template_release.x86_64.so"
 linux.x86_64.double.debug = "./linux/libgdbc.linux.template_release.x86_64.double.so"
 linux.x86_64.single.release = "./linux/libgdbc.linux.template_release.x86_64.so"
