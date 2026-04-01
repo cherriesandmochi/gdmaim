@@ -160,8 +160,20 @@ func _read_next_token() -> bool:
 		# Punctuator
 		_add_punctuator(_stream.get_next())
 	elif "\"'".contains(char):
-		# String(literal)
-		_read_string()
+		var multi : bool = false
+		
+		for x : int in range(2, 4, 1):
+			if _stream.peek(x) == char:
+				if x == 3 and _stream.peek(x + 1) != char:
+					multi = true
+				continue
+			break
+			
+		if multi:
+			_read_multi_string()
+		else:		
+			# String(literal)
+			_read_string()
 	elif char == "$" or (char == "%" and _can_be_nodepath):
 		_read_node_path()
 	elif char == "@":
@@ -212,10 +224,53 @@ func _read_string() -> void:
 		if char == end:
 			break
 		str += char
-	
 	_add_string_literal(str, end)
 	_can_be_nodepath = false
 
+func _read_multi_string() -> void:
+	var str : String
+	var end : String = _stream.get_next()
+	var mf : bool = false
+	var comment : bool = true
+	
+	while !_stream.is_eof():
+		var char : String = _stream.get_next()
+		
+		if !mf:
+			mf = true
+			while char == end:
+				str += char
+				char = _stream.get_next()	
+					
+		if char == "\\":
+			char += _stream.get_next()
+		if char == end:
+			if _stream.peek(1) == end and _stream.peek(2) == end and _stream.peek(3) != end:
+				str += str(_stream.get_next(), _stream.get_next())
+				break
+			
+		str += char
+		
+	
+	for x : int in range(_tokens.size() - 1, -1, -1):
+		var tkn : Token = _tokens[x]
+		if tkn.is_indentation() or tkn.is_line_break():
+			continue
+		elif tkn.is_operator() or tkn.is_symbol("var"):
+			comment = false
+		elif tkn.is_punctuator():
+			for z : String in "([{,":
+				if tkn.is_punctuator(z):
+					comment = false
+					break
+		break
+		
+	if comment:
+		_add_comment(str("\"",str, "\""))
+	else:
+		_add_string_multi_line(str, end)
+		
+	_can_be_nodepath = false
 
 func _read_node_path() -> void:
 	var str : String
@@ -349,6 +404,8 @@ func _add_number_literal(number : String) -> void:
 func _add_string_literal(str : String, deco : String) -> void:
 	_add_token(Token.Type.STRING_LITERAL, str, true, deco)
 
+func _add_string_multi_line(str : String, deco : String) -> void:
+	_add_token(Token.Type.STRING_MULTI_LINE, str, true, deco)
 
 func _add_node_path(str : String) -> void:
 	_add_token(Token.Type.NODE_PATH, str)
