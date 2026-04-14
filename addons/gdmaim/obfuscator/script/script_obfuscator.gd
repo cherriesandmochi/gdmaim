@@ -105,7 +105,7 @@ func _string_obfuscation(token : Token) -> void:
 
 	var placeholders : String = get_placeholders(str) if "%" in str else ""
 
-	token.set_value(_symbol_table.obfuscate_string_global(str))
+	token.set_value(_symbol_table.obfuscate_string_global(str) + placeholders)
 
 
 func get_placeholders(str: String) -> String:
