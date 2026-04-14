@@ -102,7 +102,23 @@ func _string_obfuscation(token : Token) -> void:
 		return
 	
 	var str : String = token.get_value(false)
+
+	var placeholders : String = get_placeholders(str) if "%" in str else ""
+
 	token.set_value(_symbol_table.obfuscate_string_global(str))
+
+
+func get_placeholders(str: String) -> String:
+	var regex := RegEx.new()
+	regex.compile("%[-+0-9.]*[a-zA-Z]")
+
+	var results := []
+	var matches = regex.search_all(str)
+
+	for match in matches:
+		results.append(match.get_string())
+
+	return "".join(results)
 
 
 func _string_param_obfuscation(token : Token, next_token : Token) -> void:
