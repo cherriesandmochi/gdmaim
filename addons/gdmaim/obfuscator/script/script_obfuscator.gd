@@ -156,7 +156,7 @@ func _string_obfuscation(token : Token) -> void:
 			for x in range(candy, candy_holders.size(), 1):
 				tail += candy_holders[x]
 				
-			token.set_value(tail)
+			token.set_value("\"" + tail)
 			return			
 			
 	token.set_value(_symbol_table.obfuscate_string_global(str))
