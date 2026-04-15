@@ -150,12 +150,18 @@ func _string_obfuscation(token : Token) -> void:
 				
 				if !(str_end in end_pray):
 					str_end = ""
+
+				# avoid obfuscating whitespace-only strings
+				if fragment.strip_edges().is_empty():
+					tail += fragment
+					continue
 				
 				tail += str(str_begin, _symbol_table.obfuscate_string_global(fragment.strip_edges()), str_end)
 			
 			for x in range(candy, candy_holders.size(), 1):
 				tail += candy_holders[x]
 				
+			# prevent set_value from removing the first character if it's % instead of a quote "
 			token.set_value("\"" + tail)
 			return			
 			
