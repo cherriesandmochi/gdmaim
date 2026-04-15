@@ -102,23 +102,64 @@ func _string_obfuscation(token : Token) -> void:
 		return
 	
 	var str : String = token.get_value(false)
-
-	var placeholders : String = get_placeholders(str) if "%" in str else ""
-
-	token.set_value(_symbol_table.obfuscate_string_global(str) + placeholders)
-
-
-func get_placeholders(str: String) -> String:
-	var regex := RegEx.new()
-	regex.compile("%[-+0-9.]*[a-zA-Z]")
-
-	var results := []
-	var matches = regex.search_all(str)
-
-	for match in matches:
-		results.append(match.get_string())
-
-	return "".join(results)
+	
+	var regex : RegEx = RegEx.create_from_string("(%[\\d\\.]*[a-zA-Z]|\\{\\d+\\})", false)
+	if regex.is_valid():
+		var fragments : PackedStringArray = []
+		var candy_holders : PackedStringArray = []
+		var last_candy_idx : int = 0
+		var pimpampum : String = "__HOCUSPOCUS__"
+	
+		var matches : Array[RegExMatch] = regex.search_all(str)
+		for rmatch in matches:
+			var text_before : String = str.substr(last_candy_idx, rmatch.get_start() - last_candy_idx)
+			
+			fragments.append(text_before)
+			fragments.append(pimpampum)
+			candy_holders.append(rmatch.get_string())			
+			
+			last_candy_idx = rmatch.get_end()
+		
+		if candy_holders.size() > 0:	
+			var candy : int = 0
+			var end_pray : PackedStringArray = [" ", "\t", "\n"] # wilwilwilcard String!
+			var tail : String = str.substr(last_candy_idx)
+			
+			if !tail.is_empty():
+				fragments.append(tail)
+			
+			tail = ""
+				
+			for idx : int in range(0, fragments.size(), 1):
+				var fragment : String = fragments[idx]
+				
+				if fragment.is_empty():
+					continue
+					
+				elif fragment == pimpampum:
+					if candy < candy_holders.size():
+						tail += candy_holders[candy]
+						candy += 1
+					continue
+				
+				var str_begin : String = fragment[0]
+				var str_end : String = fragment[fragment.length() - 1]
+				
+				if !(str_begin in end_pray):
+					str_begin = ""
+				
+				if !(str_end in end_pray):
+					str_end = ""
+				
+				tail += str(str_begin, _symbol_table.obfuscate_string_global(fragment.strip_edges()), str_end)
+			
+			for x in range(candy, candy_holders.size(), 1):
+				tail += candy_holders[x]
+				
+			token.set_value(tail)
+			return			
+			
+	token.set_value(_symbol_table.obfuscate_string_global(str))
 
 
 func _string_param_obfuscation(token : Token, next_token : Token) -> void:
