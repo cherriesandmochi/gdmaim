@@ -133,9 +133,12 @@ func _string_obfuscation(token : Token) -> void:
 			for idx : int in range(0, fragments.size(), 1):
 				var fragment : String = fragments[idx]
 				
-				if fragment.is_empty():
-					continue
-					
+				# avoid obfuscating whitespace-only strings
+				var text : String = fragment.strip_edges()
+				if text.is_empty():
+					tail += fragment
+					continue		
+								
 				elif fragment == pimpampum:
 					if candy < candy_holders.size():
 						tail += candy_holders[candy]
@@ -144,26 +147,21 @@ func _string_obfuscation(token : Token) -> void:
 				
 				var str_begin : String = fragment[0]
 				var str_end : String = fragment[fragment.length() - 1]
-				
+
 				if !(str_begin in end_pray):
 					str_begin = ""
 				
 				if !(str_end in end_pray):
 					str_end = ""
-
-				# avoid obfuscating whitespace-only strings
-				if fragment.strip_edges().is_empty():
-					tail += fragment
-					continue
 				
-				tail += str(str_begin, _symbol_table.obfuscate_string_global(fragment.strip_edges()), str_end)
+				tail += str(str_begin, _symbol_table.obfuscate_string_global(text), str_end)
 			
 			for x in range(candy, candy_holders.size(), 1):
 				tail += candy_holders[x]
 				
 			# prevent set_value from removing the first character if it's % instead of a quote "
 			token.set_value("\"" + tail)
-			return			
+			return
 			
 	token.set_value(_symbol_table.obfuscate_string_global(str))
 
