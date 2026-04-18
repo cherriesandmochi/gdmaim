@@ -270,21 +270,45 @@ func _shuffle_toplevel() -> void:
 		var prev_starter_token : Token = prev_line.tokens[0] if prev_line and prev_line.tokens else null
 		if starter_token and Builtins.STARTER_TOKENS.has(starter_token.get_value()):
 			var custom : bool = false
+			
 			if starter_token.get_value() in Builtins.DECORATORS:
-				for itoken in range(1, line.tokens.size(), 1):
-					var value : String = line.tokens[itoken].get_value()
-					if !value.strip_edges().is_empty():
-						if value == "class":
+				var z : int = i
+				var current_line : Tokenizer.Line = line
+				
+				while true:
+					var t : String = ""
+					
+					for x in current_line.tokens.size():
+						var tkn : String = current_line.tokens[x].get_value().strip_edges()
+						if !tkn.is_empty() and !Builtins.DECORATORS.has(tkn):
+							t = tkn
+							break
+
+					if t.is_empty() and lines.size() > z + 1:
+						z += 1
+						current_line = lines[z]	
+						continue
+						
+					break
+					
+				for itoken in range(0, current_line.tokens.size(), 1):
+					var value : String = current_line.tokens[itoken].get_value().strip_edges()
+					if !value.is_empty():
+						if Builtins.DECORATORS.has(value):
+							continue
+						elif ["class", "func", "var"].has(value):
 							custom = true
 						break
+						
 			if !custom:
 				top_block.append(line)
 				continue
+				
 		if starter_token and starter_token.get_value() == "@onready":
 			add_block.call(current_block, current_is_onready)
 			current_block = []
 			current_is_onready = true
-		elif line.get_indentation() == 0 and starter_token and (starter_token.is_keyword() or starter_token.is_annotation()) and (!prev_starter_token or (!prev_starter_token.has_value("@rpc") and !(prev_starter_token.get_value().begins_with("@export") and !prev_line.has_token_value("var")))):
+		elif line.get_indentation() == 0 and starter_token and (starter_token.is_keyword() or starter_token.is_annotation()) and (!prev_starter_token or (!prev_starter_token.has_value("@abstract") and !prev_starter_token.has_value("@rpc") and !(prev_starter_token.get_value().begins_with("@export") and !prev_line.has_token_value("var")))):
 			add_block.call(current_block, current_is_onready)
 			current_block = []
 			current_is_onready = false
