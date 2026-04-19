@@ -110,6 +110,16 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 			_symbols.lock_symbol_name(var_)
 		for func_ in variant.get("methods", []):
 			_symbols.lock_symbol_name(func_)
+			
+	if settings.use_custom_token_ignore_file:
+		var file : String = settings.custom_token_ignore_file_path
+		if FileAccess.file_exists(file):
+			var packed : PackedStringArray = FileAccess.get_file_as_string(file).split("\n")
+			for smb in packed:
+				smb = smb.strip_edges()
+				if smb.is_empty() or smb.begins_with("#"):
+					continue
+				_symbols.lock_symbol_name(smb)
 	
 	# Gather built-in class symbols
 	for class_ in ClassDB.get_class_list():
