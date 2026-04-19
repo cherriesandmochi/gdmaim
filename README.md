@@ -20,6 +20,7 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 	- [Source map viewer](#source-map-viewer)
 	- [Export template feature tags](#export-template-feature-tags)
 	- [Preprocessor hints](#preprocessor-hints)
+	- [Custom Ignore Tokens](#custom-ignore-tokens)
 - [Limitations and caveats](#limitations-and-caveats-)
 - [Stability](#stability-)
 - [External Libraries](#external-libraries-)
@@ -255,6 +256,32 @@ func server_func() -> int:
 func __Dg8o() -> int:
   printerr("ERROR: illegal call to 'test.__Dg8o'!")
   return 0
+```
+
+### Custom Ignore Tokens
+You can enter your own tokens to prevent them from being obfuscated. 
+Once you have enabled the plugin, you should go to: `res://addons/gdmaim/user/ignore_tokens.txt`
+
+The tokens must be entered as a list.
+
+For example:
+```py
+# Token List
+my_custom_variable_name
+my_special_func
+my_another_special_func
+my_class
+
+# More examples
+health_value
+show_game_core
+start_game
+game_over
+GamePlayer
+UserData
+GodotClass
+# ...
+
 ```
 
 ## Limitations and caveats [↑](#table-of-contents)

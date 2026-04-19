@@ -32,6 +32,7 @@ func _enter_tree() -> void:
 	source_map_viewer.hide()
 	get_editor_interface().get_base_control().add_child(source_map_viewer)
 
+	_setup()
 
 # Called when exiting scene tree
 func _exit_tree() -> void:
@@ -53,3 +54,14 @@ func _open_source_map_viewer() -> void:
 		source_map_viewer.hide()
 	else:
 		source_map_viewer.popup_centered_clamped(source_map_viewer.size, 0.95)
+
+
+# Pre-validations
+func _setup() -> void:
+	var file : String = settings.custom_token_ignore_file_path
+	if !file.is_empty():
+		if !FileAccess.file_exists(file):
+			var fs : FileAccess = FileAccess.open(file, FileAccess.WRITE)
+			if is_instance_valid(fs):
+				fs.store_string("# Here place you custom tokens, must be a list of tokens.\n# For example check the readme in 'https://github.com/cherriesandmochi/gdmaim' <3")
+				fs.close()
