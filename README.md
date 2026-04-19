@@ -265,7 +265,7 @@ Once you have enabled the plugin, you should go to: `res://addons/gdmaim/user/ig
 The tokens must be entered as a list.
 
 For example:
-```js
+```py
 # Token List
 my_custom_variable_name
 my_special_func
