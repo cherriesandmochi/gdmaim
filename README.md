@@ -260,6 +260,7 @@ func __Dg8o() -> int:
 
 ### Custom Ignore Tokens
 You can enter your own tokens to prevent them from being obfuscated. 
+
 Once you have enabled the plugin, you should go to: `res://addons/gdmaim/user/ignore_tokens.txt`
 
 The tokens must be entered as a list.
@@ -283,6 +284,8 @@ GodotClass
 # ...
 
 ```
+
+In settings `Custom Token File` must be enabled!
 
 ## Limitations and caveats [↑](#table-of-contents)
 
