@@ -228,29 +228,11 @@ func _read_string() -> void:
 	_can_be_nodepath = false
 
 func _read_multi_string() -> void:
-	var str : String
 	var end : String = _stream.get_next()
+	var t3 : String = str(end,end,end)
+	var str : String = t3
 	var mf : bool = false
 	var comment : bool = true
-	
-	while !_stream.is_eof():
-		var char : String = _stream.get_next()
-		
-		if !mf:
-			mf = true
-			while char == end:
-				str += char
-				char = _stream.get_next()	
-					
-		if char == "\\":
-			char += _stream.get_next()
-		if char == end:
-			if _stream.peek(1) == end and _stream.peek(2) == end and _stream.peek(3) != end:
-				str += str(_stream.get_next(), _stream.get_next())
-				break
-			
-		str += char
-		
 	
 	for x : int in range(_tokens.size() - 1, -1, -1):
 		var tkn : Token = _tokens[x]
@@ -259,16 +241,56 @@ func _read_multi_string() -> void:
 		elif tkn.is_operator() or tkn.is_symbol("var"):
 			comment = false
 		elif tkn.is_punctuator():
-			for z : String in "([{,":
+			for z : String in "([{,.:":
 				if tkn.is_punctuator(z):
 					comment = false
 					break
 		break
 		
-	if comment:
-		_add_comment(str("\"",str, "\""))
-	else:
-		_add_string_multi_line(str, end)
+	while !_stream.is_eof():
+		var char : String = _stream.get_next()
+		
+		if !mf:
+			while char.is_empty():
+				char = _stream.get_next()
+				
+			mf = true
+			while char == end:
+				char = _stream.get_next()
+				
+		if char == "\n":
+			if !str.is_empty():
+				if comment:
+					_add_comment(str+"\n")
+				else:
+					_add_string_multi_line(str, "")
+				
+			str = ""
+			
+			_add_line_break()
+			line_count += 1
+			_output.append(Line.new())
+			continue
+		
+			
+		if char == "\\":
+			pass
+			
+		if char == end:
+			if _stream.peek(1) == end and _stream.peek(2) == end and _stream.peek(3) != end:
+				str += str(_stream.get_next(), _stream.get_next())
+				break
+			
+		str += char
+		
+	if !str.is_empty():
+		while !str.ends_with(t3):
+			str += end
+			
+		if comment:
+			_add_comment(str)
+		else:
+			_add_string_multi_line(str, "")
 		
 	_can_be_nodepath = false
 
