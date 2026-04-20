@@ -103,7 +103,7 @@ func get_class_symbol() -> SymbolTable.Symbol:
 
 
 func _string_obfuscation(token : Token) -> void:
-	if !token.is_string_literal() or token.is_string_multiline():
+	if !token.is_string_literal():
 		return
 	
 	var str : String = token.get_value(false)
