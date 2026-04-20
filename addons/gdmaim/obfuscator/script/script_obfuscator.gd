@@ -46,6 +46,11 @@ func run(features : PackedStringArray) -> bool:
 		var prev_line : Tokenizer.Line = tokenizer.get_output_line(token.line-1)
 		
 		if _Settings.current.obfuscation_enabled:
+			if line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS_SEED):
+				_symbol_table.set_custom_seed(line.get_hint_args(PreprocessorHints.OBFUSCATE_STRINGS_SEED).to_int())
+			else:
+				_symbol_table.set_custom_seed(0)
+		
 			if line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS):
 				_string_obfuscation(token)
 			_string_param_obfuscation(token, next_token)
@@ -98,7 +103,7 @@ func get_class_symbol() -> SymbolTable.Symbol:
 
 
 func _string_obfuscation(token : Token) -> void:
-	if !token.is_string_literal():
+	if !token.is_string_literal() or token.is_string_multiline():
 		return
 	
 	var str : String = token.get_value(false)
