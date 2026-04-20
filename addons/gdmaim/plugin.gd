@@ -59,6 +59,11 @@ func _open_source_map_viewer() -> void:
 # Pre-validations
 func _setup() -> void:
 	var file : String = settings.custom_token_ignore_file_path
+	var base : String = file.get_base_dir()
+	
+	if !DirAccess.dir_exists_absolute(base):
+		DirAccess.make_dir_recursive_absolute(base)
+		
 	if !file.is_empty():
 		if !FileAccess.file_exists(file):
 			var fs : FileAccess = FileAccess.open(file, FileAccess.WRITE)
