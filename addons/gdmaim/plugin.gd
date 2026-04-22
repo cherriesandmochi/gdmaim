@@ -49,10 +49,7 @@ func _exit_tree() -> void:
 	if is_instance_valid(source_map_viewer):
 		source_map_viewer.queue_free()
 		
-		
-	var res : EditorFileSystem = get_editor_interface().get_resource_filesystem()
-	if res and res.filesystem_changed.is_connected(_check_settings):
-		res.filesystem_changed.disconnect(_check_settings)
+	_check_settings()
 
 
 # Opens the source map viewer
@@ -80,10 +77,6 @@ func _setup() -> void:
 				fs.close()
 				
 	_check_settings()
-		
-	var res : EditorFileSystem = get_editor_interface().get_resource_filesystem()
-	if res and !res.filesystem_changed.is_connected(_check_settings):
-		res.filesystem_changed.connect(_check_settings)
 	
 	
 func _check_settings() -> void:
