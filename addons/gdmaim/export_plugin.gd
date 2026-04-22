@@ -52,7 +52,6 @@ func _get_addon_path() -> String:
 func _get_name() -> String:
 	return "gdmaim"
 
-
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
 	_features = features
 	_export_path = path
@@ -254,8 +253,9 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 		return
 		
 	if path.begins_with(_addon_path):
+		skip()
 		return
-	
+		
 	var ext : String = path.get_extension()
 	if ext == "csv":
 		skip() #HACK
