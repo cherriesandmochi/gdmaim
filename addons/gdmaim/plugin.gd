@@ -10,6 +10,8 @@ var script_processor : EditorExportPlugin
 var dock : Control
 var source_map_viewer : Window
 
+var _cfg_hash : String = ""
+
 
 # Called when entering scene tree
 func _enter_tree() -> void:
@@ -46,6 +48,8 @@ func _exit_tree() -> void:
 	
 	if is_instance_valid(source_map_viewer):
 		source_map_viewer.queue_free()
+		
+	_check_settings()
 
 
 # Opens the source map viewer
@@ -71,3 +75,57 @@ func _setup() -> void:
 			if is_instance_valid(fs):
 				fs.store_string("# Here place you custom tokens, must be a list of tokens.\n# For example check the readme in 'https://github.com/cherriesandmochi/gdmaim' <3")
 				fs.close()
+				
+	_check_settings()
+	
+	
+func _check_settings() -> void:
+	var expath : String = "res://export_presets.cfg"
+	
+	if !FileAccess.file_exists(expath):
+		return
+	
+	var md5 : String = FileAccess.get_md5(expath)
+	if md5 != _cfg_hash:
+		if _export_init():
+			var res : EditorFileSystem = get_editor_interface().get_resource_filesystem()
+			res.update_file(expath)
+			res.scan.call_deferred()
+			md5 = FileAccess.get_md5(expath)
+		_cfg_hash = md5
+
+
+func _export_init() -> bool:
+	var path : String = "res://export_presets.cfg"
+	if !FileAccess.file_exists(path):
+		return false
+		
+	var excl : String= "exclude_filter"
+	var plug : String = get_script().resource_path
+	
+	if !plug.begins_with("res://"):
+		false
+		
+	plug = plug.get_base_dir().path_join("*")
+	
+	var config : ConfigFile = ConfigFile.new()
+	var err : int = config.load(path)
+	var dirty : bool = false
+	
+	if err == OK:
+		for sector : String in config.get_sections():
+			var filters : String = config.get_value(sector, excl, "")
+			if plug in filters:
+				if !sector.ends_with(".options") and !config.has_section(sector + ".options"):
+					config.set_value(sector + ".options", excl, plug)
+				continue
+			if !filters.is_empty():
+				filters += ","
+			filters += plug
+			config.set_value(sector, excl, filters)
+			dirty = true
+			
+		if dirty:
+			config.save(path)
+	config = null
+	return dirty
