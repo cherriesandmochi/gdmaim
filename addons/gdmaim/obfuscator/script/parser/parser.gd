@@ -803,6 +803,7 @@ func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
 		var ast: AST.Sequence = _parse_block_with_callback(parent, indentation, func(ast : AST.Sequence, line : Tokenizer.Line, token : Token, indentation : int):
 			match token.type:
 				Token.Type.KEYWORD:
+					_statement_break = false
 					_tokenizer.get_next()
 					if token.is_keyword('func'):
 						var function : AST.Func = _parse_func(ast)
