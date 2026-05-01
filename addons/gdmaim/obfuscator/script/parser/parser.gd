@@ -124,9 +124,7 @@ func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 	_statement_break = false  # Statement break persists until next non-whitespace token
 	
 	#TODO skip line break here, unless we've got a semicolon coming up next
-	
 	return node
-
 
 func _parse_statement_break() -> void:
 	_tokenizer.get_next()
@@ -487,6 +485,7 @@ func _parse_enum(parent : AST.ASTNode) -> AST.EnumDef:
 	
 	# Check if enum is Named
 	var token : Token = _tokenizer.get_next()
+	
 	if token.is_symbol():
 		ast = AST.EnumDef.new(parent)
 		ast.symbol = _symbol_table.create_global_symbol(token.get_value())
@@ -748,6 +747,7 @@ func _parse_params(parent : AST.ASTNode) -> Array[AST.Parameter]:
 		elif token.is_symbol():
 			if expect_symbol:
 				_tokenizer.get_next()
+				
 				expect_symbol = false
 				param.symbol = _symbol_table.create_local_symbol(token.get_value(), _parse_var_type(param))
 				token.link_symbol(param.symbol)

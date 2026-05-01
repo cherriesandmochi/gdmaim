@@ -18,6 +18,8 @@ var _id_list : PackedStringArray
 var _id_table : Dictionary
 var _unique_ids : Dictionary
 
+var _custom_seed : int = 0
+
 
 func _init(settings : _Settings) -> void:
 	self.settings = settings
@@ -34,6 +36,9 @@ func lock_symbol(symbol : Symbol) -> void:
 		_local_symbols.remove_at(lidx)
 	else:
 		lock_symbol_name(symbol.get_name())
+		
+func set_custom_seed(new_seed : int = 0) -> void:
+	_custom_seed = new_seed
 
 func create_symbol(ast_node : AST.ASTNode, name : String, type : String = "") -> Symbol:
 	if ast_node.get_parent() is AST.Sequence and ast_node.get_parent().get_parent() is AST.Class:
@@ -124,10 +129,12 @@ func resolve_symbol_paths() -> void:
 func obfuscate_symbols() -> void:
 	for symbol in _local_symbols:
 		if !_locked_symbols.has(symbol.get_name()):
+			#set_custom_seed(symbol.seed)
 			rename_symbol(symbol, _generate_symbol_name(symbol.get_name(), true))
 	
 	for symbol in _global_symbols.values():
 		if !_locked_symbols.has(symbol.get_name()):
+			#set_custom_seed(symbol.seed)
 			rename_symbol(symbol, _generate_symbol_name(symbol.get_name()))
 
 
@@ -152,29 +159,40 @@ func _search_symbol(ast_node : AST.ASTNode, name : String, is_func : bool) -> Sy
 
 
 func _generate_symbol_name(source_name : String, unique : bool = false) -> String:
-	if !unique and _id_table.has(source_name):
+	if !unique and _id_table.has(source_name) and _custom_seed == 0:
 		return _id_table[source_name]
 	
 	var random := RandomNumberGenerator.new()
-	random.seed = hash(source_name) + source_name.length() + _seed
 	
 	var target_length : int = maxi(1, settings.symbol_target_length)
 	var id : String
-	while !id or _id_list.has(id):
+	
+	if _custom_seed != 0:
+		random.seed = hash(source_name) + source_name.length() + _custom_seed
+		
 		var _id : String = settings.symbol_prefix
 		for j in target_length:
 			_id += settings.symbol_characters[random.randi() % settings.symbol_characters.length()]
-		if !id and unique and _id_list.has(_id):
-			_unique_ids[source_name] = _unique_ids.get(source_name, 0) + 1
-			random.seed += _unique_ids[source_name]
-		else:
-			target_length += 1
 		id = _id
+		
+	else:
+		random.seed = hash(source_name) + source_name.length() + _seed
 	
-	_id_list.append(id)
-	if !unique:
-		_id_table[source_name] = id
-	
+		while !id or _id_list.has(id):
+			var _id : String = settings.symbol_prefix
+			for j in target_length:
+				_id += settings.symbol_characters[random.randi() % settings.symbol_characters.length()]
+			if !id and unique and _id_list.has(_id):
+				_unique_ids[source_name] = _unique_ids.get(source_name, 0) + 1
+				random.seed += _unique_ids[source_name]
+			else:
+				target_length += 1
+			id = _id
+		
+		_id_list.append(id)
+		if !unique:
+			_id_table[source_name] = id
+		
 	return id
 
 
@@ -185,6 +203,7 @@ class Symbol extends RefCounted:
 	var children : Dictionary
 	var string_params : Array
 	var parent : Symbol
+	#var seed : int = 0
 	
 	static func new_linked(type : String, ref : Symbol) -> Symbol:
 		var symbol := Symbol.new(ref.source_name, type)
