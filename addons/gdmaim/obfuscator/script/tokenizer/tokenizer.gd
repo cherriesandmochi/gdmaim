@@ -5,7 +5,7 @@ const _Logger := preload("../../../logger.gd")
 const _Settings := preload("../../../settings.gd")
 const Token := preload("token.gd")
 const Stream := preload("stream.gd")
-const PreprocessorHints = preload("uid://bn68k5a203yof")
+const PreprocessorHints = preload("../preprocessor_hints.gd")
 
 const KEYWORDS : Array[String] = ["extends", "class_name", "setget", "const", "signal", "enum", "static", "var", "func", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not", "when"]
 const LITERALS : Array[String] = ["true", "false", "null", "self", "PI", "TAU", "NAN", "INF"]
