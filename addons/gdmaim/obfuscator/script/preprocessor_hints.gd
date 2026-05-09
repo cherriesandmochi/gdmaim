@@ -11,3 +11,4 @@ const EXCLUDE_HINT : String = "EXCLUDE_FILE" # prevent obfuscate the script and 
 const STRIP_STATIC_TYPED_HINT : String = "STRIP_STATIC_TYPED_FILE" # Strip typed definitions in variables, functions and arrays of the file.
 const STRIP_STATIC_TYPED_INITIALIZED_HINT : String = "STRIP_STATIC_TYPED_FILE_INITIALIZED"
 const STRIP_IGNORE_STATIC_TYPED_HINT : String = "STRIP_STATIC_TYPED_FILE_IGNORE"
+const OBFUSCATE_STRINGS_SEED : String = "OBFUSCATE_STRINGS_SEED"

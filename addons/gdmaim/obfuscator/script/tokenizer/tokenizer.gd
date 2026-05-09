@@ -528,6 +528,8 @@ func _is_punctuator(char : String) -> bool:
 
 
 func _is_digit(char : String) -> bool:
+	if char == "x" and _stream.peek(0) == "0":
+		return true
 	return ".0123456789".contains(char)
 
 

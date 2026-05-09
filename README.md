@@ -222,6 +222,36 @@ var __rEyW : int
 __U5iZ("__rEyW", 3)
 ```
 
+`##OBFUSCATE_STRING_SEED arg_number`: 
+
+```js
+// In the next example we use OBFUSCATE_STRINGS_SEED preprocessor combined with OBFUSCATE_STRINGS
+
+var my_string : String = "Foo" ##OBFUSCATE_STRINGS ##OBFUSCATE_STRINGS_SEED 1000
+
+# This force use the seed '1000'
+
+// Example
+//# In the next example we use OBFUSCATE_STRINGS_SEED preprocessor combined with OBFUSCATE_STRINGS
+var my_generic_string : String = "Shared String"
+var my_obfuscated_string : String = "Shared String" ##OBFUSCATE_STRINGS
+
+// This force use the seed '1000'
+var my_obfuscated_string_by_seed : String = "Shared String" ##OBFUSCATE_STRINGS ##OBFUSCATE_STRINGS_SEED 1000
+var other_obfuscated_string : String = "Shared String" ##OBFUSCATE_STRINGS
+```
+
+=>
+
+
+```js
+var __m6KE:String="Shared String"
+var __nBLL:String="_y342"
+var __bLLP:String="_ySlQ" //# String with seed 1000
+var __knM3:String="_y342"
+```
+
+
 `##EXCLUDE_FILE`: Prevent obfuscation of the script file and it maintains match compatibility throughout the project for the scripts that can use it. put in wherever you want in your script, as a good practice, place it at the beginning of the file.
 
 ```js
