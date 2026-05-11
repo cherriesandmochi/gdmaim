@@ -165,7 +165,7 @@ func _string_obfuscation(token : Token) -> void:
 				tail += candy_holders[x]
 				
 			# prevent set_value from removing the first character if it's % instead of a quote "
-			token.set_value("\"" + tail)
+			token.set_value(token.decorator + tail)
 			return
 			
 	token.set_value(_symbol_table.obfuscate_string_global(str))
@@ -241,10 +241,9 @@ func _func_feature_filter(token : Token, line : Tokenizer.Line, feature : String
 		tokenizer.get_output_line(line_idx_from + 1).insert_token(1, Token.new(Token.Type.KEYWORD, func_body, 0, line_idx_from + 1))
 		while line_idx < tokenizer.get_output_line_count():
 			var tline : Tokenizer.Line = tokenizer.get_output_line(line_idx)
-			if tline.has_statement():
-				if tline.get_indentation() <= indentation:
-					break
-				last_valid = line_idx
+			if tline.has_statement() and tline.get_indentation() <= indentation:
+				break
+			last_valid = line_idx
 			if tline.tokens:
 				tokenizer.seek_token(tline.tokens[0])
 			line_idx += 1
