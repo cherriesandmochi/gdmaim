@@ -48,7 +48,7 @@ func _parse_block_with_callback(parent : AST.ASTNode, indentation : int, token_p
 		if _bracket_lock < 0:
 			break
 		
-		if _bracket_lock == 0 and token.is_punctuator(','):
+		if _bracket_lock == 0 and token.is_punctuator(',') and !(parent is AST.Match):
 			token = _tokenizer.peek(1)
 			while token:
 				token_process.call(ast, line, token, indentation)
@@ -202,18 +202,9 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	
 	while !_tokenizer.is_eof():
 		var token : Token = _tokenizer.peek()
-		if token.type == Token.Type.PUNCTUATOR:
-			if token.is_punctuator("."):
-				_tokenizer.get_next()
-				continue
-			elif token.is_punctuator(",") and bracket < 1:
-				break
-			else:
-				match token.get_value():
-					'(', '[', '{':
-						bracket += 1
-					')', ']', '}':
-						bracket -= 1
+		if token.is_punctuator("."):
+			_tokenizer.get_next()
+			continue
 		elif token.is_symbol():
 			_tokenizer.get_next()
 			var symbol : SymbolTable.Symbol = path.add(token.get_value())
