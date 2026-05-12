@@ -195,18 +195,9 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	
 	while !_tokenizer.is_eof():
 		var token : Token = _tokenizer.peek()
-		if token.type == Token.Type.PUNCTUATOR:
-			if token.is_punctuator("."):
-				_tokenizer.get_next()
-				continue
-			elif token.is_punctuator(",") and bracket < 1:
-				break
-			else:
-				match token.get_value():
-					'(', '[', '{':
-						bracket += 1
-					')', ']', '}':
-						bracket -= 1
+		if token.is_punctuator("."):
+			_tokenizer.get_next()
+			continue
 		elif token.is_symbol():
 			_tokenizer.get_next()
 			var symbol : SymbolTable.Symbol = path.add(token.get_value())
