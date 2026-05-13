@@ -520,12 +520,24 @@ func _convert_text_to_binary_resource(extension : String, text_data : String) ->
 
 
 func strip(path : String) -> String:
+	var out : String = ""
 	if _Settings.current.strip_comments:
 		var resources : PackedStringArray = ResourceObfuscator.Resources
 		if FileAccess.file_exists(path) and path.get_extension().begins_with(resources[resources.size() - 1]):
 			var data : String = FileAccess.get_file_as_string(path)
-			return ResourceObfuscator.c_strip.sub(data, "", true, 0, -1).strip_edges()
-	return ""
+			var idx : int = 0
+			for x : RegExMatch in ResourceObfuscator.c_strip.search_all(data):
+				out += data.substr(idx, x.get_start() - idx)
+
+				if not x.get_string(1).is_empty():
+					out += x.get_string(1)
+				
+				idx = x.get_end()
+
+			if idx < data.length():
+				out += data.substr(idx, -1)
+				
+	return out
 
 static func _generate_uuid(path : String) -> String:
 	var bytes : PackedByteArray
