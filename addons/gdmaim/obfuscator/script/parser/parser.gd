@@ -48,13 +48,6 @@ func _parse_block_with_callback(parent : AST.ASTNode, indentation : int, token_p
 		if _bracket_lock < 0:
 			break
 		
-		if _bracket_lock == 0 and token.is_punctuator(',') and !(parent is AST.Match):
-			token = _tokenizer.peek(1)
-			while token:
-				token_process.call(ast, line, token, indentation)
-				token = _tokenizer.peek(1)
-			break
-		
 		if prev_line and prev_line != line and line.has_statement() and line.get_indentation() <= indentation and _bracket_lock == 0 and not _statement_break:
 			break
 		else:

@@ -4,6 +4,13 @@ extends RefCounted
 const _Logger := preload("../../logger.gd")
 const _Settings := preload("../../settings.gd")
 const SymbolTable := preload("../symbol_table.gd")
+const Resources : PackedStringArray = ["tres", "res", "gdshader"]
+
+static var c_strip : RegEx = null:
+	get:
+		if null == c_strip:
+			c_strip = RegEx.create_from_string(r"(?m)/\/\*[\s\S]*?\*\/|\/\/.*")
+		return c_strip
 
 var path : String
 
@@ -122,7 +129,6 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 	_data = _data.strip_edges(false, true) + "\n"
 	
 	return true
-
 
 func get_source_data() -> String:
 	return _source_data
