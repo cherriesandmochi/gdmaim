@@ -159,7 +159,7 @@ func _parse_annotation(parent : AST.ASTNode) -> AST.ASTNode:
 			_skip_brackets("(", ")")
 		
 		var exported_var : bool = true
-		for key : String in ["@export_category", "@export_group"]:
+		for key : String in ["@export_category", "@export_group", '@export_subgroup']:
 			if token.get_value().begins_with(key):
 				exported_var = false
 				break
