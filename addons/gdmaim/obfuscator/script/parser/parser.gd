@@ -157,10 +157,26 @@ func _parse_annotation(parent : AST.ASTNode) -> AST.ASTNode:
 	if token.get_value().begins_with("@export"):
 		if _tokenizer.peek().is_punctuator("("):
 			_skip_brackets("(", ")")
-		while _tokenizer.get_next().get_value() != "var":
-			pass
-		return _parse_export_var(parent)
-	
+		
+		var exported_var : bool = true
+		for key : String in ["@export_category", "@export_group"]:
+			if token.get_value().begins_with(key):
+				exported_var = false
+				break
+		
+		
+		
+		if exported_var:
+			var _token : Token = _tokenizer.get_next()
+			while _token and _token.get_value() != "var":
+				_token = _tokenizer.get_next()
+			return _parse_export_var(parent)
+			
+		else:
+			var _token : Token = _tokenizer.peek(0)
+			while _token and _token.is_whitespace():
+				_token = _tokenizer.get_next()
+			
 	return null
 
 
@@ -590,7 +606,7 @@ func _parse_var(parent : AST.ASTNode) -> AST.Var:
 
 func _parse_export_var(parent : AST.ASTNode) -> AST.ExportVar:
 	var token : Token = _tokenizer.get_next()
-	if !token.is_symbol():
+	if !token or !token.is_symbol():
 		_Logger.write("ERROR: Parser._parse_export_var() - Symbol expected!")
 		return null
 	
