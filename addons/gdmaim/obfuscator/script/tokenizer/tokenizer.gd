@@ -257,8 +257,6 @@ func _read_multi_string() -> void:
 			mf = true
 			while char == end:
 				char = _stream.get_next()
-				
-		
 			
 		if char == "\\":
 			pass
@@ -275,6 +273,25 @@ func _read_multi_string() -> void:
 		_add_comment(t3 + str + t3)
 	else:
 		_add_string_multi_line(str, t3)
+	
+	# Capture the indentation of the line where the multistring started
+	var initial_indentation : String = ""
+	var current_line : Line = _output.back()
+	if current_line.tokens and current_line.tokens[0].type == Token.Type.INDENTATION:
+		initial_indentation = current_line.tokens[0].get_value()
+		
+	# Append padding lines to maintain 1:1 line counting & indentation depth so the AST doesn't drop scope.
+	var absorbed_newlines : int = str.count("\n")
+	for i in absorbed_newlines:
+		line_count += 1
+		var new_line := Line.new()
+		
+		if initial_indentation:
+			# Create an INDENTATION token mapped strictly to this padding line
+			var indent_token := Token.new(Token.Type.INDENTATION, initial_indentation, _tokens.size(), _output.size(), "")
+			new_line.add_token(indent_token)
+			
+		_output.append(new_line)
 		
 	_can_be_nodepath = false
 
