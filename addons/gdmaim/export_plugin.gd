@@ -522,7 +522,7 @@ func _convert_text_to_binary_resource(extension : String, text_data : String) ->
 func strip(path : String) -> String:
 	if _Settings.current.strip_comments:
 		var resources : PackedStringArray = ResourceObfuscator.Resources
-		if FileAccess.file_exists(path) and path.get_extension() == resources[resources.size() - 1]:
+		if FileAccess.file_exists(path) and path.get_extension().begins_with(resources[resources.size() - 1]):
 			var data : String = FileAccess.get_file_as_string(path)
 			return ResourceObfuscator.c_strip.sub(data, "", true, 0, -1).strip_edges()
 	return ""
