@@ -9,7 +9,7 @@ const Resources : PackedStringArray = ["tres", "res", "gdshader"]
 static var c_strip : RegEx = null:
 	get:
 		if null == c_strip:
-			c_strip = RegEx.create_from_string(r"(\".*?\"|'.*?')|(\/\*[\s\S]*?\*\/|\/\/.*)")
+			c_strip = RegEx.create_from_string(r"(?m)(\".*?\"|'.*?')|(\/\*[\s\S]*?\*\/|\/\/.*)")
 		return c_strip
 
 var path : String
