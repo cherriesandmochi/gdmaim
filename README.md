@@ -82,6 +82,10 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Preprocessor prefix`: The prefix to use for preprocessor hints.
 
+`Strip Static Typing`: Allow remove the typed definiton in [vars | functions].
+
+`Initialize Stripped Typed Variables`: Complement of Strip Static Typing Action, this add a initialized value.
+
 ### Post Processing
 
 `Strip Comments`: If enabled, remove all comments.
@@ -262,6 +266,41 @@ func _ready() -> void:
   print("Hello to a safer world")
 
 # ...
+```
+
+`##STRIP_STATIC_TYPED_FILE`: Strip typed definitions in variables, functions and arrays of the files, same behaviour of "Strip Static Typing".
+
+```js
+##STRIP_STATIC_TYPED_FILE
+
+class_name MyClass extends Node
+
+var coins_collected : int
+
+func my_func(arg0 : String) -> String:
+	return arg0
+```
+
+=>
+
+```js
+class_name MyClass extends Node
+
+var coins_collected
+
+func my_func(arg0):
+	return arg0
+```
+
+`##STRIP_STATIC_TYPED_FILE_INITIALIZED`: Same behaviour of "Initialize Stripped Typed Variables".
+
+```js
+class_name MyClass extends Node
+
+var coins_collected=0
+
+func my_func(arg0):
+	return arg0
 ```
 
 __Feature filters__
