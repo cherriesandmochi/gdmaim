@@ -1099,6 +1099,9 @@ const VARIANTS : Array[Dictionary] = [
 	{
 		"class": "Key",
 	},
+	{
+		"class" : "Variant"
+	}
 ]
 const STARTER_TOKENS : PackedStringArray = [
 	"@icon", 
