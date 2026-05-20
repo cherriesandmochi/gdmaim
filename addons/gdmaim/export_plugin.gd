@@ -560,9 +560,18 @@ func strip(path : String) -> String:
 				if _settings.has_method(&"set_buffer"):
 					var instance : Object = Engine.get_singleton(&"GDShedor")
 					var data : String = FileAccess.get_file_as_string(path)
+					instance.notification(3164312)
 					_settings.call(&"set_buffer", data)
 					instance.notification(2162314)
 					out = instance.get_data()
+					
+					var err : Variant = instance.call(&"get_error")
+					if err is int:
+						if err == OK:
+							print("[GDShedor] Export OK {0}".format([path]))
+						else:
+							out = ""
+							printerr("[GDShedor] Export Error Code {0} : {1} ".format([err, path]))
 					break
 	
 		elif _Settings.current.strip_comments:
