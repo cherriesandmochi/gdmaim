@@ -48,13 +48,6 @@ func _parse_block_with_callback(parent : AST.ASTNode, indentation : int, token_p
 		if _bracket_lock < 0:
 			break
 		
-		if _bracket_lock == 0 and token.is_punctuator(','):
-			token = _tokenizer.peek(1)
-			while token:
-				token_process.call(ast, line, token, indentation)
-				token = _tokenizer.peek(1)
-			break
-		
 		if prev_line and prev_line != line and line.has_statement() and line.get_indentation() <= indentation and _bracket_lock == 0 and not _statement_break:
 			break
 		else:
@@ -164,13 +157,26 @@ func _parse_annotation(parent : AST.ASTNode) -> AST.ASTNode:
 	if token.get_value().begins_with("@export"):
 		if _tokenizer.peek().is_punctuator("("):
 			_skip_brackets("(", ")")
+		
+		var exported_var : bool = true
+		for key : String in ["@export_category", "@export_group", '@export_subgroup']:
+			if token.get_value().begins_with(key):
+				exported_var = false
+				break
+		
+		
+		
+		if exported_var:
+			var _token : Token = _tokenizer.get_next()
+			while _token and _token.get_value() != "var":
+				_token = _tokenizer.get_next()
+			return _parse_export_var(parent)
 			
-		var _token : Token = _tokenizer.get_next()
-		while _token and _token.get_value() != "var":
-			_token = _tokenizer.get_next()
+		else:
+			var _token : Token = _tokenizer.peek(0)
+			while _token and _token.is_whitespace():
+				_token = _tokenizer.get_next()
 			
-		return _parse_export_var(parent)
-	
 	return null
 
 
@@ -205,18 +211,9 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	
 	while !_tokenizer.is_eof():
 		var token : Token = _tokenizer.peek()
-		if token.type == Token.Type.PUNCTUATOR:
-			if token.is_punctuator("."):
-				_tokenizer.get_next()
-				continue
-			elif token.is_punctuator(",") and bracket < 1:
-				break
-			else:
-				match token.get_value():
-					'(', '[', '{':
-						bracket += 1
-					')', ']', '}':
-						bracket -= 1
+		if token.is_punctuator("."):
+			_tokenizer.get_next()
+			continue
 		elif token.is_symbol():
 			_tokenizer.get_next()
 			var symbol : SymbolTable.Symbol = path.add(token.get_value())

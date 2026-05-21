@@ -5,12 +5,15 @@ const _Logger := preload("../../../logger.gd")
 const _Settings := preload("../../../settings.gd")
 const Token := preload("token.gd")
 const Stream := preload("stream.gd")
+const PreprocessorHints = preload("../preprocessor_hints.gd")
 
 const KEYWORDS : Array[String] = ["extends", "class_name", "setget", "const", "signal", "enum", "static", "var", "func", "class", "pass", "if", "else", "elif", "while", "for", "in", "match", "continue", "break", "return", "assert", "yield", "await", "preload", "load", "as", "and", "or", "not", "when"]
 const LITERALS : Array[String] = ["true", "false", "null", "self", "PI", "TAU", "NAN", "INF"]
 const OPERATORS : String = "+-*^/%=<>!&|~"
 const PUNCTUATORS : String = "()[]{},;:."
 const IDENTIFIER_CHARACTERS : String = "1234567890_"
+
+static var _pregex : RegEx = null
 
 var line_count : int
 
@@ -21,6 +24,10 @@ var _line : int
 var _output : Array[Line]
 var _can_be_nodepath : bool = true
 
+## PreprocessorHints
+var _stream_preprocessor : Dictionary = {}
+var _strip_static_typing : bool = false
+var _strip_static_typing_initialized : bool = false
 
 func read(source_code : String) -> void:
 	line_count = 1
@@ -29,9 +36,25 @@ func read(source_code : String) -> void:
 	_line = 0
 	_output = [Line.new()]
 	
+	_read_preprocessor(source_code)
+	
 	_stream = Stream.new(source_code)
 	while _read_next_token(): pass
 
+
+func _read_preprocessor(src : String) -> void:
+	if null == _pregex:
+		_pregex = RegEx.create_from_string("(?m)(?<=\\s|^)##STRIP_([^\\s\\n]+)((?:(?!\\n|##).)*)")
+	
+	for mtch : RegExMatch in _pregex.search_all(src):
+		_stream_preprocessor[mtch.get_string(0).trim_prefix(_Settings.current.preprocessor_prefix)] = mtch.get_string(1).strip_edges()
+
+	if !has_preprocessor(PreprocessorHints.STRIP_IGNORE_STATIC_TYPED_HINT):
+		_strip_static_typing = has_preprocessor(PreprocessorHints.STRIP_STATIC_TYPED_HINT) or has_preprocessor(PreprocessorHints.STRIP_STATIC_TYPED_INITIALIZED_HINT) or _Settings.current.strip_static_typing
+		_strip_static_typing_initialized = has_preprocessor(PreprocessorHints.STRIP_STATIC_TYPED_INITIALIZED_HINT) or _strip_static_typing_initialized or _Settings.current.striped_static_typing_be_initialized
+
+func has_preprocessor(preprocessor : String) -> bool:
+	return _stream_preprocessor.has(preprocessor)
 
 func reset() -> void:
 	_idx = -1
@@ -126,7 +149,126 @@ func generate_source_code() -> String:
 			code += token.get_value()
 	
 	return code
+	
+func _add_default_value(id: String) -> void:
+	var type : int = TYPE_OBJECT
+	
+	for x in TYPE_MAX:
+		if type_string(x) == id:
+			type = x
+			break
+			
+	if type == TYPE_OBJECT:
+		_add_literal("null")
+		return
+	
+	var variant : String = str(type_convert("", type))
+	
+	if variant.is_empty():
+		variant = '""'
+	
+	for x : String in variant:
+		if _is_punctuator(x):
+			_add_punctuator(x)
+		elif _is_whitespace(x):
+			continue
+		elif _is_keyword(x):
+			_add_keyword(x)
+		elif _is_literal(x):
+			_add_literal(x)
+		else:
+			_add_symbol(x)
+	
+func _is_stripped_typed(char : String) -> bool:
+	if _strip_static_typing and char == ":":
+		const breakers : PackedInt64Array = [Token.Type.WHITESPACE, Token.Type.INDENTATION, Token.Type.STATEMENT_BREAK, Token.Type.LINE_BREAK]
+		const snacks : PackedStringArray = ["func", "var", "const"]
+		for x in range(_tokens.size() - 2, -1, -1):
+			var tkn : Token = _tokens[x]
+			if tkn.type in breakers:
+				continue
+			if tkn.type == Token.Type.KEYWORD and tkn.get_value() in snacks:
+				break
+			elif tkn.type == Token.Type.PUNCTUATOR:
+				if tkn.get_value() == ",":
+					continue
+				elif "([".contains(tkn.get_value()):
+					break
+				elif "{".contains(tkn.get_value()):
+					return false
+			elif tkn.type == Token.Type.OPERATOR and tkn.get_value() == "=":
+				break
+			elif tkn.type == Token.Type.NUMBER_LITERAL:
+				continue
+			elif tkn.type == Token.Type.LITERAL or tkn.type == Token.Type.SYMBOL:
+				continue
+			return false
+			
+		var candy : Stream = _stream.snapshot()
+		
+		char = _stream.peek(2)
+		
+		while _is_whitespace(char):
+			_stream.get_next()
+			char = _stream.peek()
+		
+		if char == "=":
+			_stream.get_next()
+			return true
+		else:
+			while _is_whitespace(char) or char == "\\":
+				_stream.get_next()
+				char = _stream.peek()
+				
+			if !char.is_empty() and !(char in ["\n\"`"]):
+				var id : String = _read_while(_is_valid_identifier)
+				if !id.is_empty():
+					char = _stream.peek()
+					while _is_whitespace(char) or char == "\\":
+						_stream.get_next()
+						char = _stream.peek()
+						
+					if char == "[":
+						char = _stream.get_next()
+						while !char.is_empty() and char != "]":
+							char = _stream.get_next()
+						
+					char = _stream.peek()
+					while char != "\n" and char != "=" and (_is_whitespace(char) or char == "\\"):
+						_stream.get_next()
+						char = _stream.peek()
+						
+					if _strip_static_typing_initialized:
+						if char != "=":
+							_add_operator("=")
+							_add_default_value(id)
+						
+					return true
+					
+		_stream = candy
+	return false
 
+func _post_operator() -> void:
+	if _strip_static_typing:
+		if _tokens.size() > 0 and _tokens[_tokens.size() - 1].get_value() == "->":
+			var tkn : Token = _tokens.pop_back()
+			
+			for x : int in range(_output.size() - 1, -1, -1):
+				var l : Line = _output[x]
+				var y : int = l.tokens.rfind(tkn)
+				if y > -1:
+					l.tokens.remove_at(y)
+					break
+					
+			var char : String = _stream.get_next()
+			
+			while _is_whitespace(char) or char == "\\":
+				char = _stream.get_next()
+				
+			if char == ":":
+				return
+			
+			_read_while(_is_valid_identifier)
 
 func _read_next_token() -> bool:
 	if _stream.is_eof():
@@ -156,9 +298,6 @@ func _read_next_token() -> bool:
 	elif char == "#":
 		# Comment
 		_read_comment()
-	elif _is_punctuator(char):
-		# Punctuator
-		_add_punctuator(_stream.get_next())
 	elif "\"'".contains(char):
 		var multi : bool = false
 		
@@ -181,11 +320,16 @@ func _read_next_token() -> bool:
 	elif _is_operator(char):
 		# Operator
 		_read_operator()
+		_post_operator()
+		
 	elif _is_digit(char):
 		# Number(literal)
 		_read_number()
+	elif _is_punctuator(char):
+		if !_is_stripped_typed(char):
+			# Punctuator
+			_add_punctuator(_stream.get_next())
 	elif _is_valid_identifier(char):
-		# Identifier(symbol, keyword or literal)
 		_read_identifier()
 	else:
 		_stream.get_next()
@@ -329,7 +473,7 @@ func _read_operator() -> void:
 
 
 func _read_number() -> void:
-	_add_number_literal(_read_while(_is_digit))
+	_add_number_literal(_read_while(_is_literal_digit))
 	_can_be_nodepath = false
 
 
@@ -384,10 +528,10 @@ func _is_punctuator(char : String) -> bool:
 
 
 func _is_digit(char : String) -> bool:
-	if char == "x" and _stream.peek(0) == "0":
-		return true
-	return ".0123456789".contains(char)
-
+	return "0123456789".contains(char)
+	
+func _is_literal_digit(char : String) -> bool:
+	return ".0123456789_-exabcdef".containsn(char)
 
 func _is_valid_identifier(char : String) -> bool:
 	return TextServerManager.get_primary_interface().is_valid_letter(char.unicode_at(0)) or IDENTIFIER_CHARACTERS.contains(char)
