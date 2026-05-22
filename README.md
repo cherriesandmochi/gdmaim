@@ -303,6 +303,18 @@ func my_func(arg0):
 	return arg0
 ```
 
+`##PRESERVE_ANNOTATION`: This prevents the annotation from being removed from your code.
+
+
+```js 
+@export var do_anything : String ##PRESERVE_ANNOTATION
+````
+=>
+
+```js
+@export var _Jdwiq : String
+```
+
 __Feature filters__
 
 Feature filters provide a way to dynamically strip out code based on the export template feature tags set. There is currently only one preprocessor hint.
