@@ -35,6 +35,11 @@ func _enter_tree() -> void:
 	get_editor_interface().get_base_control().add_child(source_map_viewer)
 
 	_setup()
+	
+	# GDShedor
+	if Engine.has_singleton(&"GDShedor"):
+		for _settings in Engine.get_main_loop().get_nodes_in_group(&"GDShedor"):
+			_settings.call(&"disable_export_check", true)
 
 # Called when exiting scene tree
 func _exit_tree() -> void:
@@ -50,6 +55,11 @@ func _exit_tree() -> void:
 		source_map_viewer.queue_free()
 		
 	_check_settings()
+	
+	# GDShedor
+	if Engine.has_singleton(&"GDShedor"):
+		for _settings in Engine.get_main_loop().get_nodes_in_group(&"GDShedor"):
+			_settings.call(&"disable_export_check", false)
 
 
 # Opens the source map viewer
