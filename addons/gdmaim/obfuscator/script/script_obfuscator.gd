@@ -105,8 +105,8 @@ func generate_line_mappings() -> Array[Dictionary]:
 				
 				if not mappings_in.has(current_s):
 					mappings_in[current_s] = current_o
-				if not mappings_out.has(current_o):
-					mappings_out[current_o] = current_s
+				
+				mappings_out[current_o] = current_s
 			
 			# Advance the trackers by the number of newlines INSIDE this specific token
 			out_line += lines_in_token.size() - 1
