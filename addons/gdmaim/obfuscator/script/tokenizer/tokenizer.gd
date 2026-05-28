@@ -274,26 +274,35 @@ func _read_multi_string() -> void:
 	else:
 		_add_string_multi_line(str, t3)
 	
+	# Discard any trailing whitespace
+	if _is_whitespace(_stream.peek()):
+		_read_whitespace()
+	
+	# Determine if the str is followed by a newline or string function.
+	var has_newline : bool = _stream.peek() == "\n"
+	if has_newline:
+		_stream.get_next()
+		_add_line_break()
+	
 	# Capture the indentation of the line where the multistring started
-	var initial_indentation : String = ""
-	var current_line : Line = _output.back()
-	if current_line.tokens and current_line.tokens[0].type == Token.Type.INDENTATION:
-		initial_indentation = current_line.tokens[0].get_value()
+	var base_indent := ""
+	if _output.back().tokens and _output.back().tokens[0].type == Token.Type.INDENTATION:
+		base_indent = _output.back().tokens[0].get_value()
 		
 	# Append padding lines to maintain 1:1 line counting & indentation depth so the AST doesn't drop scope.
-	var absorbed_newlines : int = str.count("\n")
-	for i in absorbed_newlines:
+	for i in str.count("\n"):
 		line_count += 1
 		var new_line := Line.new()
-		
-		if initial_indentation:
-			# Create an INDENTATION token mapped strictly to this padding line
-			var indent_token := Token.new(Token.Type.INDENTATION, initial_indentation, _tokens.size(), _output.size(), "")
-			new_line.add_token(indent_token)
-			
+		if base_indent:
+			new_line.add_token(Token.new(Token.Type.INDENTATION, base_indent, _tokens.size(), _output.size(), ""))
 		_output.append(new_line)
-		
-	_can_be_nodepath = false
+	
+	# Ensure we force a newline after a bare multiline string
+	if has_newline:
+		line_count += 1
+		_output.append(Line.new())
+	
+	_can_be_nodepath = has_newline
 
 func _read_node_path() -> void:
 	var str : String
