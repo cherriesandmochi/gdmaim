@@ -52,12 +52,21 @@ func _get_addon_path() -> String:
 func _get_name() -> String:
 	return "gdmaim"
 
+func _initialize_third_party() -> void:
+	#GDShedor
+	if Engine.has_singleton(&"GDShedor"):
+		for _settings in Engine.get_main_loop().get_nodes_in_group(&"GDShedor"):
+			_settings.call(&"disable_export_check", true)
+
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
 	_features = features
 	_export_path = path
 	_source_map_filename = _export_path.get_file().get_basename() + Time.get_datetime_string_from_system().replace(":", ".") + ".gd.map"
 	_exported_script_count = 0
 	_enabled = !features.has("no_gdmaim") and settings.obfuscation_enabled # Discrepancy with the objective of this variable in the setting.
+	
+	_initialize_third_party()
+	
 	if !_enabled:
 		return
 		
@@ -130,7 +139,29 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		for script_path in paths:
 			_parse_script(script_path)
 	
+	# GDShedor
+	if Engine.has_singleton(&"GDShedor"):
+		for _settings in Engine.get_main_loop().get_nodes_in_group(&"GDShedor"):
+			var packed : PackedStringArray = _settings.call(&"get_custom_locked")
+			var data : Dictionary = _settings.call(&"get_custom_names")
+			
+			for smb in packed:
+				smb = smb.strip_edges()
+				if smb.is_empty() or smb.begins_with("#"):
+					continue
+					
+				_symbols.lock_symbol_name(smb)
+				
+			for k : StringName in data.keys():
+				var symb : SymbolTable.Symbol = _symbols.create_global_symbol(k)
+				var key : StringName = data[k]
+				_symbols.lock_symbol_name(key)
+				
+				_symbols.rename_symbol(symb, key)
+				
+				
 	_symbols.resolve_symbol_paths()
+	
 	#if settings.obfuscation_enabled: #settings.obfuscation_enabled # Discrepancy with the objective of this variable in the setting.
 		# JUMP 127
 	_symbols.obfuscate_symbols()
@@ -255,7 +286,7 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 	if path.begins_with(_addon_path):
 		skip()
 		return
-		
+	
 	var ext : String = path.get_extension()
 	if ext == "csv":
 		skip() #HACK
@@ -286,6 +317,12 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 		add_file(path, bytes, _compiler != null)
 		_exported_script_count += 1
 
+	else:
+		var data : String = strip(path)
+		if data.is_empty():
+			return
+		skip()
+		add_file(path, data.to_utf8_buffer(), false)
 
 func _get_class_symbols(class_ : String) -> PackedStringArray:
 	var symbols : PackedStringArray
@@ -512,6 +549,46 @@ func _convert_text_to_binary_resource(extension : String, text_data : String) ->
 	
 	return FileAccess.get_file_as_bytes(path + binary_ext)
 
+
+func strip(path : String) -> String:
+	var out : String = ""
+	
+	var resources : PackedStringArray = ResourceObfuscator.Resources
+	if FileAccess.file_exists(path) and path.get_extension().begins_with(resources[resources.size() - 1]):
+		if Engine.has_singleton(&"GDShedor"):
+			for _settings in Engine.get_main_loop().get_nodes_in_group(&"GDShedor"):
+				if _settings.has_method(&"set_buffer"):
+					var instance : Object = Engine.get_singleton(&"GDShedor")
+					var data : String = FileAccess.get_file_as_string(path)
+					instance.notification(3164312)
+					_settings.call(&"set_buffer", data)
+					instance.notification(2162314)
+					out = instance.get_data()
+					
+					var err : Variant = instance.call(&"get_error")
+					if err is int:
+						if err == OK:
+							print("[GDShedor] Export OK {0}".format([path]))
+						else:
+							out = ""
+							printerr("[GDShedor] Export Error Code {0} : {1} ".format([err, path]))
+					break
+	
+		elif _Settings.current.strip_comments:
+			var data : String = FileAccess.get_file_as_string(path)
+			var idx : int = 0
+			for x : RegExMatch in ResourceObfuscator.c_strip.search_all(data):
+				out += data.substr(idx, x.get_start() - idx)
+
+				if not x.get_string(1).is_empty():
+					out += x.get_string(1)
+				
+				idx = x.get_end()
+
+			if idx < data.length():
+				out += data.substr(idx, -1)
+				
+	return out
 
 static func _generate_uuid(path : String) -> String:
 	var bytes : PackedByteArray

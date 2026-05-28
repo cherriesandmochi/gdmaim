@@ -7,6 +7,12 @@ var _line : int = 1
 var _col : int = 0
 
 
+func snapshot() -> RefCounted:
+	var shot : RefCounted = new(_data)
+	for x : StringName in [&"_idx", &"_line", &"_col"]:
+		shot.set(x, get(x))
+	return shot
+
 func _init(characters : String) -> void:
 	_data = characters
 
@@ -19,7 +25,6 @@ func get_next() -> String:
 	else:
 		_col += 1
 	return _data[_idx] if _idx < _data.length() else ""
-
 
 func peek(offset : int = 1) -> String:
 	return _data[_idx + offset] if _idx + offset < _data.length() else ""

@@ -416,7 +416,7 @@ func _strip_code() -> void:
 						elif token.get_value() in Builtins.DECORATORS:
 							continue
 						# Other @export's and a few others might have parenthesis after them, with whitespace possibly after the parenthesis
-						elif token.get_value().contains("@export") or token.get_value() in Builtins.ANNOTATIONS:
+						elif (token.get_value().contains("@export") or token.get_value() in Builtins.ANNOTATIONS) and !line.has_hint(PreprocessorHints.PRESERVE_ANNOTATION):
 							line.remove_token(i)
 							if line.tokens.size() > i and line.tokens[i].is_punctuator("("):
 								var last_token: Token
