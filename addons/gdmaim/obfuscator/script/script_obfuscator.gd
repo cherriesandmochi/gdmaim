@@ -78,22 +78,50 @@ func generate_line_mappings() -> Array[Dictionary]:
 	var mappings_in : Dictionary
 	var mappings_out : Dictionary
 	var output_lines : Array[Tokenizer.Line] = tokenizer.get_output_lines()
-	for i in output_lines.size():
-		var line : Tokenizer.Line = output_lines[i]
+	
+	var out_line : int = 0
+	
+	for line in output_lines:
+		var src_line : int = -1
+		
+		# Find the block's starting line from the first valid token.
 		for token in line.tokens:
 			if token.line != -1:
-				mappings_in[token.line] = i
-				mappings_out[i] = token.line
+				src_line = token.line
 				break
-	#HACK it works?
-	mappings_in[tokenizer.line_count-1] = output_lines.size()
-	mappings_out[output_lines.size()] = tokenizer.line_count-1
+		
+		# Skip empty padding lines added by the tokenizer
+		if src_line == -1 and line.tokens.is_empty():
+			continue
+			
+		for token in line.tokens:
+			var text : String = token.get_value()
+			var lines_in_token : PackedStringArray = text.split("\n")
+			
+			# Map every internal line of the token 1:1
+			for nl_idx in lines_in_token.size():
+				var current_s = src_line + nl_idx
+				var current_o = out_line + nl_idx
+				
+				if not mappings_in.has(current_s):
+					mappings_in[current_s] = current_o
+				
+				mappings_out[current_o] = current_s
+			
+			# Advance the trackers by the number of newlines INSIDE this specific token
+			out_line += lines_in_token.size() - 1
+			src_line += lines_in_token.size() - 1
+
+	mappings_in[tokenizer.line_count-1] = out_line
+	mappings_out[out_line] = tokenizer.line_count-1
 	
 	var last_valid : int = 0
 	for i in tokenizer.line_count:
-		var from : int = mappings_in.get(i, last_valid)
-		last_valid = from
-		mappings_in[i] = from
+		var from : int = mappings_in.get(i, -1)
+		if from != -1:
+			last_valid = from
+		else:
+			mappings_in[i] = last_valid
 	
 	return [mappings_in, mappings_out]
 
@@ -165,7 +193,7 @@ func _string_obfuscation(token : Token) -> void:
 				tail += candy_holders[x]
 				
 			# prevent set_value from removing the first character if it's % instead of a quote "
-			token.set_value("\"" + tail)
+			token.set_value(token.decorator + tail)
 			return
 			
 	token.set_value(_symbol_table.obfuscate_string_global(str))
@@ -241,10 +269,9 @@ func _func_feature_filter(token : Token, line : Tokenizer.Line, feature : String
 		tokenizer.get_output_line(line_idx_from + 1).insert_token(1, Token.new(Token.Type.KEYWORD, func_body, 0, line_idx_from + 1))
 		while line_idx < tokenizer.get_output_line_count():
 			var tline : Tokenizer.Line = tokenizer.get_output_line(line_idx)
-			if tline.has_statement():
-				if tline.get_indentation() <= indentation:
-					break
-				last_valid = line_idx
+			if tline.has_statement() and tline.get_indentation() <= indentation:
+				break
+			last_valid = line_idx
 			if tline.tokens:
 				tokenizer.seek_token(tline.tokens[0])
 			line_idx += 1

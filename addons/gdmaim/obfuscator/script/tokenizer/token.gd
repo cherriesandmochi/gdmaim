@@ -45,7 +45,10 @@ func _to_string() -> String:
 
 
 func set_value(new_val : String) -> void:
-	_value.set_value(new_val.substr(len(decorator), len(new_val)-len(decorator)) if decorator else new_val)
+	if decorator and new_val.begins_with(decorator):
+		_value.set_value(new_val.substr(len(decorator)))
+	else:
+		_value.set_value(new_val)
 
 
 func get_value(decorated : bool = true) -> String:
