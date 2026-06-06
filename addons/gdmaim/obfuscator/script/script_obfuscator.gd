@@ -20,16 +20,31 @@ var tokenizer : Tokenizer
 var _symbol_table : SymbolTable
 var _ast : AST.ASTNode
 
+var _space_rgx : RegEx = null
+var _last_tabs_length : int = 0
 
 func _init(path : String) -> void:
 	self.path = path
 
+func space2tabs(src: String, tabs: int = 4) -> String:
+	if _space_rgx == null or tabs != _last_tabs_length:
+		_last_tabs_length = max(tabs, 1)
+		var srch : String = ""
+		for __ : int in range(_last_tabs_length):
+			srch += " "
+		_space_rgx = RegEx.create_from_string(srch)
+		
+	var regex : RegEx = _space_rgx
+	if regex.search(src, 0, -1) != null:
+		src = regex.sub(src, "\t", true)
+		
+	return src
 
 func parse(source_code : String, symbol_table : SymbolTable, autoload_symbol : SymbolTable.Symbol = null) -> void:
-	self.source_code = source_code
+	self.source_code = space2tabs(source_code)
 	_symbol_table = symbol_table
 	tokenizer = Tokenizer.new()
-	tokenizer.read(source_code)
+	tokenizer.read(self.source_code)
 	parser = Parser.new()
 	_ast = parser.read(tokenizer, symbol_table, autoload_symbol)
 
