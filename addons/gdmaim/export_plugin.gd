@@ -615,6 +615,5 @@ static func _generate_uuid(path : String) -> String:
 func _space2tabs(src: String) -> String:
 	if _space_rgx == null:
 		_space_rgx = RegEx.create_from_string(" {%d}" % _space_tabs_size)
-	if _space_rgx.search(src, 0, -1) != null:
-		src = _space_rgx.sub(src, "\t", true)
+	src = _space_rgx.sub(src, "\t", true)
 	return src
