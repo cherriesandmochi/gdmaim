@@ -20,10 +20,8 @@ var tokenizer : Tokenizer
 var _symbol_table : SymbolTable
 var _ast : AST.ASTNode
 
-
 func _init(path : String) -> void:
 	self.path = path
-
 
 func parse(source_code : String, symbol_table : SymbolTable, autoload_symbol : SymbolTable.Symbol = null) -> void:
 	self.source_code = source_code

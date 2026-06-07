@@ -29,10 +29,12 @@ var _src_obfuscators : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
-var _rgx : RegEx = null
+var _rgx : RegEx
 var _godot_files : GodotFiles
 var _compiler
 var _compress_mode : int
+var _space_rgx : RegEx
+var _space_tabs_size : int
 
 #region addon_path
 static var _addon_path : String = "res://addons/gdmaim/"
@@ -72,6 +74,13 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		
 	# Get current addon folder
 	_addon_path = _get_addon_path()
+	
+	_space_tabs_size = 4
+	var editor : EditorSettings = EditorInterface.get_editor_settings()
+	if editor:
+		var value = editor.get_setting("text_editor/behavior/indent/size")
+		if value is int:
+			_space_tabs_size = value
 	
 	_convert_text_resources_to_binary = ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", false)
 	if _convert_text_resources_to_binary:
@@ -387,7 +396,7 @@ func _parse_script(path : String) -> void:
 			_Logger.write("---------- " + " Parsing script embedded " + embedded_path + " ----------")
 
 
-			obfuscator.parse(_source_code, _symbols, _symbols.create_global_symbol(_autoloads[embedded_path]) if _autoloads.has(embedded_path) else null)
+			obfuscator.parse(_space2tabs(_source_code), _symbols, _symbols.create_global_symbol(_autoloads[embedded_path]) if _autoloads.has(embedded_path) else null)
 			obfuscator.check_exclusion_source(path, _source_code)
 
 			_Logger.write("\nAbstract Syntax Tree\n" + obfuscator._ast.print_tree(-1))
@@ -404,7 +413,7 @@ func _parse_script(path : String) -> void:
 	_Logger.write("Export log for '" + path + "'\n")
 	_Logger.write("---------- " + " Parsing script " + path + " ----------")
 	
-	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
+	obfuscator.parse(_space2tabs(source_code), _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
 	obfuscator.check_exclusion_source(path, source_code)
 	
 	if obfuscator.get_class_symbol():
@@ -602,3 +611,9 @@ static func _generate_uuid(path : String) -> String:
 	bytes[6] = (bytes[6] & 0x0f) | 0x40
 	bytes[8] = (bytes[8] & 0x3f) | 0x80
 	return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (bytes as Array)
+
+func _space2tabs(src: String) -> String:
+	if _space_rgx == null:
+		_space_rgx = RegEx.create_from_string(" {%d}" % _space_tabs_size)
+	src = _space_rgx.sub(src, "\t", true)
+	return src
