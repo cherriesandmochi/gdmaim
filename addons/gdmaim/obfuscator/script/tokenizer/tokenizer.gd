@@ -285,9 +285,13 @@ func _read_next_token() -> bool:
 	
 	var char : String = _stream.peek()
 	if char == '\\':
-		# Statement break
-		_stream.get_next()
-		_add_statement_break()
+		if _is_continue_line():
+			_stream.get_next()
+			_read_continue_line()
+		else:
+			# Statement break
+			_stream.get_next()
+			_add_statement_break()
 	elif _is_whitespace(char):
 		if _stream.get_column_pos() == 0:
 			# Indentation
@@ -345,7 +349,6 @@ func _read_indentation() -> void:
 func _read_whitespace() -> void:
 	_add_whitespace(_read_while(_is_whitespace))
 
-
 func _read_comment() -> void:
 	var text : String = _read_until("\n")
 	if text.begins_with(_Settings.current.preprocessor_prefix):
@@ -355,6 +358,13 @@ func _read_comment() -> void:
 			if slices:
 				_output.back().add_hint(slices[0], slices[1] if slices.size() == 2 else "")
 	_add_comment(text)
+
+func _read_continue_line() -> void:
+	var nchar : String = _stream.peek()
+	
+	while _is_whitespace(nchar) or nchar == "\n":
+		_stream.get_next()
+		nchar = _stream.peek()
 
 
 func _read_string() -> void:
@@ -536,6 +546,9 @@ func _is_operator(char : String) -> bool:
 func _is_punctuator(char : String) -> bool:
 	return PUNCTUATORS.contains(char)
 
+func _is_continue_line() -> bool:
+	var nchar : String = _stream.peek(2)
+	return _is_whitespace(nchar) or nchar == "\n"
 
 func _is_digit(char : String) -> bool:
 	return "0123456789".contains(char)

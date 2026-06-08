@@ -286,6 +286,7 @@ func _export_end() -> void:
 	_src_obfuscators.clear()
 	_res_obfuscators.clear()
 	_Logger.clear_all()
+	_space_rgx = null
 
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
