@@ -526,8 +526,15 @@ func _parse_enum(parent : AST.ASTNode) -> AST.EnumDef:
 	
 	if _class_symbol and ast:
 		_class_symbol.add_child(ast.symbol)
-	
+
 	return ast
+
+
+# Mirrors SymbolTable.create_symbol(): true for declarations which received a
+# global symbol. Function-local declarations get uniquely renamed symbols, so
+# registering them as class members would shadow same-named global members.
+func _is_class_level(ast : AST.ASTNode) -> bool:
+	return ast.get_parent() is AST.Sequence and ast.get_parent().get_parent() is AST.Class
 
 
 func _parse_enum_key(parent : AST.ASTNode) -> AST.EnumDef.KeyDef:
@@ -574,9 +581,9 @@ func _parse_const(parent : AST.ASTNode) -> AST.Const:
 	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
-	if _class_symbol:
+	if _class_symbol and _is_class_level(ast):
 		_class_symbol.add_child(ast.symbol)
-	
+
 	return ast
 
 
@@ -598,9 +605,9 @@ func _parse_var(parent : AST.ASTNode) -> AST.Var:
 	ast.default = _parse_var_default(ast)
 	ast.getset = _parse_var_getset(ast)
 	
-	if _class_symbol and (_is_autoload or is_static):
+	if _class_symbol and (_is_autoload or is_static) and _is_class_level(ast):
 		_class_symbol.add_child(ast.symbol)
-	
+
 	return ast
 
 
@@ -719,9 +726,9 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 			if string_params.has(params[i].symbol.get_name()):
 				ast.symbol.add_string_param(i)
 	
-	if _class_symbol and (_is_autoload or is_static):
+	if _class_symbol and (_is_autoload or is_static) and _is_class_level(ast):
 		_class_symbol.add_child(ast.symbol)
-	
+
 	_bracket_lock += bracket_lock
 	if bracket_lock:
 		_current_indentation = indentation
@@ -820,6 +827,7 @@ func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
 						if function:
 							ast.statements.append(function)
 				Token.Type.SYMBOL:
+					_statement_break = false  # Statement break persists until next non-whitespace token
 					var symbol : AST.ASTNode = _parse_symbol(ast)
 					if symbol:
 						ast.statements.append(symbol)
@@ -827,9 +835,11 @@ func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
 					if token.get_value() == ':' and _bracket_lock <= 0:
 						return false
 					else:
+						_statement_break = false
 						_parse_punctuator()
 				_:
 					if not _parse_and_process_indentation():
+						_statement_break = false
 						_tokenizer.get_next()
 			return true
 		)
@@ -860,6 +870,7 @@ func _parse_var_getset(parent : AST.ASTNode) -> AST.Sequence:
 					_tokenizer.get_next()
 			else:
 				if not _parse_and_process_indentation():
+					_statement_break = false  # Statement break persists until next non-whitespace token
 					_tokenizer.get_next()
 			return true
 		)
