@@ -613,7 +613,37 @@ static func _generate_uuid(path : String) -> String:
 	return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (bytes as Array)
 
 func _space2tabs(src: String) -> String:
+	# Converts leading indentation spaces to tabs, line by line.
+	# Only the leading whitespace of each line is modified; spaces inside string
+	# literals and elsewhere in the line are left untouched.
+	# Note: leading spaces in multiline string literals (""") are still affected —
+	# this is a known accepted limitation.
 	if _space_rgx == null:
-		_space_rgx = RegEx.create_from_string(" {%d}" % _space_tabs_size)
-	src = _space_rgx.sub(src, "\t", true)
-	return src
+		_space_rgx = RegEx.create_from_string("^([ \t]*)")
+	var n : int = _space_tabs_size
+	var lines : PackedStringArray = src.split("\n", true)
+	for i in lines.size():
+		var line : String = lines[i]
+		var m : RegExMatch = _space_rgx.search(line)
+		if m == null:
+			continue
+		var leading : String = m.get_string(1)
+		if leading.is_empty():
+			continue
+		# Count existing tabs and spaces in the leading whitespace, then convert
+		# every N consecutive spaces to one tab (existing tabs are kept as-is).
+		var tabs : int = 0
+		var spaces : int = 0
+		for ch in leading:
+			if ch == "\t":
+				# A tab that was already there counts as one indent level.
+				tabs += 1
+				spaces = 0 # reset any partial space run before this tab
+			else:
+				spaces += 1
+				if spaces == n:
+					tabs += 1
+					spaces = 0
+		var new_leading : String = "\t".repeat(tabs) + " ".repeat(spaces)
+		lines[i] = new_leading + line.substr(leading.length())
+	return "\n".join(lines)
