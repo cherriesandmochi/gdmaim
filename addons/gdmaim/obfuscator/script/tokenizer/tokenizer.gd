@@ -331,7 +331,7 @@ func _read_next_token() -> bool:
 		# Number(literal)
 		_read_number()
 	elif _is_punctuator(char):
-		if !_is_stripped_typed(char) and !_is_continue_sequence_line(char, ",{", "\n"):
+		if !_is_stripped_typed(char) and !_is_continue_sequence_line(char, ",([{", "\n"):
 			# Punctuator
 			_add_punctuator(_stream.get_next())
 	elif _is_valid_identifier(char):
