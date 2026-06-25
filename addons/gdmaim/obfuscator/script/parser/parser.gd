@@ -147,7 +147,6 @@ func _parse_punctuator() -> void:
 		')', ']', '}':
 			_bracket_lock -= 1
 
-
 func _parse_annotation(parent : AST.ASTNode) -> AST.ASTNode:
 	var token : Token = _tokenizer.get_next()
 
@@ -204,16 +203,29 @@ func _parse_string_symbol(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 
 func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	var path : SymbolTable.SymbolPath = _symbol_table.create_symbol_path(ast_node)
-	var bracket : int = 0
 	path.maybe_local = !_tokenizer.peek(0) or !_tokenizer.peek(0).is_punctuator(".")
 	path.set_log(_Logger.current_log)
 	path.line = _tokenizer.peek().line
 	
 	while !_tokenizer.is_eof():
 		var token : Token = _tokenizer.peek()
-		if token.is_punctuator("."):
-			_tokenizer.get_next()
-			continue
+		if token.is_punctuator():
+			var value : String = token.get_value()
+			if ".[".contains(value):
+				_tokenizer.get_next()
+				if value == "[":
+					while !_tokenizer.is_eof():
+						token = _tokenizer.peek()
+						if token.is_punctuator("]"):
+							_tokenizer.get_next()
+							break
+						elif token.is_symbol():
+							_tokenizer.get_next()
+							var _symbol : SymbolTable.Symbol = path.add(token.get_value())
+							token.link_symbol(_symbol)
+						else:
+							_tokenizer.get_next()
+				continue
 		elif token.is_symbol():
 			_tokenizer.get_next()
 			var symbol : SymbolTable.Symbol = path.add(token.get_value())
