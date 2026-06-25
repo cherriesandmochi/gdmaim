@@ -148,6 +148,11 @@ const GLOBALS : Array[String] = [
 	"COUNTERCLOCKWISE",
 	"OK",
 	"FAILED",
+	
+	# Built-in Types
+	"int",
+	"float",
+	"bool",
 ]
 const VARIANTS : Array[Dictionary] = [
 	{
