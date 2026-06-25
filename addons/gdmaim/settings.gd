@@ -52,6 +52,18 @@ var _exclude_files : String = "":
 				continue
 			exclude_files.append(_str)
 var exclude_resources : bool = false
+
+var space_as_tabs : int = -1:
+	get:
+		if space_as_tabs < 0:
+			space_as_tabs = 4
+			var editor : EditorSettings = EditorInterface.get_editor_settings()
+			if editor:
+				var value = editor.get_setting("text_editor/behavior/indent/size")
+				if value is int:
+					space_as_tabs = maxi(value, 1)
+					
+		return space_as_tabs
 		
 var _cfg := ConfigFile.new()
 var _entries : Dictionary

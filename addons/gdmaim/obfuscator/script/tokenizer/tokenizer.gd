@@ -275,12 +275,13 @@ func _read_next_token() -> bool:
 		return false
 	
 	if _stream.peek() == "\n":
-		# Line break
-		_stream.get_next()
-		_add_line_break()
-		line_count += 1
-		_output.append(Line.new())
-		_can_be_nodepath = true
+		if !_read_sequence_break_line():
+			# Line break
+			_stream.get_next()
+			_add_line_break()
+			line_count += 1
+			_output.append(Line.new())
+			_can_be_nodepath = true
 		return true
 	
 	var char : String = _stream.peek()
@@ -330,7 +331,7 @@ func _read_next_token() -> bool:
 		# Number(literal)
 		_read_number()
 	elif _is_punctuator(char):
-		if !_is_stripped_typed(char):
+		if !_is_stripped_typed(char) and !_is_continue_sequence_line(char, ",([{", "\n"):
 			# Punctuator
 			_add_punctuator(_stream.get_next())
 	elif _is_valid_identifier(char):
@@ -340,11 +341,47 @@ func _read_next_token() -> bool:
 		_Logger.write("ERROR: Tokenizer._read_next_token() - Invalid character '" + char + "' at " + _stream.get_pos_str())
 	
 	return true
-
+		
+func _is_continue_sequence_line(char : String, from : String, to : String) -> bool:
+	for x : String in from:
+		if char == x:
+			_add_punctuator(_stream.get_next())
+			_read_while(_is_whitespace)
+			if _stream.peek() == to:
+				_stream.get_next()
+				_read_while(_is_whitespace)
+			return true
+	return false
+	
+func _read_sequence_break_line() -> bool:
+	var idx : int = 1
+	var char : String = " "
+	while !char.is_empty():
+		idx += 1
+		char = _stream.peek(idx)
+		
+		if _is_whitespace(char):
+			continue
+			
+		if ",})]".contains(char):
+			_stream.get_next()
+			_read_while(_is_whitespace)
+			return true
+		
+		break
+	return false
 
 func _read_indentation() -> void:
-	_add_indentation(_read_while(_is_whitespace).length())
-
+	var x0 : int = _Settings.current.space_as_tabs
+	var ax : int = 0
+	var zf : bool = true
+	
+	while zf:
+		var bx : int = _read_while(_is_space).length() / x0 + _read_while(_is_tab).length()
+		ax += bx
+		zf = bx > 0
+		
+	_add_indentation(ax)
 
 func _read_whitespace() -> void:
 	_add_whitespace(_read_while(_is_whitespace))
@@ -536,8 +573,13 @@ func _read_until(delimeters : String) -> String:
 	return str
 
 func _is_whitespace(char : String) -> bool:
-	return char == " " or char == "\t"
+	return _is_space(char) or _is_tab(char)
 
+func _is_space(char : String) -> bool:
+	return char == " "
+	
+func _is_tab(char : String) -> bool:
+	return char == "\t"
 
 func _is_operator(char : String) -> bool:
 	return OPERATORS.contains(char)
