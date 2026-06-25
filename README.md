@@ -33,7 +33,7 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 
 ### Vulnerability of GDScripts
 
-GDScripts are stored as is when exporting a project, which makes it very easy for anyone to gain full access to the original source code, using tools like [gdsdecomp](https://github.com/bruvzg/gdsdecomp). Godot does have built-in [encryption](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_script_encryption_key.html), but that will only deter people who don't know about [gdke](https://github.com/pozm/gdke), which extracts the encryption key from the executable.
+GDScripts are stored as is when exporting a project, which makes it very easy for anyone to gain full access to the original source code, using tools like [gdsdecomp](https://github.com/bruvzg/gdsdecomp). Godot does have built-in [encryption](https://docs.godotengine.org/en/stable/engine_details/development/compiling/compiling_with_script_encryption_key.html), but that will only deter people who don't know about [gdke](https://github.com/pozm/gdke), which extracts the encryption key from the executable.
 
 Thus, it's very easy for people to get the entire GDScript source code of any exported project.
 This also means that writing cheats for multiplayer games becomes a lot easier, which includes finding and taking advantage of vulnerabilities in server-authoritative code.
@@ -82,7 +82,7 @@ To configure this plugin, open the GDMaim dock on the bottom left, right next to
 
 `Preprocessor prefix`: The prefix to use for preprocessor hints.
 
-`Strip Static Typing`: Allow remove the typed definiton in [vars | functions].
+`Strip Static Typing`: Allow remove the typed definition in [vars | functions].
 
 `Initialize Stripped Typed Variables`: Complement of Strip Static Typing Action, this add a initialized value.
 
