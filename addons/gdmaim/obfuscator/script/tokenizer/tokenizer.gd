@@ -162,7 +162,7 @@ func _add_default_value(id: String) -> void:
 		_add_literal("null")
 		return
 	
-	var variant : String = str(type_convert("", type))
+	var variant : String = "Color()" if type == TYPE_COLOR else str(type_convert("", type))
 	
 	if variant.is_empty():
 		variant = '""'
