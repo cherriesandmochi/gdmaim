@@ -8,6 +8,7 @@ const Token := preload("../tokenizer/token.gd")
 const Tokenizer := preload("../tokenizer/tokenizer.gd")
 const SymbolTable := preload("../../symbol_table.gd")
 const AST := preload("ast.gd")
+const BUILT_IN := preload("../../../builtins.gd")
 
 var _tokenizer : Tokenizer
 var _symbol_table : SymbolTable
@@ -201,6 +202,9 @@ func _parse_string_symbol(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	return path
 
 
+func _is_symbol_typed(token : Token) -> bool:
+	return null != token and token.get_value() in BUILT_IN.SYMBOLS_TYPED
+
 func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 	var path : SymbolTable.SymbolPath = _symbol_table.create_symbol_path(ast_node)
 	path.maybe_local = !_tokenizer.peek(0) or !_tokenizer.peek(0).is_punctuator(".")
@@ -211,9 +215,12 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 		var token : Token = _tokenizer.peek()
 		if token.is_punctuator():
 			var value : String = token.get_value()
-			if ".[".contains(value):
+			if "." == value:
 				_tokenizer.get_next()
-				if value == "[":
+				continue
+			elif "[" == value:
+				if _is_symbol_typed(_tokenizer.peek(0)):
+					_tokenizer.get_next()
 					while !_tokenizer.is_eof():
 						token = _tokenizer.peek()
 						if token.is_punctuator("]"):
@@ -225,7 +232,7 @@ func _parse_symbol_path(ast_node : AST.ASTNode) -> SymbolTable.SymbolPath:
 							token.link_symbol(_symbol)
 						else:
 							_tokenizer.get_next()
-				continue
+					continue
 		elif token.is_symbol():
 			_tokenizer.get_next()
 			var symbol : SymbolTable.Symbol = path.add(token.get_value())

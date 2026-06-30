@@ -1133,6 +1133,11 @@ const DECORATORS : PackedStringArray = [
 	"@abstract"
 ]
 
+const SYMBOLS_TYPED : PackedStringArray = [
+	"Array",
+	"Dictionary"
+]
+
 static func to_list_of_methods(raw : String) -> String:
 	var methods : String
 	
