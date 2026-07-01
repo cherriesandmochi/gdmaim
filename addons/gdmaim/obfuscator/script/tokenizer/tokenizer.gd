@@ -162,7 +162,7 @@ func _add_default_value(id: String) -> void:
 		_add_literal("null")
 		return
 	
-	var variant : String = "Color()" if type == TYPE_COLOR else str(type_convert("", type))
+	var variant : String = get_default_value(type)
 	
 	if variant.is_empty():
 		variant = '""'
@@ -729,3 +729,46 @@ class Line:
 			if token.get_value() == value:
 				return true
 		return false
+
+func get_default_value(type: int) -> Variant:
+	match type:
+		TYPE_NIL: return "null"
+		TYPE_BOOL: return "false"
+		TYPE_INT: return "0"
+		TYPE_FLOAT: return "0.0"
+		TYPE_STRING: return ""
+		TYPE_VECTOR2: return "Vector2.ZERO"
+		TYPE_VECTOR2I: return "Vector2i.ZERO"
+		TYPE_RECT2: return "Rect2()"
+		TYPE_RECT2I: return "Rect2i()"
+		TYPE_VECTOR3: return "Vector3.ZERO"
+		TYPE_VECTOR3I: return "Vector3i.ZERO"
+		TYPE_TRANSFORM2D: return "Transform2D()"
+		TYPE_VECTOR4: return "Vector4.ZERO"
+		TYPE_VECTOR4I: return "Vector4i.ZERO"
+		TYPE_PLANE: return "Plane()"
+		TYPE_QUATERNION: return "Quaternion()"
+		TYPE_AABB: return "AABB()"
+		TYPE_BASIS: return "Basis()"
+		TYPE_TRANSFORM3D: return "Transform3D()"
+		TYPE_PROJECTION: return "Projection()"
+		TYPE_COLOR: return "Color.BLACK"
+		TYPE_STRING_NAME: return &""
+		TYPE_NODE_PATH: return "NodePath()"
+		TYPE_RID: return "RID()"
+		TYPE_OBJECT: return "null"
+		TYPE_CALLABLE: return "Callable()"
+		TYPE_SIGNAL: return "Signal()"
+		TYPE_DICTIONARY: return "{}"
+		TYPE_ARRAY: return "[]"
+		TYPE_PACKED_BYTE_ARRAY: return "PackedByteArray()"
+		TYPE_PACKED_INT32_ARRAY: return "PackedInt32Array()"
+		TYPE_PACKED_INT64_ARRAY: return "PackedInt64Array()"
+		TYPE_PACKED_FLOAT32_ARRAY: return "PackedFloat32Array()"
+		TYPE_PACKED_FLOAT64_ARRAY: return "PackedFloat64Array()"
+		TYPE_PACKED_STRING_ARRAY: return "PackedStringArray()"
+		TYPE_PACKED_VECTOR2_ARRAY: return "PackedVector2Array()"
+		TYPE_PACKED_VECTOR3_ARRAY: return "PackedVector3Array()"
+		TYPE_PACKED_COLOR_ARRAY: return "PackedColorArray()"
+		TYPE_PACKED_VECTOR4_ARRAY: return "PackedVector4Array()"
+	return str(type_convert("", type))
