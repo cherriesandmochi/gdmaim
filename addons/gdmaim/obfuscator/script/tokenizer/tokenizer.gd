@@ -356,14 +356,32 @@ func _is_continue_sequence_line(char : String, from : String, to : String) -> bo
 func _read_sequence_break_line() -> bool:
 	var idx : int = 1
 	var char : String = " "
+	var t1 : int = 0
+	
 	while !char.is_empty():
 		idx += 1
 		char = _stream.peek(idx)
-		
-		if _is_whitespace(char):
+				
+		if _is_space(char):
+			continue
+		elif _is_tab(char):
+			t1 += 1
 			continue
 			
 		if ",})]".contains(char):
+			var dt : String = _stream._data 
+			var t0 : int = 0
+			for x : int in range(_stream._idx, -1, -1):
+				var c : String = dt[x] 
+				if c != "\n":
+					if _is_tab(c):
+						t0 += 1
+				else:
+					break
+			
+			if t0 >= t1:
+				return false
+				
 			_stream.get_next()
 			_read_while(_is_whitespace)
 			return true
