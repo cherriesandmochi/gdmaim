@@ -69,7 +69,18 @@ var _cfg := ConfigFile.new()
 var _entries : Dictionary
 var _categories : Array[Category]
 
-static var current : _Settings
+static var _current : _Settings
+
+# Lazily initialized so headless/CLI exports — and any context that never ran the editor
+# plugin's _enter_tree() — still get a valid, export.cfg-loaded Settings instead of null.
+# Constructing a _Settings runs _init(), which sets `current = self` and loads export.cfg.
+static var current : _Settings:
+	get:
+		if not _current:
+			_current = _Settings.new()
+		return _current
+	set(value):
+		_current = value
 
 func _init() -> void:
 	current = self

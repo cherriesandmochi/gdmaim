@@ -59,6 +59,10 @@ func _initialize_third_party() -> void:
 			_settings.call(&"disable_export_check", true)
 
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
+	# Headless/CLI exports don't run the editor plugin's _enter_tree(), so `settings` may be unset
+	# here. Fall back to the (lazily-initialized) shared singleton the obfuscator components read.
+	if not settings:
+		settings = _Settings.current
 	_features = features
 	_export_path = path
 	_source_map_filename = _export_path.get_file().get_basename() + Time.get_datetime_string_from_system().replace(":", ".") + ".gd.map"
