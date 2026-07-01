@@ -753,7 +753,7 @@ func get_default_value(type: int) -> Variant:
 		TYPE_TRANSFORM3D: return "Transform3D()"
 		TYPE_PROJECTION: return "Projection()"
 		TYPE_COLOR: return "Color.BLACK"
-		TYPE_STRING_NAME: return &""
+		TYPE_STRING_NAME: return "&\"\""
 		TYPE_NODE_PATH: return "NodePath()"
 		TYPE_RID: return "RID()"
 		TYPE_OBJECT: return "null"
