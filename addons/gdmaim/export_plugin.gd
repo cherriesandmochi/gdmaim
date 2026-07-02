@@ -63,6 +63,12 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_export_path = path
 	_source_map_filename = _export_path.get_file().get_basename() + Time.get_datetime_string_from_system().replace(":", ".") + ".gd.map"
 	_exported_script_count = 0
+	
+	if !is_instance_valid(settings):
+		push_error("Not settings defined!\nObfuscation not executed for [{0}]".format([_export_path]))
+		return
+		
+	settings.initialize_settings(true)
 	_enabled = !features.has("no_gdmaim") and settings.obfuscation_enabled # Discrepancy with the objective of this variable in the setting.
 	
 	_initialize_third_party()

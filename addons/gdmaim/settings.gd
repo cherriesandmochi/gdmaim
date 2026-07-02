@@ -68,11 +68,22 @@ var space_as_tabs : int = -1:
 var _cfg := ConfigFile.new()
 var _entries : Dictionary
 var _categories : Array[Category]
+var _initialized : bool = false
 
 static var current : _Settings
 
-func _init() -> void:
-	current = self
+func _init(make_as_global : bool) -> void:
+	initialize_settings(make_as_global)
+	
+func is_initialized() -> bool:
+	return _initialized
+	
+func initialize_settings(make_as_global_settings : bool = false, force_load_config : bool = false) -> void:
+	if make_as_global_settings and current != self:
+		current = self
+	
+	if _initialized and !force_load_config:
+		return
 	
 	set_category("obfuscator", "Obfuscation")
 	add_entry("obfuscation_enabled", "enabled", "Enable Obfuscation", "If false, skip obfuscation entirely, but still allow post-processing to take place.")
@@ -120,6 +131,8 @@ func _init() -> void:
 	#add_entry("obfuscate_debug_only", "obfuscate_debug_only", "", "")
 	
 	deserialize()
+	
+	_initialized = true
 
 
 func set_category(cfg_region : String, visible_name : String) -> void:
