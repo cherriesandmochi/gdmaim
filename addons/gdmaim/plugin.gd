@@ -18,7 +18,8 @@ func _enter_tree() -> void:
 	name = "GDMaim"
 	
 	GodotFiles.check_backups()
-	settings = _Settings.new()
+	
+	settings = _Settings.new(true)
 	
 	script_processor = preload("export_plugin.gd").new()
 	script_processor.settings = settings
