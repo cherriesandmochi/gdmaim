@@ -754,6 +754,7 @@ func _parse_params(parent : AST.ASTNode) -> Array[AST.Parameter]:
 		return params
 	
 	var pth : int = 0
+	var brackets : int = 0
 	var param := AST.Parameter.new(parent)
 	var expect_symbol : bool = true
 	while !_tokenizer.is_eof():
@@ -769,7 +770,11 @@ func _parse_params(parent : AST.ASTNode) -> Array[AST.Parameter]:
 						params.append(param)
 					param = AST.Parameter.new(parent)
 					return params
-			elif token.has_value(",") and pth == 1:
+			elif token.has_value("["):
+				brackets += 1
+			elif token.has_value("]"):
+				brackets -= 1
+			elif token.has_value(",") and pth == 1 and brackets == 0:
 				expect_symbol = true
 				params.append(param)
 				param = AST.Parameter.new(parent)
