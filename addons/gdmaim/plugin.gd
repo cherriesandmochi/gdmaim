@@ -130,10 +130,13 @@ func _export_init() -> bool:
 	
 	if err == OK:
 		for sector : String in config.get_sections():
+			if not sector.begins_with("preset.") or sector.ends_with(".options"):
+				if config.has_section_key(sector, excl):
+					config.erase_section_key(sector, excl)
+					dirty = true
+				continue
 			var filters : String = config.get_value(sector, excl, "")
 			if plug in filters:
-				if !sector.ends_with(".options") and !config.has_section(sector + ".options"):
-					config.set_value(sector + ".options", excl, plug)
 				continue
 			if !filters.is_empty():
 				filters += ","
