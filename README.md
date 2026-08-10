@@ -8,6 +8,13 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 [![Godot Engine 4.3](https://img.shields.io/badge/Godot_Engine-4.x-blue)](https://godotengine.org/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 
+## Related Post Topic
+> [!NOTE]
+> It may contain spelling errors and misunderstandings.
+
+[GDMaim - 2026](https://ko-fi.com/post/GDMaim-A2A424RY4Y)
+
+
 ## Table of contents
 
 - [Why does this exist?](#why-does-this-exist)
