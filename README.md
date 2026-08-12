@@ -310,6 +310,17 @@ func my_func(arg0):
 	return arg0
 ```
 
+`##STRIP_STATIC_TYPED_FILE_IGNORE`: This causes the strip static typing functionality in the file to be ignored; as a good practice, place it at the beginning of your file. 
+
+
+```js
+##STRIP_STATIC_TYPED_FILE_IGNORE
+class_name MyClass extends Node
+
+# ...
+```
+
+
 `##PRESERVE_ANNOTATION`: This prevents the annotation from being removed from your code.
 
 
