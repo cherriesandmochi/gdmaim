@@ -492,7 +492,7 @@ This can be done automatically by double-clicking the imported file('.glb' for e
 > Note: `Set Animation Save Paths` currently ignores the `-loop`/`-cycle` import hints, so you have to manually set the loop mode for each looped animation.
 
 
-### Save and Load Custom Resource Types
+### Save and Load Custom Resource Types (in Runtime of exported games)
 
 If you work with custom resources, you've probably encountered errors like the following:
   * Annotations like ```@export``` have disappeared.
