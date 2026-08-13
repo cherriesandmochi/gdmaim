@@ -506,7 +506,11 @@ If you work with custom resources, you've probably encountered errors like the f
 
 ##### Option 2 (work as Global by Project)
 * In the settings, you must have unchecked ```Strip Editor Annotations```
-* In the settings you must have unchecked ```Strip Static Typing```
+* In the settings, you must have unchecked ```Strip Static Typing```
+
+In both cases you will need to block the obfuscation of the tokens (Your variables) that you will later recover, for that you can use one of the following options:
+* Use the "Custom Ignore Tokens" method.
+* Use preprocessors like ```##LOCK_SYMBOLS``` or ```##EXCLUDE_FILE```
 
 
 ## Stability [↑](#table-of-contents)
