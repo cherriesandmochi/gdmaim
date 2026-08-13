@@ -491,6 +491,24 @@ This can be done automatically by double-clicking the imported file('.glb' for e
 
 > Note: `Set Animation Save Paths` currently ignores the `-loop`/`-cycle` import hints, so you have to manually set the loop mode for each looped animation.
 
+
+### Save and Load Custom Resource Types
+
+If you work with custom resources, you've probably encountered errors like the following:
+  * Annotations like ```@export``` have disappeared.
+  * Your variable names do not match in different exported versions.
+  * @export doesn't work if it doesn't have a defined type when it's removed with the '''strip static typed''' function.
+
+#### Solutions:
+##### Option 1 (work as Local by File)
+* You must use the preprocessor like ```##PRESERVE_ANNOTATION``` at the far right of the line for prevent remove the ```@export``` annotation
+* You must use the preprocessor like ```##STRIP_STATIC_TYPED_FILE_IGNORE``` to prevent the deletion of the typing in the file if you are using that function.
+
+##### Option 2 (work as Global by Project)
+* In the settings, you must have unchecked ```Strip Editor Annotations```
+* In the settings you must have unchecked ```Strip Static Typing```
+
+
 ## Stability [↑](#table-of-contents)
 
 Developed using Godot 4.2-stable.
