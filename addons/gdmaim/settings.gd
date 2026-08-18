@@ -42,6 +42,9 @@ var export_mode : int = GDScriptExportMode.TEXT
 
 var use_custom_token_ignore_file : bool = false
 var custom_token_ignore_file_path : String = "res://addons/gdmaim/user/ignore_tokens.txt"
+var use_custom_token_as_regex : bool = false
+var custom_token_regex_buffer : Array = []
+
 var exclude_files : PackedStringArray = []
 var _exclude_files : String = "":
 	set(value):
@@ -124,7 +127,8 @@ func initialize_settings(make_as_global_settings : bool = false, force_load_conf
 	set_category("exclude_files_category", "Exclusion")
 	add_entry("_exclude_files", "multi_filepath", "Path", "Select files or folders to be excluded from obfuscation; excluded scripts will maintain compatibility with the other obfuscated scripts.").set_custom_type(Entry.CustomType.MULTI_FILE_PATH, "")
 	add_entry("exclude_resources", "resources", "Exclude Resources", "If true, resources like PackedScenes will be ignored during scanning.\nThis is useful if you typically have a lot of embedded resources in your resources and causing problems such as freezing.\n\n(WARNING) This could cause errors if you reference scripts within your packaged scenes, such as signals or exported variables. (Source of embedded scripts are the exception)\n\nRemember that this can be solved by following the best practices recommended in the official repository.")
-	add_entry("use_custom_token_ignore_file", "custom_tokens_enabled", "Custom Token File", "If true, any token defined by you in\n'{0}'\nwill be ignored".format([custom_token_ignore_file_path]))
+	add_entry("use_custom_token_ignore_file", "custom_tokens_enabled", "Custom Tokens File", "If true, any token defined by you in\n'{0}'\nwill be ignored".format([custom_token_ignore_file_path]))
+	add_entry("use_custom_token_as_regex", "custom_tokens_as_regex_enabled", "Custom Tokens as regex", "If true, any token defined by you in\n'{0}'\nwill be read as regex setence.\n\nRequire 'Custom Tokens File' Enabled".format([custom_token_ignore_file_path]))
 	
 	#set_category("debug", "Debug")
 	#add_entry("debug_scripts", debug_scripts", "", "")
@@ -189,6 +193,10 @@ func _read_entries() -> void:
 
 func _get_cfg_dir() -> String:
 	return get_script().resource_path.get_base_dir()
+	
+	
+func get_tokens_rgx() -> Array:
+	return custom_token_regex_buffer
 
 
 class Category:

@@ -127,17 +127,37 @@ func resolve_symbol_paths() -> void:
 
 
 func obfuscate_symbols() -> void:
-	for symbol in _local_symbols:
-		if !_locked_symbols.has(symbol.get_name()):
-			rename_symbol(symbol, _generate_symbol_name(symbol.get_name(), true))
-	
-	for symbol in _global_symbols.values():
-		if !_locked_symbols.has(symbol.get_name()):
-			rename_symbol(symbol, _generate_symbol_name(symbol.get_name()))
+	if _Settings.current.custom_token_regex_buffer:
+		for symbol in _local_symbols:
+			var str : String = symbol.get_name()
+			if !_locked_symbols.has(str) and !is_custom_lock_settings(str):
+				rename_symbol(symbol, _generate_symbol_name(str, true))
+		
+		for symbol in _global_symbols.values():
+			var str : String = symbol.get_name()
+			if !_locked_symbols.has(str) and !is_custom_lock_settings(str):
+				rename_symbol(symbol, _generate_symbol_name(str))
+		
+	else:
+		for symbol in _local_symbols:
+			var str : String = symbol.get_name()
+			if !_locked_symbols.has(symbol.get_name()):
+				rename_symbol(symbol, _generate_symbol_name(str, true))
+		
+		for symbol in _global_symbols.values():
+			var str : String = symbol.get_name()
+			if !_locked_symbols.has(str):
+				rename_symbol(symbol, _generate_symbol_name(str))
 
+func is_custom_lock_settings(str : String) -> bool:
+	for rgx in _Settings.current.get_tokens_rgx():
+		if null != rgx.search(str):
+			_locked_symbols[str] = true
+			return true
+	return false
 
 func obfuscate_string_global(str : String) -> String:
-	return _generate_symbol_name(str) if !_locked_symbols.has(str) else str
+	return _generate_symbol_name(str) if !_locked_symbols.has(str) and !is_custom_lock_settings(str) else str
 
 
 func _search_symbol(ast_node : AST.ASTNode, name : String, is_func : bool) -> Symbol:
