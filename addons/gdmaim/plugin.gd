@@ -12,6 +12,8 @@ var source_map_viewer : Window
 
 var _cfg_hash : String = ""
 
+func get_settings() -> _Settings:
+	return settings
 
 # Called when entering scene tree
 func _enter_tree() -> void:
@@ -29,11 +31,6 @@ func _enter_tree() -> void:
 	dock.settings = settings
 	dock.source_map_viewer_requested.connect(_open_source_map_viewer)
 	add_control_to_dock(DOCK_SLOT_LEFT_BR, dock)
-	
-	source_map_viewer = preload("ui/source_map_viewer/source_map_viewer.tscn").instantiate()
-	source_map_viewer._as_plugin = true
-	source_map_viewer.hide()
-	get_editor_interface().get_base_control().add_child(source_map_viewer)
 
 	_setup()
 	
@@ -52,7 +49,7 @@ func _exit_tree() -> void:
 		remove_control_from_docks(dock)
 		dock.queue_free()
 	
-	if is_instance_valid(source_map_viewer):
+	if is_instance_valid(source_map_viewer) and !source_map_viewer.is_queued_for_deletion():
 		source_map_viewer.queue_free()
 		
 	_check_settings()
@@ -65,6 +62,14 @@ func _exit_tree() -> void:
 
 # Opens the source map viewer
 func _open_source_map_viewer() -> void:
+	if !is_instance_valid(source_map_viewer):
+		source_map_viewer = preload("ui/source_map_viewer/source_map_viewer.tscn").instantiate()
+		source_map_viewer._as_plugin = true
+		source_map_viewer.hide()
+		source_map_viewer.set_tool(self)
+		
+		get_editor_interface().get_base_control().add_child(source_map_viewer)
+	
 	if source_map_viewer.visible:
 		source_map_viewer.hide()
 	else:
@@ -125,10 +130,13 @@ func _export_init() -> bool:
 	
 	if err == OK:
 		for sector : String in config.get_sections():
+			if not sector.begins_with("preset.") or sector.ends_with(".options"):
+				if config.has_section_key(sector, excl):
+					config.erase_section_key(sector, excl)
+					dirty = true
+				continue
 			var filters : String = config.get_value(sector, excl, "")
 			if plug in filters:
-				if !sector.ends_with(".options") and !config.has_section(sector + ".options"):
-					config.set_value(sector + ".options", excl, plug)
 				continue
 			if !filters.is_empty():
 				filters += ","

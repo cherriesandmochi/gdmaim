@@ -8,6 +8,13 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 [![Godot Engine 4.3](https://img.shields.io/badge/Godot_Engine-4.x-blue)](https://godotengine.org/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 
+## Related Post Topic
+> [!NOTE]
+> It may contain spelling errors and misunderstandings.
+
+[GDMaim - 2026](https://ko-fi.com/post/GDMaim-A2A424RY4Y)
+
+
 ## Table of contents
 
 - [Why does this exist?](#why-does-this-exist)
@@ -303,6 +310,17 @@ func my_func(arg0):
 	return arg0
 ```
 
+`##STRIP_STATIC_TYPED_FILE_IGNORE`: This causes the strip static typing functionality in the file to be ignored; as a good practice, place it at the beginning of your file. 
+
+
+```js
+##STRIP_STATIC_TYPED_FILE_IGNORE
+class_name MyClass extends Node
+
+# ...
+```
+
+
 `##PRESERVE_ANNOTATION`: This prevents the annotation from being removed from your code.
 
 
@@ -472,6 +490,28 @@ This can be done automatically by double-clicking the imported file('.glb' for e
 <img src='docs/images/animation_save_paths.png' width='300'>
 
 > Note: `Set Animation Save Paths` currently ignores the `-loop`/`-cycle` import hints, so you have to manually set the loop mode for each looped animation.
+
+
+### Save and Load Custom Resource Types (In runtime of exported games)
+
+If you work with custom resources, you've probably encountered errors like the following:
+  * Annotations like ```@export``` have disappeared.
+  * Your variable names do not match in different exported versions.
+  * ```@export``` doesn't work if it doesn't have a defined type when it's removed with the ```strip static typed``` function.
+
+#### Solutions:
+##### Option 1 (work as Local by File)
+* You must use the preprocessor like ```##PRESERVE_ANNOTATION``` at the far right of the line for prevent remove the ```@export``` annotation
+* You must use the preprocessor like ```##STRIP_STATIC_TYPED_FILE_IGNORE``` to prevent the deletion of the typing in the file if you are using that function.
+
+##### Option 2 (work as Global by Project)
+* In the settings, you must have unchecked ```Strip Editor Annotations```
+* In the settings, you must have unchecked ```Strip Static Typing```
+
+In both cases you will need to block the obfuscation of the tokens (Your variables) that you will later recover, for that you can use one of the following options:
+* Use the "Custom Ignore Tokens" method.
+* Use preprocessors like ```##LOCK_SYMBOLS``` or ```##EXCLUDE_FILE```
+
 
 ## Stability [↑](#table-of-contents)
 

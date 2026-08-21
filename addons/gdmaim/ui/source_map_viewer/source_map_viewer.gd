@@ -15,6 +15,8 @@ var _caret_lock : bool = false
 var _prev_preprocessor_hint : String
 var _prev_theme : Theme
 
+var _tool : EditorPlugin
+
 @onready var current_file : Label = $Panel/CurrentFile
 @onready var console : TextEdit = %Console
 @onready var file_tree : Tree = %FileTree
@@ -27,6 +29,19 @@ var _prev_theme : Theme
 @onready var border : StyleBox = self["theme_override_styles/embedded_border"]
 @onready var border_unfocused : StyleBox = self["theme_override_styles/embedded_unfocused_border"]
 
+func set_tool(tool : Node) -> void:
+	var z : int = 0
+	var ms : StringName = &"tree_exiting"
+	var cn : Array = [&"disconnect", &"connect"]
+	for x : Node in [_tool, tool]:
+		if is_instance_valid(x):
+			if z ^ int(x.is_connected(ms, _on_exiting)):
+				x.call(cn[z], ms, _on_exiting)
+		z = 1
+	_tool = tool
+			
+func _on_exiting() -> void:
+	queue_free()
 
 func _ready() -> void:
 	if !_as_plugin:
@@ -201,10 +216,16 @@ func _on_file_tree_item_activated() -> void:
 
 
 func _setup_syntax_highlighter() -> void:
-	if _prev_preprocessor_hint == _Settings.current.preprocessor_prefix and _prev_theme == EditorInterface.get_editor_theme():
+	if !is_instance_valid(_tool) or !is_instance_valid(_tool.get_settings()):
+		queue_free()
+		return
+		
+	var settings : _Settings = _tool.get_settings()
+		
+	if _prev_preprocessor_hint == settings.preprocessor_prefix and _prev_theme == EditorInterface.get_editor_theme():
 		return
 	
-	_prev_preprocessor_hint = _Settings.current.preprocessor_prefix
+	_prev_preprocessor_hint = settings.preprocessor_prefix
 	_prev_theme = EditorInterface.get_editor_theme()
 	
 	var editor_settings: EditorSettings = EditorInterface.get_editor_settings()
