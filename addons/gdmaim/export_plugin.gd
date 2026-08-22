@@ -125,15 +125,30 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		for func_ in variant.get("methods", []):
 			_symbols.lock_symbol_name(func_)
 			
+	settings.custom_token_regex_buffer.clear()
 	if settings.use_custom_token_ignore_file:
 		var file : String = settings.custom_token_ignore_file_path
 		if FileAccess.file_exists(file):
-			var packed : PackedStringArray = FileAccess.get_file_as_string(file).split("\n")
-			for smb in packed:
-				smb = smb.strip_edges()
-				if smb.is_empty() or smb.begins_with("#"):
-					continue
-				_symbols.lock_symbol_name(smb)
+			var packed : PackedStringArray = FileAccess.get_file_as_string(file).split("\n") 
+			
+			if settings.use_custom_token_as_regex:				
+				for smb in packed:
+					smb = smb.strip_edges()
+					if smb.is_empty() or smb.begins_with("#"):
+						continue
+						
+					var rgx : RegEx = RegEx.create_from_string(smb, false)
+					
+					if rgx.is_valid():
+						settings.custom_token_regex_buffer.append(rgx)
+					else:
+						printerr("An invalid regex sentence of {0} in custom token file".format([smb]))
+			else:			
+				for smb in packed:
+					smb = smb.strip_edges()
+					if smb.is_empty() or smb.begins_with("#"):
+						continue
+					_symbols.lock_symbol_name(smb)
 	
 	# Gather built-in class symbols
 	for class_ in ClassDB.get_class_list():
@@ -283,6 +298,9 @@ func _export_end() -> void:
 	_src_obfuscators.clear()
 	_res_obfuscators.clear()
 	_Logger.clear_all()
+	
+	if is_instance_valid(settings):
+		settings.custom_token_regex_buffer.clear()
 
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
