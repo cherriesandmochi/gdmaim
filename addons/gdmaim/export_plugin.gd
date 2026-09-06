@@ -334,8 +334,8 @@ func _export_end() -> void:
 							if sweet_msg:
 								msg += "\n\t{0}".format([target])
 						
-						if sweet_msg:
-							print("[GDMaim] internal lib file/s cleaned",msg)
+						if sweet_msg and !msg.is_empty():
+							print("[GDMaim] internal lib file/s cleaned", msg)
 		)
 
 
