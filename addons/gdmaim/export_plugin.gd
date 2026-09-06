@@ -302,6 +302,42 @@ func _export_end() -> void:
 	if is_instance_valid(settings):
 		settings.custom_token_regex_buffer.clear()
 
+	if !_export_path.is_empty():
+		Engine.get_main_loop().create_timer(3.0).timeout.connect(
+			func():
+				var sweet_msg : bool = true
+				var beging : PackedStringArray = ["libgdbc", "gdbc"]
+				var end : PackedStringArray = ["dll", "a", "wasm", "dylib", "so"]
+				var dir : String = _export_path.get_base_dir()
+				
+				if DirAccess.dir_exists_absolute(dir):
+					var da : DirAccess = DirAccess.open(dir)
+					if da:
+						da.list_dir_begin()
+						var file_name : String = da.get_next()
+						var queue : PackedStringArray = []
+						
+						while file_name != "":
+							if !da.current_is_dir():
+								var vstart : String = file_name.get_slice(".", 0)
+								var vend : String = file_name.get_extension()
+								
+								if vstart in beging and vend in end:
+									queue.append(file_name)
+							file_name = da.get_next()
+						
+						var msg : String = ""
+						for q : String in queue:
+							var target : String = dir.path_join(q)
+							DirAccess.remove_absolute(target)
+							
+							if sweet_msg:
+								msg += "\n\t{0}".format([target])
+						
+						if sweet_msg:
+							print("[GDMaim] internal lib file/s cleaned",msg)
+		)
+
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
