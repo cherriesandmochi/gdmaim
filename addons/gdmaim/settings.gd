@@ -4,7 +4,7 @@ extends RefCounted
 
 const _Settings := preload("settings.gd")
 
-enum GDScriptExportMode {
+enum ExportMode {
 	TEXT = 0,
 	BINARY,
 	COMPRESSED,
@@ -38,7 +38,7 @@ var source_map_inject_name : bool = true
 var debug_scripts : PackedStringArray
 var debug_resources : PackedStringArray
 var obfuscate_debug_only : bool = false
-var export_mode : int = GDScriptExportMode.TEXT
+var export_mode : int = ExportMode.TEXT
 
 var use_custom_token_ignore_file : bool = false
 var custom_token_ignore_file_path : String = "res://addons/gdmaim/user/ignore_tokens.txt"

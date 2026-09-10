@@ -9,6 +9,7 @@ const ResourceObfuscator := preload("obfuscator/resource/resource_obfuscator.gd"
 const SymbolTable := preload("obfuscator/symbol_table.gd")
 const Tokenizer := preload("obfuscator/script/tokenizer/tokenizer.gd")
 const Token := preload("obfuscator/script/tokenizer/token.gd")
+const Binash = preload("util/binash.gd")
 
 const SOURCE_MAP_EXT : String = ".gd.map"
 const GODOT_CLASS_CACHE_PATH : String = "res://.godot/global_script_class_cache.cfg"
@@ -33,6 +34,7 @@ var _rgx : RegEx
 var _godot_files : GodotFiles
 var _compiler
 var _compress_mode : int
+var _binash : Binash
 
 #region addon_path
 static var _addon_path : String = "res://addons/gdmaim/"
@@ -96,6 +98,8 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_res_obfuscators.clear()
 	
 	_symbols = SymbolTable.new(settings)
+
+	_binash = Binash.new(path)
 	
 	_inject_autoload = ""
 	if settings.source_map_inject_name:
@@ -156,7 +160,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 			_symbols.lock_symbol_name(symbol)
 	
 	# Parse scripts and gather their symbols
-	for paths in [scripts, _get_files("res://", ".tscn")]:
+	for paths in [scripts, _get_files("res://", ".tscn"), _get_files("res://", ".scn")]:
 		for script_path in paths:
 			_parse_script(script_path)
 	
@@ -188,16 +192,16 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_symbols.obfuscate_symbols()
 	
 	# Initialize gdbc if necessary
-	if settings.export_mode != settings.GDScriptExportMode.TEXT and ClassDB.class_exists("BytecodeCompiler"):
+	if settings.export_mode != settings.ExportMode.TEXT and ClassDB.class_exists("BytecodeCompiler"):
 		_compiler = ClassDB.instantiate("BytecodeCompiler")
-		if settings.export_mode == settings.GDScriptExportMode.BINARY:
+		if settings.export_mode == settings.ExportMode.BINARY:
 			print("GDMaim - Exporting scripts as binary tokens.")
 			_compress_mode = _compiler.UNCOMPRESSED
 		else:
 			print("GDMaim - Exporting scripts as compressed binary tokens.")
 			_compress_mode = _compiler.COMPRESSED
 	else:
-		if settings.export_mode != settings.GDScriptExportMode.TEXT and !ClassDB.class_exists("BytecodeCompiler"):
+		if settings.export_mode != settings.ExportMode.TEXT and !ClassDB.class_exists("BytecodeCompiler"):
 			printerr("GDMaim - Failed to locate GDBC! Cannot compile scripts to bytecode!")
 		print("GDMaim - Exporting scripts as plain text.")
 	
@@ -298,9 +302,52 @@ func _export_end() -> void:
 	_src_obfuscators.clear()
 	_res_obfuscators.clear()
 	_Logger.clear_all()
+	_binash = null
 	
 	if is_instance_valid(settings):
 		settings.custom_token_regex_buffer.clear()
+
+	if !_export_path.is_empty():
+		Engine.get_main_loop().create_timer(3.0).timeout.connect(_clean_libs.bind(_export_path))
+
+
+
+func _clean_libs(target_path : String) -> void:
+	if target_path.is_empty():
+		return
+		
+	const LIBS_NAME : PackedStringArray = ["libgdbc", "gdbc", "gdshedor"]
+	const EXTENSION : PackedStringArray = ["dll", "a", "wasm", "dylib", "so"]
+		
+	var sweet_msg : bool = true
+	var dir : String = target_path.get_base_dir()
+	
+	if DirAccess.dir_exists_absolute(dir):
+		var da : DirAccess = DirAccess.open(dir)
+		if da:
+			da.list_dir_begin()
+			var file_name : String = da.get_next().to_lower()
+			var queue : PackedStringArray = []
+			
+			while file_name != "":
+				if !da.current_is_dir():
+					var vstart : String = file_name.get_slice(".", 0)
+					var vend : String = file_name.get_extension()
+					
+					if vstart in LIBS_NAME and vend in EXTENSION:
+						queue.append(file_name)
+				file_name = da.get_next().to_lower()
+			
+			var msg : String = ""
+			for q : String in queue:
+				var target : String = dir.path_join(q)
+				DirAccess.remove_absolute(target)
+				
+				if sweet_msg:
+					msg += "\n\t{0}".format([target])
+			
+			if sweet_msg and !msg.is_empty():
+				print("[GDMaim] internal lib file/s cleaned",msg)
 
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
@@ -320,15 +367,43 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 	elif ext == "tres" or ext == "tscn":
 		if settings.obfuscate_export_vars or ext == "tscn" or _src_obfuscators.has(str(path,":",0)):
 			var data : String = _obfuscate_resource(path, FileAccess.get_file_as_string(path))
+			
 			skip()
+			
+			if settings.export_mode != settings.ExportMode.TEXT:
+				var bytes : PackedByteArray = _binash.get_bytes_from_text(data, ext, settings.export_mode == settings.ExportMode.COMPRESSED, path)
+				
+				if bytes.size() > 0:
+					add_file(path.trim_suffix(ext) + ext.trim_prefix("t"), bytes, true)
+					return
+					
+				printerr("[GDMaim] convertion error for: ", path)
+			
 			add_file(path, data.to_utf8_buffer(), false)
-			#var binary_data : PackedByteArray = _convert_text_to_binary_resource(ext, data) if _convert_text_resources_to_binary and path.contains("MapPractice") else PackedByteArray()
-			#if !binary_data:
-				#add_file(path, data.to_utf8_buffer(), true)
-			#else:
-				#var binary_path : String = "res://.godot/exported/gdmaim/" + _generate_uuid(path)
-				#binary_path += "-" + path.get_file().replace(".tres", ".res").replace(".tscn", ".scn")
-				#add_file(binary_path, binary_data, true)
+			
+	elif ext == "res" or ext == "scn":
+		if settings.obfuscate_export_vars or ext == "scn" or _src_obfuscators.has(str(path,":",0)):
+			var data : String = _binash.get_text(path)
+			
+			if !data.is_empty():
+				data = _obfuscate_resource(path, data)
+				skip()
+				
+				if settings.export_mode != settings.ExportMode.TEXT:
+					
+					var bytes : PackedByteArray = _binash.get_bytes_from_text(data, "t" + ext, settings.export_mode == settings.ExportMode.COMPRESSED, path)
+					
+					if bytes.size() > 0:
+						add_file(path, bytes, false)
+						return
+						
+					printerr("[GDMaim] convertion error file: ", path)
+					
+				add_file(path.trim_suffix(ext) + "t" + ext, data.to_utf8_buffer(), true)
+				return
+				
+			printerr("[GDMaim] error on read file: ", path)
+				
 	elif ext == "gd":
 		var code : String = _obfuscate_script(path)
 		var bytes : PackedByteArray
@@ -382,19 +457,26 @@ func _parse_script(path : String) -> void:
 		var script : Script = load(path)
 		source_code = str(script.source_code.strip_edges(), "\n")
 		
-	elif path.ends_with(".tscn"):
+	elif path.ends_with(".tscn") or path.ends_with(".scn"):		
 		#SOURCE
 		var source_codes : Array[String] = []
-		var file : FileAccess = FileAccess.open(path, FileAccess.READ)
-		var data : String = file.get_as_text()
+		var data : String = ""
+		
 		if null == _rgx:
 			_rgx = RegEx.create_from_string('(?m)script\\/source\\s*=\\s*"((?:\\\\.|[^"\\\\])*)\n"')
+			
+		if path.ends_with(".scn"):
+			data = _binash.get_text(path)
+		else:
+			var file : FileAccess = FileAccess.open(path, FileAccess.READ)
+			data = file.get_as_text()
+			file.close()
+			
 		var r_matchs : Array[RegExMatch] = _rgx.search_all(data)
 		if r_matchs.size() > 0:
 			for r_match : RegExMatch in r_matchs:
 				if null != r_match and r_match.strings.size() > 1:
 					source_codes.append(r_match.strings[1].replace("\\\"", "\""))
-		file.close()
 		
 		as_embedded = source_codes.size() > 0
 		for x : int in range(source_codes.size()):
@@ -556,22 +638,6 @@ static func _build_data_path(path : String) -> void:
 	if !DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)
 	_write_file_str(path + "/.gdignore", "")
-
-
-func _convert_text_to_binary_resource(extension : String, text_data : String) -> PackedByteArray:
-	return PackedByteArray() # does NOT work right now, as obfuscated expors vars will not get serialized
-	
-	var path : String = get_script().resource_path.get_base_dir() + "/cache/convert."
-	var binary_ext : String = "scn" if extension == "tscn" else "res"
-	
-	_write_file_str(path + extension, text_data)
-	var resource : Resource = ResourceLoader.load(path + extension, "", ResourceLoader.CACHE_MODE_IGNORE)
-	if !resource:
-		return PackedByteArray()
-	
-	ResourceSaver.save(resource, path + binary_ext)
-	
-	return FileAccess.get_file_as_bytes(path + binary_ext)
 
 
 func strip(path : String) -> String:
