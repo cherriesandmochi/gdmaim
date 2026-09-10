@@ -326,17 +326,19 @@ func _clean_libs(target_path : String) -> void:
 		var da : DirAccess = DirAccess.open(dir)
 		if da:
 			da.list_dir_begin()
-			var file_name : String = da.get_next().to_lower()
+			var file_name : String = da.get_next()
 			var queue : PackedStringArray = []
 			
 			while file_name != "":
 				if !da.current_is_dir():
-					var vstart : String = file_name.get_slice(".", 0)
-					var vend : String = file_name.get_extension()
+					var _file_name : String = file_name.to_lower()
+					var vstart : String = _file_name.get_slice(".", 0)
+					var vend : String = _file_name.get_extension()
 					
 					if vstart in LIBS_NAME and vend in EXTENSION:
 						queue.append(file_name)
-				file_name = da.get_next().to_lower()
+						
+				file_name = da.get_next()
 			
 			var msg : String = ""
 			for q : String in queue:
