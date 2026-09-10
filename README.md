@@ -560,7 +560,7 @@ Huge file sizes are usually caused by embedded resources, some of which take up 
 	- [ ] Scripts
 	- [ ] Created resources
 	- [ ] Imported resources
-- [ ] Converting text resources to binary: Requires obfuscation of binary files or a conversion tool.
+- [x] Converting text resources to binary: Requires obfuscation of binary files or a conversion tool.
 
 ## License [↑](#table-of-contents)
 
