@@ -748,13 +748,13 @@ class Line:
 				return true
 		return false
 
-func get_default_value(type: int) -> Variant:
+static func get_default_value(type: int) -> Variant:
 	match type:
 		TYPE_NIL: return "null"
 		TYPE_BOOL: return "false"
 		TYPE_INT: return "0"
 		TYPE_FLOAT: return "0.0"
-		TYPE_STRING: return ""
+		TYPE_STRING: return "\"\""
 		TYPE_VECTOR2: return "Vector2.ZERO"
 		TYPE_VECTOR2I: return "Vector2i.ZERO"
 		TYPE_RECT2: return "Rect2()"
@@ -789,4 +789,5 @@ func get_default_value(type: int) -> Variant:
 		TYPE_PACKED_VECTOR3_ARRAY: return "PackedVector3Array()"
 		TYPE_PACKED_COLOR_ARRAY: return "PackedColorArray()"
 		TYPE_PACKED_VECTOR4_ARRAY: return "PackedVector4Array()"
+		TYPE_OBJECT: return "null"
 	return str(type_convert("", type))

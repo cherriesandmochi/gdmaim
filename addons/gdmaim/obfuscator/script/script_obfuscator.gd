@@ -248,18 +248,18 @@ func _func_feature_filter(token : Token, line : Tokenizer.Line, feature : String
 		if token.is_operator("->"):
 			token = tokenizer.get_next()
 			var ret_type : String = token.get_value()
-			const ret_code : Dictionary = {
-				"bool": "return false",
-				"int": "return 0",
-				"float": "return 0.0",
-				"String": 'return ""',
-				"Array": "return []",
-				"Array[int]": "return []",
-				"Array[float]": "return []",
-				"Dictionary": "return {}",
-				"void": "",
-			}
-			func_body += ret_code.get(ret_type, "return null")
+			
+			if ret_type != "void":
+				var return_type : String = ret_type.split("[", true, 1)[0]
+				
+				for x in TYPE_MAX:
+					if type_string(x) == return_type:
+						return_type = Tokenizer.get_default_value(x)
+						break
+				
+				if !return_type.is_empty():
+					func_body += "return {0}".format([return_type])
+			
 		var line_idx_from : int = tokenizer.find_output_line(line)
 		var line_idx : int = line_idx_from + 2
 		var last_valid : int = -1
