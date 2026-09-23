@@ -469,11 +469,12 @@ func _parse_class(parent : AST.ASTNode) -> AST.Class:
 	if !token.is_symbol():
 		_Logger.write("ERROR: Parser._parse_class() - Symbol expected!")
 		return null
-	
+		
 	var ast := AST.Class.new(parent)
 	
 	var name : String = token.get_value()
 	var indentation : int = _current_indentation
+	var lock_symbol : bool = _line_has_hint(PreprocessorHints.LOCK_SYMBOLS)
 	
 	if _tokenizer.peek().is_keyword("extends"):
 		_tokenizer.get_next()
@@ -483,7 +484,7 @@ func _parse_class(parent : AST.ASTNode) -> AST.Class:
 	ast.body = _parse_block(ast, indentation)
 	
 	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if lock_symbol:
 		_symbol_table.lock_symbol(ast.symbol)
 	
 	if _class_symbol:
