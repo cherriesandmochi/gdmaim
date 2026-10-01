@@ -343,14 +343,26 @@ func _read_next_token() -> bool:
 	return true
 		
 func _is_continue_sequence_line(char : String, from : String, to : String) -> bool:
-	for x : String in from:
-		if char == x:
-			_add_punctuator(_stream.get_next())
+	if char in from:
+		_add_punctuator(_stream.get_next())
+		_read_while(_is_whitespace)
+		if _stream.peek() == to:
+			var _idx : int = 2
+			var chr : String = _stream.peek(_idx)
+			
+			while !chr.is_empty():
+				if chr == ":":
+					return false
+				elif chr == to:
+					break
+				
+				_idx += 1
+				chr = _stream.peek(_idx)
+			
+			_stream.peek(2)
+			_stream.get_next()
 			_read_while(_is_whitespace)
-			if _stream.peek() == to:
-				_stream.get_next()
-				_read_while(_is_whitespace)
-			return true
+		return true
 	return false
 	
 func _read_sequence_break_line() -> bool:
