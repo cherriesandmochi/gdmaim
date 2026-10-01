@@ -343,6 +343,9 @@ func _read_next_token() -> bool:
 	return true
 		
 func _is_continue_sequence_line(char : String, from : String, to : String) -> bool:
+	if is_instance_valid(_Settings.current) and !_Settings.current.strip_sequential_newlines:
+		return false
+	
 	if char in from:
 		_add_punctuator(_stream.get_next())
 		_read_while(_is_whitespace)
