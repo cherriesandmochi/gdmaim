@@ -84,7 +84,7 @@ func _input(event : InputEvent) -> void:
 			exported_code_search.close()
 		else:
 			_on_close_requested()
-	elif event.keycode == KEY_F and event.ctrl_pressed:
+	elif event.keycode == KEY_F and event.is_command_or_control_pressed():
 		if source_code.has_focus():
 			source_code_search.open()
 		elif exported_code.has_focus():
