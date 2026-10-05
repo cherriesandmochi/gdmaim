@@ -12,6 +12,7 @@ A plugin for the [Godot Engine] which obfuscates all GDScripts when exporting a 
 > [!NOTE]
 > It may contain spelling errors and misunderstandings.
 * Video: [Introduction to GDMaim - 2026](https://youtu.be/EALLt06l5Bo)
+* Video: [GDMaim Best Settings for Debug / Release](https://youtu.be/DAJvBBrVNyA)
 * Video: [Fix Load / Save Resources using GDMaim - Godot](https://youtu.be/W9FD6h1VpFs) (In Runtime, for Exported projects - Issue [#157](https://github.com/cherriesandmochi/gdmaim/issues/157)) 
 * [GDMaim - 2026](https://ko-fi.com/post/GDMaim-A2A424RY4Y)
 
