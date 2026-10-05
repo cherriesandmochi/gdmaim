@@ -60,6 +60,9 @@ func _ready() -> void:
 	theme_changed.connect(_setup_syntax_highlighter)
 	
 	var popup : PopupMenu = $Panel/HBoxContainer/MenuButton.get_popup()
+	var shortcut_text : String = "CMD + F" if OS.has_feature("macos") else "CTRL + F"
+	popup.set_item_text(0, "Search source code...    (%s)" % shortcut_text)
+	popup.set_item_text(1, "Search exported code...    (%s)" % shortcut_text)
 	popup.index_pressed.connect(_on_search_option_selected)
 
 
@@ -84,7 +87,7 @@ func _input(event : InputEvent) -> void:
 			exported_code_search.close()
 		else:
 			_on_close_requested()
-	elif event.keycode == KEY_F and event.ctrl_pressed:
+	elif event.keycode == KEY_F and event.is_command_or_control_pressed():
 		if source_code.has_focus():
 			source_code_search.open()
 		elif exported_code.has_focus():
