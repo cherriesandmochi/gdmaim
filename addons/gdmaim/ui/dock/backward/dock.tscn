@@ -1,18 +1,26 @@
-[gd_scene format=3 uid="uid://co43s08djflp5"]
+[gd_scene format=3 uid="uid://cot6hordl6qvh"]
 
-[ext_resource type="Script" uid="uid://dfoyyluren7dt" path="res://addons/gdmaim/ui/dock/dock.gd" id="1_se4hh"]
+[ext_resource type="Script" uid="uid://cd4ilwxfrb116" path="res://addons/gdmaim/ui/dock/backward/dock.gd" id="1_ki0k1"]
 
-[node name="GDMaim" type="EditorDock" unique_id=612200111]
+[node name="GDMaim" type="Panel" unique_id=1667792443]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-title = "GDMaim"
-script = ExtResource("1_se4hh")
+script = ExtResource("1_ki0k1")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1050734341]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer" unique_id=35510754]
 layout_mode = 2

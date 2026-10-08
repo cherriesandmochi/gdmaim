@@ -23,14 +23,23 @@ func _enter_tree() -> void:
 	
 	settings = _Settings.new(true)
 	
-	script_processor = preload("export_plugin.gd").new()
+	var res : Resource = preload("export_plugin.gd")
+	script_processor = res.new()
 	script_processor.settings = settings
 	add_export_plugin(script_processor)
 	
-	dock = preload("ui/dock/dock.tscn").instantiate()
-	dock.settings = settings
-	dock.source_map_viewer_requested.connect(_open_source_map_viewer)
-	add_control_to_dock(DOCK_SLOT_LEFT_BR, dock)
+	var _DOCK_SLOT_LEFT_BR : int = 3 #DOCK_SLOT_LEFT_BR
+	if has_method(&"add_dock"):
+		dock = load(res.resource_path.get_base_dir().path_join("ui/dock/dock.tscn")).instantiate()
+		dock.settings = settings
+		dock.source_map_viewer_requested.connect(_open_source_map_viewer)
+		dock.set(&"default_slot", _DOCK_SLOT_LEFT_BR)
+		call(&"add_dock", dock)
+	else:
+		dock = load(res.resource_path.get_base_dir().path_join("ui/dock/backward/dock.tscn")).instantiate()
+		dock.settings = settings
+		dock.source_map_viewer_requested.connect(_open_source_map_viewer)
+		call(&"add_control_to_dock", _DOCK_SLOT_LEFT_BR, dock)
 
 	_setup()
 	
@@ -46,7 +55,11 @@ func _exit_tree() -> void:
 	if is_instance_valid(dock):
 		dock._write_cfg(true)
 		
-		remove_control_from_docks(dock)
+		for x : StringName in [&"remove_dock", &"remove_control_from_docks"]:
+			if has_method(x):
+				call(x, dock)
+				break
+				
 		dock.queue_free()
 	
 	if is_instance_valid(source_map_viewer) and !source_map_viewer.is_queued_for_deletion():
