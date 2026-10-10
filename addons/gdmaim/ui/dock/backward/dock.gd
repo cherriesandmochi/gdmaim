@@ -1,10 +1,10 @@
 @tool
-extends EditorDock
+extends Panel
 
 
 signal source_map_viewer_requested()
 
-const _Settings := preload("../../settings.gd")
+const _Settings := preload("../../../settings.gd")
 
 var settings : _Settings
 
@@ -17,7 +17,7 @@ func _ready() -> void:
 		return
 	
 	for category in settings.get_categories():
-		var label : Label = preload("dock_category.tscn").instantiate()
+		var label : Label = preload("../dock_category.tscn").instantiate()
 		label.text = category.visible_name
 
 		var label_background: Panel = label.get_node("Background")
@@ -30,7 +30,7 @@ func _ready() -> void:
 		$ScrollContainer/VBoxContainer.add_child(label)
 		for entry in category.entries:
 			if entry.visible_name:
-				label = preload("dock_entry.tscn").instantiate()
+				label = preload("../dock_entry.tscn").instantiate()
 				label.text = entry.visible_name
 				if entry.visible_name:
 					label.tooltip_text = entry.visible_name + "\n" + entry.tooltip
@@ -39,7 +39,7 @@ func _ready() -> void:
 			if entry.custom_type != entry.CustomType.NONE:
 				match entry.custom_type:
 					entry.CustomType.OPTIONS:
-						var options : OptionButton = preload("dock_options.tscn").instantiate()
+						var options : OptionButton = preload("../dock_options.tscn").instantiate()
 						options.settings_var = entry.var_name
 						options.disabled = entry.disabled
 						for option in entry.custom_data:
@@ -48,7 +48,7 @@ func _ready() -> void:
 						label.add_child(options)
 						register_setting(options)
 					entry.CustomType.MULTI_FILE_PATH:
-						var options : Control = preload("dock_multi_filepath.tscn").instantiate()
+						var options : Control = preload("../dock_multi_filepath.tscn").instantiate()
 						options.settings_var = entry.var_name
 						label.add_child(options)
 						label.custom_minimum_size.y = max(options.custom_minimum_size.y, 32.0)
@@ -57,21 +57,21 @@ func _ready() -> void:
 			else:
 				match typeof(settings.get(entry.var_name)):
 					TYPE_BOOL:
-						var checkbox : CheckBox = preload("dock_checkbox.tscn").instantiate()
+						var checkbox : CheckBox = preload("../dock_checkbox.tscn").instantiate()
 						checkbox.settings_var = entry.var_name
 						checkbox.disabled = entry.disabled
 						checkbox.toggled.connect(_on_check_box_toggled)
 						label.add_child(checkbox)
 						register_setting(checkbox)
 					TYPE_INT:
-						var spinbox : SpinBox = preload("dock_spinbox.tscn").instantiate()
+						var spinbox : SpinBox = preload("../dock_spinbox.tscn").instantiate()
 						spinbox.settings_var = entry.var_name
 						spinbox.editable = !entry.disabled
 						spinbox.value_changed.connect(_on_spin_box_value_changed)
 						label.add_child(spinbox)
 						register_setting(spinbox)
 					TYPE_STRING:
-						var lineedit : LineEdit = preload("dock_lineedit.tscn").instantiate()
+						var lineedit : LineEdit = preload("../dock_lineedit.tscn").instantiate()
 						lineedit.settings_var = entry.var_name
 						lineedit.editable = !entry.disabled
 						lineedit.text_changed.connect(_on_line_edit_text_changed)
