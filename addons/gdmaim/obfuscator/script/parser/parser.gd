@@ -18,6 +18,10 @@ var _current_indentation : int
 var _bracket_lock : int = 0
 var _statement_break : bool = false
 
+# CUSTOM INTERNALS
+var _blocked : bool = false
+var _func_blocked : bool = false
+
 
 func read(tokenizer : Tokenizer, symbol_table : SymbolTable, autoload_symbol : SymbolTable.Symbol = null) -> AST.ASTNode:
 	_tokenizer = tokenizer
@@ -112,6 +116,8 @@ func _parse_statement(parent : AST.ASTNode) -> AST.ASTNode:
 			node = _parse_keyword(parent)
 		Token.Type.ANNOTATION:
 			node = _parse_annotation(parent)
+		Token.Type.COMMENT:
+			_parse_comment(token)
 		_:
 			_tokenizer.get_next()
 	
@@ -415,7 +421,7 @@ func _parse_for(parent : AST.ASTNode) -> AST.For:
 	ast.body = _parse_block(ast, indentation)
 	
 	symbol_token.link_symbol(iterator.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(iterator.symbol)
 	
 	return ast
@@ -447,7 +453,7 @@ func _parse_class_name(parent : AST.ASTNode) -> void:
 	
 	token.link_symbol(ast.symbol)
 	
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 
 
@@ -474,7 +480,7 @@ func _parse_class(parent : AST.ASTNode) -> AST.Class:
 	
 	var name : String = token.get_value()
 	var indentation : int = _current_indentation
-	var lock_symbol : bool = _line_has_hint(PreprocessorHints.LOCK_SYMBOLS)
+	var lock_symbol : bool = _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS)
 	
 	if _tokenizer.peek().is_keyword("extends"):
 		_tokenizer.get_next()
@@ -504,7 +510,7 @@ func _parse_signal(parent : AST.ASTNode) -> AST.SignalDef:
 	ast.params = _parse_params(parent)
 	
 	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
 	if _class_symbol and _is_autoload:
@@ -524,7 +530,7 @@ func _parse_enum(parent : AST.ASTNode) -> AST.EnumDef:
 		ast.symbol = _symbol_table.create_global_symbol(token.get_value())
 		
 		token.link_symbol(ast.symbol)
-		if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+		if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 			_symbol_table.lock_symbol(ast.symbol)
 	
 	var expect_key : bool = true
@@ -564,7 +570,7 @@ func _parse_enum_key(parent : AST.ASTNode) -> AST.EnumDef.KeyDef:
 	key.symbol = _symbol_table.create_global_symbol(token.get_value())
 	
 	token.link_symbol(key.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(key.symbol)
 	
 	if parent is AST.SymbolDeclaration and parent.symbol:
@@ -594,7 +600,7 @@ func _parse_const(parent : AST.ASTNode) -> AST.Const:
 	ast.getset = _parse_var_getset(ast)
 	
 	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
 	if _class_symbol:
@@ -615,7 +621,7 @@ func _parse_var(parent : AST.ASTNode) -> AST.Var:
 	ast.symbol = _symbol_table.create_symbol(ast, token.get_value(), _parse_var_type(ast))
 	
 	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
 	ast.default = _parse_var_default(ast)
@@ -637,7 +643,7 @@ func _parse_export_var(parent : AST.ASTNode) -> AST.ExportVar:
 	ast.symbol = _symbol_table.create_export_symbol(token.get_value(), _parse_var_type(ast))
 	
 	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
 	ast.default = _parse_var_default(ast)
@@ -667,7 +673,7 @@ func _parse_export_node_path_var(parent : AST.ASTNode) -> AST.ExportNodePathVar:
 	ast.symbol = _symbol_table.create_export_symbol(token.get_value(), _parse_var_type(ast))
 	
 	token.link_symbol(ast.symbol)
-	if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+	if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 		_symbol_table.lock_symbol(ast.symbol)
 	
 	ast.default = _parse_var_default(ast)
@@ -710,9 +716,11 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	var token : Token = _tokenizer.peek()
 	var name : String = "@lambda"
 	var is_static : bool = false
-	var lock_symbols : bool = _line_has_hint(PreprocessorHints.LOCK_SYMBOLS)
+	var lock_symbols : bool = _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS)
 	var obfuscate_string_params : bool = _line_has_hint(PreprocessorHints.OBFUSCATE_STRING_PARAMETERS, -1)
 	var string_params : PackedStringArray = _line_get_hint_args(PreprocessorHints.OBFUSCATE_STRING_PARAMETERS, -1).split(" ", false)
+	_func_blocked = _line_has_hint(PreprocessorHints.LOCK_FUNC_SYMBOLS, -1)
+	
 	if token.is_symbol():
 		_tokenizer.get_next()
 		name = token.get_value()
@@ -723,8 +731,10 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	
 	var ast := AST.Func.new(parent)
 	
+		
 	var params : Array[AST.Parameter] = _parse_params(ast)
 	var type : String = _parse_func_type(ast)
+	
 	
 	_bracket_lock = 0
 
@@ -734,7 +744,7 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	
 	if token.is_symbol():
 		token.link_symbol(ast.symbol)
-		if lock_symbols:
+		if lock_symbols or _func_blocked:
 			_symbol_table.lock_symbol(ast.symbol)
 	
 	if obfuscate_string_params:
@@ -748,6 +758,8 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	_bracket_lock += bracket_lock
 	if bracket_lock:
 		_current_indentation = indentation
+		
+	_func_blocked = false
 	
 	return ast
 
@@ -784,7 +796,7 @@ func _parse_params(parent : AST.ASTNode) -> Array[AST.Parameter]:
 				expect_symbol = false
 				param.symbol = _symbol_table.create_local_symbol(token.get_value(), _parse_var_type(param))
 				token.link_symbol(param.symbol)
-				if _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
+				if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS) or _func_blocked:
 					_symbol_table.lock_symbol(param.symbol)
 	
 			else:
@@ -851,6 +863,9 @@ func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
 						return false
 					else:
 						_parse_punctuator()
+				Token.Type.COMMENT:
+					_parse_comment(token)
+					_tokenizer.get_next()
 				_:
 					if not _parse_and_process_indentation():
 						_tokenizer.get_next()
@@ -936,3 +951,13 @@ func _is_call() -> bool:
 
 func _is_statement(token : Token) -> bool:
 	return token and token.type != Token.Type.COMMENT and token.type != Token.Type.WHITESPACE and token.type != Token.Type.INDENTATION and token.type != Token.Type.LINE_BREAK 
+
+func _parse_comment(token : Token) -> void:
+	var value : String = token.get_value().trim_prefix(Tokenizer._Settings.current.preprocessor_prefix)
+	match value:
+		PreprocessorHints.START_LOCK_SYMBOLS:
+			_blocked = true
+		PreprocessorHints.END_LOCK_SYMBOLS:
+			_blocked = false
+		
+	_tokenizer.get_next()

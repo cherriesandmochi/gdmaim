@@ -649,6 +649,8 @@ func _add_token(type : Token.Type, value : String, readable : bool = true, deco 
 	_output.back().add_token(token)
 	if readable:
 		_tokens.append(token)
+	elif value.begins_with(_Settings.current.preprocessor_prefix):
+		_tokens.append(token)
 
 
 func _add_symbol(name : String) -> void:
