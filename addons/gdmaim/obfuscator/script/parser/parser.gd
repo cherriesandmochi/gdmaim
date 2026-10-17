@@ -865,7 +865,6 @@ func _parse_var_default(parent : AST.ASTNode) -> AST.Sequence:
 						_parse_punctuator()
 				Token.Type.COMMENT:
 					_parse_comment(token)
-					_tokenizer.get_next()
 				_:
 					if not _parse_and_process_indentation():
 						_tokenizer.get_next()
@@ -953,7 +952,7 @@ func _is_statement(token : Token) -> bool:
 	return token and token.type != Token.Type.COMMENT and token.type != Token.Type.WHITESPACE and token.type != Token.Type.INDENTATION and token.type != Token.Type.LINE_BREAK 
 
 func _parse_comment(token : Token) -> void:
-	var value : String = token.get_value().trim_prefix(Tokenizer._Settings.current.preprocessor_prefix)
+	var value : String = token.get_value(false)
 	match value:
 		PreprocessorHints.START_LOCK_SYMBOLS:
 			_blocked = true

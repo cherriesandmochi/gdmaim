@@ -37,21 +37,30 @@ func run(features : PackedStringArray) -> bool:
 		return false
 	
 	tokenizer.reset()
+	
+	var _str_processing : bool = false
 	while !tokenizer.is_eof():
 		var token : Token = tokenizer.get_next()
 		var next_token : Token = tokenizer.peek()
 		var line : Tokenizer.Line = tokenizer.get_output_line(token.line)
 		var prev_line : Tokenizer.Line = tokenizer.get_output_line(token.line-1)
 		
-		if _Settings.current.obfuscation_enabled:
-			if line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS_SEED):
-				_symbol_table.set_custom_seed(line.get_hint_args(PreprocessorHints.OBFUSCATE_STRINGS_SEED).to_int())
-			else:
-				_symbol_table.set_custom_seed(0)
+		if token.type == Token.Type.COMMENT:
+			var value : String = token.get_value(false)
+			match value:
+				PreprocessorHints.START_OBFUSCATE_STRINGS:
+					_str_processing = true
+				PreprocessorHints.END_OBFUSCATE_STRINGS:
+					_str_processing = false		
 		
-			if line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS):
-				_string_obfuscation(token)
-			_string_param_obfuscation(token, next_token)
+		if line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS_SEED):
+			_symbol_table.set_custom_seed(line.get_hint_args(PreprocessorHints.OBFUSCATE_STRINGS_SEED).to_int())
+		else:
+			_symbol_table.set_custom_seed(0)
+	
+		if _str_processing or line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS):
+			_string_obfuscation(token)
+		_string_param_obfuscation(token, next_token)
 		
 		if !_Settings.current.feature_filters:
 			continue
