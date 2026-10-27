@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://co43s08djflp5"]
 
-[ext_resource type="Script" uid="uid://dfoyyluren7dt" path="res://addons/gdmaim/ui/dock/dock.gd" id="1_se4hh"]
+[ext_resource type="Script" path="res://addons/gdmaim/ui/dock/dock.gd" id="1_se4hh"]
 
 [node name="GDMaim" type="EditorDock" unique_id=612200111]
 anchors_preset = 15

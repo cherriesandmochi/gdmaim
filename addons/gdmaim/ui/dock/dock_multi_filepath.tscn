@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bjtrd20uvj4uc"]
 
-[ext_resource type="Script" uid="uid://bxo3yqp4cqs21" path="res://addons/gdmaim/ui/dock/setting_multifile.gd" id="1_7ba2y"]
+[ext_resource type="Script" path="res://addons/gdmaim/ui/dock/setting_multifile.gd" id="1_7ba2y"]
 
 [node name="DockMultiFilepath" type="HBoxContainer" unique_id=91181815]
 offset_right = 185.0
