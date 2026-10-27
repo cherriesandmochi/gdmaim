@@ -27,6 +27,8 @@ var _autoloads : Dictionary
 var _class_symbols : Dictionary
 var _symbols : SymbolTable
 var _src_obfuscators : Dictionary
+var _script_sources : Dictionary
+var _script_maps : Dictionary
 var _res_obfuscators : Dictionary
 var _inject_autoload : String
 var _exported_script_count : int
@@ -95,6 +97,8 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_godot_files = GodotFiles.new()
 	_autoloads.clear()
 	_src_obfuscators.clear()
+	_script_sources.clear()
+	_script_maps.clear()
 	_res_obfuscators.clear()
 	
 	_symbols = SymbolTable.new(settings)
@@ -258,20 +262,16 @@ func _export_end() -> void:
 		"scripts": {},
 		"resources": {},
 	}
+	for pair : PackedStringArray in _symbols._forgotten_locals:
+		source_map["symbols"]["source"][pair[0]] = pair[1]
+		source_map["symbols"]["export"][pair[1]] = pair[0]
 	for symbol : SymbolTable.Symbol in _symbols._global_symbols.values() + _symbols._local_symbols:
 		source_map["symbols"]["source"][symbol.get_source_name()] = symbol.get_name()
 		source_map["symbols"]["export"][symbol.get_name()] = symbol.get_source_name()
 	for path in _src_obfuscators:
 		var obfuscator : ScriptObfuscator = _src_obfuscators[path]
-		var mappings : Array[Dictionary] = obfuscator.generate_line_mappings()
-		var data : Dictionary = {
-			"source_code": obfuscator.source_code,
-			"export_code": obfuscator.generated_code,
-			"source_mappings": mappings[0],
-			"export_mappings": mappings[1],
-			"log": _Logger.get_log(obfuscator),
-		}
-		source_map["scripts"][obfuscator.path] = data
+		source_map["scripts"][obfuscator.path] = _script_map(obfuscator)
+	source_map["scripts"].merge(_script_maps)
 	for path in _res_obfuscators:
 		var obfuscator : ResourceObfuscator = _res_obfuscators[path]
 		var data : Dictionary = {
@@ -302,6 +302,8 @@ func _export_end() -> void:
 	_autoloads.clear()
 	_symbols = null
 	_src_obfuscators.clear()
+	_script_sources.clear()
+	_script_maps.clear()
 	_res_obfuscators.clear()
 	_Logger.clear_all()
 	_binash = null
@@ -515,8 +517,20 @@ func _parse_script(path : String) -> void:
 		return
 			
 	if source_code.is_empty():return
+	# Only the declarations are kept: the script is read again when it is exported, so
+	# no more than one script's tokens and syntax tree are held at a time.
+	var paths_from : int = _symbols.count_symbol_paths()
+	var locals_from : int = _symbols.count_local_symbols()
+	var obfuscator := _read_script(path, source_code)
+	if obfuscator.get_class_symbol():
+		_class_symbols[obfuscator.get_class_symbol().to_string()] = obfuscator.get_class_symbol()
+	_symbols.forget_since(paths_from, locals_from)
+	_Logger.forget(obfuscator)
+	_script_sources[path] = source_code
+
+
+func _read_script(path : String, source_code : String) -> ScriptObfuscator:
 	var obfuscator := ScriptObfuscator.new(path)
-	_src_obfuscators[path] = obfuscator
 	
 	_Logger.swap(obfuscator)
 	_Logger.clear()
@@ -526,16 +540,52 @@ func _parse_script(path : String) -> void:
 	obfuscator.parse(source_code, _symbols, _symbols.create_global_symbol(_autoloads[path]) if _autoloads.has(path) else null)
 	obfuscator.check_exclusion_source(path, source_code)
 	
-	if obfuscator.get_class_symbol():
-		_class_symbols[obfuscator.get_class_symbol().to_string()] = obfuscator.get_class_symbol()
-	
 	_Logger.write("\nAbstract Syntax Tree\n" + obfuscator._ast.print_tree(-1))
 	
 	_Logger.write("\n---------- " + " Resolving symbols " + path + " ----------\n")
+	
+	return obfuscator
+
+
+func _script_map(obfuscator : ScriptObfuscator) -> Dictionary:
+	var mappings : Array[Dictionary] = obfuscator.generate_line_mappings()
+	return {
+		"source_code": obfuscator.source_code,
+		"export_code": obfuscator.generated_code,
+		"source_mappings": mappings[0],
+		"export_mappings": mappings[1],
+		"log": _Logger.get_log(obfuscator),
+	}
 
 
 func _obfuscate_script(path : String) -> String:
+	if !_src_obfuscators.has(path):
+		return _obfuscate_streamed_script(path)
+	
 	var obfuscator : ScriptObfuscator = _src_obfuscators[path]
+	return _generate_script(path, obfuscator)
+
+
+# Reads a script again, now that every global name is known, resolves and names its own
+# symbols, writes it out and lets its tokens go.
+func _obfuscate_streamed_script(path : String) -> String:
+	if !_script_sources.has(path):
+		push_error("GDMaim - '" + path + "' is exported, but was not read before export. Its names would not match the other scripts.")
+		return FileAccess.get_file_as_string(path)
+	
+	var paths_from : int = _symbols.count_symbol_paths()
+	var locals_from : int = _symbols.count_local_symbols()
+	var obfuscator := _read_script(path, _script_sources[path])
+	_symbols.resolve_symbol_paths(paths_from)
+	_symbols.obfuscate_local_symbols(locals_from)
+	var code : String = _generate_script(path, obfuscator)
+	_script_maps[path] = _script_map(obfuscator)
+	_symbols.forget_since(paths_from, locals_from)
+	_Logger.forget(obfuscator)
+	return code
+
+
+func _generate_script(path : String, obfuscator : ScriptObfuscator) -> String:
 	
 	_Logger.swap(obfuscator)
 	_Logger.write("\n---------- " + " Obfuscating script " + path + " ----------")

@@ -23,6 +23,12 @@ static func write(new_text : String) -> void:
 	logs[current_log] += new_text + "\n"
 
 
+static func forget(target : Variant) -> void:
+	logs.erase(target)
+	if is_same(current_log, target):
+		current_log = null
+
+
 static func get_log(target : Variant) -> String:
 	return logs[target].trim_suffix("\n")
 
