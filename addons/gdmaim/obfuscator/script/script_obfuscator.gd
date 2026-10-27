@@ -51,6 +51,7 @@ func run(features : PackedStringArray) -> bool:
 		
 			if line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS):
 				_string_obfuscation(token)
+			_name_param_obfuscation(token, next_token)
 			_string_param_obfuscation(token, next_token)
 		
 		if !_Settings.current.feature_filters:
@@ -225,6 +226,56 @@ func _string_param_obfuscation(token : Token, next_token : Token) -> void:
 			var str : String = token.get_value(false)
 			token.set_value(_symbol_table.obfuscate_string_global(str))
 		maybe_str_param = false
+
+
+# Engine methods taking a member's or a class's name as a string, by the index of that argument.
+# Object.get() and set() are left out: Dictionary has them too, with free keys.
+const NAME_PARAMS : Dictionary = {
+	"tween_property": 1, "set_deferred": 0, "set_indexed": 0, "get_indexed": 0,
+	"has_method": 0, "call": 0, "call_deferred": 0, "callv": 0, "propagate_call": 0,
+	"emit_signal": 0, "has_signal": 0, "connect": 0, "disconnect": 0, "is_connected": 0,
+	"property_can_revert": 0, "property_get_revert": 0, "call_group": 1, "set_group": 1,
+	"call_group_flags": 2, "set_group_flags": 2, "Callable": 1, "find_children": 1,
+}
+
+
+# Names the member or class a string argument refers to as it was named: every member of a name
+# shares one generated name, so this holds whichever object it is looked up on. Only the first
+# part of a property path is a member ("_hover:x"); strings naming no symbol stay as they are.
+func _name_param_obfuscation(token : Token, next_token : Token) -> void:
+	if !next_token or !next_token.is_punctuator("(") or !(token.is_symbol() or token.is_keyword()):
+		return
+	var wanted : int = NAME_PARAMS.get(token.get_value(), -1)
+	if wanted == -1:
+		return
+	var param : int = 0
+	var depth : int = 0
+	var first_in_param : bool = true
+	var cursor : int = 1
+	while !tokenizer.is_eof(cursor):
+		var arg : Token = tokenizer.peek(cursor)
+		cursor += 1
+		if arg.is_punctuator():
+			if arg.get_value() in ["(", "[", "{"]:
+				depth += 1
+			elif arg.get_value() in [")", "]", "}"]:
+				depth -= 1
+				if depth <= 0:
+					return
+			elif arg.has_value(",") and depth == 1:
+				param += 1
+				first_in_param = true
+			continue
+		if arg.type == Token.Type.WHITESPACE or arg.type == Token.Type.LINE_BREAK or arg.type == Token.Type.INDENTATION or arg.is_operator("&") or arg.is_operator("^"):
+			continue
+		if param == wanted and first_in_param and depth == 1 and arg.is_string_literal():
+			var parts : PackedStringArray = arg.get_value(false).split(":")
+			var member : SymbolTable.Symbol = _symbol_table.find_global_symbol(parts[0])
+			if member and member.get_name() != parts[0]:
+				parts[0] = member.get_name()
+				arg.set_value(":".join(parts))
+			return
+		first_in_param = false
 
 
 func _func_feature_filter(token : Token, line : Tokenizer.Line, feature : String, features : PackedStringArray) -> void:
