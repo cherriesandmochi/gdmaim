@@ -54,7 +54,8 @@ func run(source_data : String, symbol_table : SymbolTable) -> bool:
 					var name : String = token.substr(start + 1, end - (start + 1))
 					var new_symbol : SymbolTable.Symbol = symbol_table.find_global_symbol(name)
 					if new_symbol:
-						line = _replace_first(line, name, str(new_symbol.name))
+						var quoted_at : int = line.find('"' + name + '"', line.find(token))
+						line = line.substr(0, quoted_at + 1) + str(new_symbol.name) + line.substr(quoted_at + 1 + name.length())
 						_Logger.write(str(i+1) + " found symbol '" + name + "' = " + str(new_symbol.name))
 		
 		
