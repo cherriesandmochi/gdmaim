@@ -169,6 +169,12 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		for script_path in paths:
 			if !_is_excluded(script_path, excluded):
 				_parse_script(script_path)
+	if settings.keep_string_names:
+		var key := RegEx.create_from_string('"([A-Za-z_]\\w*)"\\s*:')
+		for data_path in _get_files("res://", ".json") + _get_files("res://", ".tres") + _get_files("res://", ".tscn"):
+			if !_is_excluded(data_path, excluded):
+				for found in key.search_all(FileAccess.get_file_as_string(data_path)):
+					_symbols.lock_symbol_name(found.get_string(1))
 	
 	# GDShedor
 	if Engine.has_singleton(&"GDShedor"):
@@ -524,6 +530,9 @@ func _parse_script(path : String) -> void:
 	var obfuscator := _read_script(path, source_code)
 	if obfuscator.get_class_symbol():
 		_class_symbols[obfuscator.get_class_symbol().to_string()] = obfuscator.get_class_symbol()
+	if settings.keep_string_names:
+		for name in obfuscator.get_string_names():
+			_symbols.lock_symbol_name(name)
 	_symbols.forget_since(paths_from, locals_from)
 	_Logger.forget(obfuscator)
 	_script_sources[path] = source_code
