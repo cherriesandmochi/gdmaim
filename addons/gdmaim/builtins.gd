@@ -2,6 +2,8 @@ extends RefCounted
 
 
 const GLOBALS : Array[String] = [
+	# Object's own property, added at runtime, so ClassDB does not list it
+	"script",
 	# GDScript
 	"_static_init",
 	"Color8",
