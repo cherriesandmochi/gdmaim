@@ -159,10 +159,12 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		for symbol in _get_class_symbols(class_):
 			_symbols.lock_symbol_name(symbol)
 	
-	# Parse scripts and gather their symbols
+	# Parse scripts and gather their symbols, skipping those the preset never exports
+	var excluded : PackedStringArray = get_export_preset().get_exclude_filter().split(",", false)
 	for paths in [scripts, _get_files("res://", ".tscn"), _get_files("res://", ".scn")]:
 		for script_path in paths:
-			_parse_script(script_path)
+			if !_is_excluded(script_path, excluded):
+				_parse_script(script_path)
 	
 	# GDShedor
 	if Engine.has_singleton(&"GDShedor"):
@@ -425,6 +427,16 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 		skip()
 		add_file(path, data.to_utf8_buffer(), false)
 
+# Files the preset's exclude filter keeps out of the export, matched as Godot matches them.
+static func _is_excluded(path : String, filters : PackedStringArray) -> bool:
+	var relative : String = path.trim_prefix("res://")
+	for filter in filters:
+		filter = filter.strip_edges()
+		if path.matchn(filter) or relative.matchn(filter):
+			return true
+	return false
+
+
 func _get_class_symbols(class_ : String) -> PackedStringArray:
 	var symbols : PackedStringArray
 	
@@ -456,8 +468,7 @@ func _parse_script(path : String) -> void:
 	var source_code : String
 	var as_embedded : bool = false
 	if path.ends_with(".gd"):
-		var script : Script = load(path)
-		source_code = str(script.source_code.strip_edges(), "\n")
+		source_code = str(FileAccess.get_file_as_string(path).strip_edges(), "\n")
 		
 	elif path.ends_with(".tscn") or path.ends_with(".scn"):		
 		#SOURCE
