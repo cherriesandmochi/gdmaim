@@ -400,7 +400,7 @@ func _strip_code() -> void:
 					elif token.type == Token.Type.WHITESPACE:
 						var prev_type : int = line.tokens[i-1].type
 						var next_type : int = line.tokens[i+1].type if i+1 < line.tokens.size() else Token.Type.NONE
-						if i == 0 or prev_type == Token.Type.OPERATOR or prev_type == Token.Type.PUNCTUATOR or next_type == Token.Type.OPERATOR or next_type == Token.Type.PUNCTUATOR:
+						if i == 0 or prev_type == Token.Type.OPERATOR or prev_type == Token.Type.PUNCTUATOR or (next_type == Token.Type.OPERATOR and prev_type != Token.Type.KEYWORD) or next_type == Token.Type.PUNCTUATOR:
 							line.remove_token(i)
 							continue
 				
