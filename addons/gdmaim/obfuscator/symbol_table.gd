@@ -19,6 +19,7 @@ var _id_table : Dictionary
 var _unique_ids : Dictionary
 
 var _custom_seed : int = 0
+var _forgotten_locals : Array[PackedStringArray]
 
 
 func _init(settings : _Settings) -> void:
@@ -96,8 +97,9 @@ func rename_symbol(symbol : Symbol, target : String) -> void:
 	symbol.name.set_value(target)
 
 
-func resolve_symbol_paths() -> void:
-	for symbol_path in _symbol_paths:
+func resolve_symbol_paths(from : int = 0) -> void:
+	for i in range(from, _symbol_paths.size()):
+		var symbol_path : SymbolPath = _symbol_paths[i]
 		var log : String = "Line " + str(symbol_path.line + 1) + " | " + str(symbol_path) + " |"
 		
 		var cur : Symbol
@@ -148,6 +150,33 @@ func obfuscate_symbols() -> void:
 			var str : String = symbol.get_name()
 			if !_locked_symbols.has(str):
 				rename_symbol(symbol, _generate_symbol_name(str))
+
+# Names the local symbols declared since 'from', as obfuscate_symbols() names every local.
+func obfuscate_local_symbols(from : int) -> void:
+	for i in range(from, _local_symbols.size()):
+		var symbol : Symbol = _local_symbols[i]
+		var str : String = symbol.get_name()
+		if !_locked_symbols.has(str) and !is_custom_lock_settings(str):
+			rename_symbol(symbol, _generate_symbol_name(str, true))
+
+
+func count_symbol_paths() -> int:
+	return _symbol_paths.size()
+
+
+func count_local_symbols() -> int:
+	return _local_symbols.size()
+
+
+# Drops the symbol paths and local symbols added since the given counts, so a script's
+# tokens and syntax tree can be freed; global declarations stay. Named locals are kept
+# for the source map.
+func forget_since(paths_from : int, locals_from : int) -> void:
+	_symbol_paths.resize(paths_from)
+	for i in range(locals_from, _local_symbols.size()):
+		_forgotten_locals.append(PackedStringArray([_local_symbols[i].get_source_name(), _local_symbols[i].get_name()]))
+	_local_symbols.resize(locals_from)
+
 
 func is_custom_lock_settings(str : String) -> bool:
 	for rgx in _Settings.current.get_tokens_rgx():

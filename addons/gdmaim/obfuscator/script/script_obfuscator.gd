@@ -133,6 +133,17 @@ func generate_line_mappings() -> Array[Dictionary]:
 	return [mappings_in, mappings_out]
 
 
+# The names the script spells as one-line strings: a string that is a name, or a property or
+# node path of names ("_hover", "modulate:a", "Board/Pin"), gives each of its names.
+func get_string_names() -> PackedStringArray:
+	var names : PackedStringArray
+	var named := RegEx.create_from_string("^[A-Za-z_]\\w*(?:[:/][A-Za-z_]\\w*)*$")
+	for token : Token in tokenizer._tokens:
+		if token.type == Token.Type.STRING_LITERAL and named.search(token.get_value(false)):
+			names.append_array(token.get_value(false).replace("/", ":").split(":"))
+	return names
+
+
 func get_class_symbol() -> SymbolTable.Symbol:
 	return parser.get_class_symbol() if parser else null
 
