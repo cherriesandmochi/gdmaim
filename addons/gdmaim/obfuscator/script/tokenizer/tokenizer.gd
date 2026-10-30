@@ -649,8 +649,6 @@ func _add_token(type : Token.Type, value : String, readable : bool = true, deco 
 	
 	if !readable and value.begins_with(_Settings.current.preprocessor_prefix):
 		readable = true
-		deco = _Settings.current.preprocessor_prefix
-		value = value.trim_prefix(deco)
 		
 	token = Token.new(type, value, _tokens.size(), _output.size()-1, deco)
 

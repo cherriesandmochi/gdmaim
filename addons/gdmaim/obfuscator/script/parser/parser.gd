@@ -2,6 +2,7 @@ extends RefCounted
 
 
 const _Logger := preload("../../../logger.gd")
+const _Settings := preload("../../../settings.gd")
 const PreprocessorHints := preload("../preprocessor_hints.gd")
 const Stream := preload("../tokenizer/stream.gd")
 const Token := preload("../tokenizer/token.gd")
@@ -20,7 +21,6 @@ var _statement_break : bool = false
 
 # CUSTOM INTERNALS
 var _blocked : bool = false
-var _func_blocked : bool = false
 
 
 func read(tokenizer : Tokenizer, symbol_table : SymbolTable, autoload_symbol : SymbolTable.Symbol = null) -> AST.ASTNode:
@@ -719,7 +719,6 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	var lock_symbols : bool = _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS)
 	var obfuscate_string_params : bool = _line_has_hint(PreprocessorHints.OBFUSCATE_STRING_PARAMETERS, -1)
 	var string_params : PackedStringArray = _line_get_hint_args(PreprocessorHints.OBFUSCATE_STRING_PARAMETERS, -1).split(" ", false)
-	_func_blocked = _line_has_hint(PreprocessorHints.LOCK_FUNC_SYMBOLS, -1)
 	
 	if token.is_symbol():
 		_tokenizer.get_next()
@@ -744,7 +743,7 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	
 	if token.is_symbol():
 		token.link_symbol(ast.symbol)
-		if lock_symbols or _func_blocked:
+		if lock_symbols:
 			_symbol_table.lock_symbol(ast.symbol)
 	
 	if obfuscate_string_params:
@@ -758,8 +757,6 @@ func _parse_func(parent : AST.ASTNode) -> AST.Func:
 	_bracket_lock += bracket_lock
 	if bracket_lock:
 		_current_indentation = indentation
-		
-	_func_blocked = false
 	
 	return ast
 
@@ -796,7 +793,7 @@ func _parse_params(parent : AST.ASTNode) -> Array[AST.Parameter]:
 				expect_symbol = false
 				param.symbol = _symbol_table.create_local_symbol(token.get_value(), _parse_var_type(param))
 				token.link_symbol(param.symbol)
-				if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS) or _func_blocked:
+				if _blocked or _line_has_hint(PreprocessorHints.LOCK_SYMBOLS):
 					_symbol_table.lock_symbol(param.symbol)
 	
 			else:
@@ -952,7 +949,7 @@ func _is_statement(token : Token) -> bool:
 	return token and token.type != Token.Type.COMMENT and token.type != Token.Type.WHITESPACE and token.type != Token.Type.INDENTATION and token.type != Token.Type.LINE_BREAK 
 
 func _parse_comment(token : Token) -> void:
-	var value : String = token.get_value(false)
+	var value : String = token.get_value().trim_prefix(_Settings.current.preprocessor_prefix)
 	match value:
 		PreprocessorHints.START_LOCK_SYMBOLS:
 			_blocked = true
