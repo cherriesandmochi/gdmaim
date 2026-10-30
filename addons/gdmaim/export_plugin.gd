@@ -425,7 +425,9 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 		skip()
 		add_file(path, data.to_utf8_buffer(), false)
 
+
 func _get_class_symbols(class_ : String) -> PackedStringArray:
+	const setget : PackedStringArray = ["set_", "get_"]
 	var symbols : PackedStringArray
 	
 	symbols.append(class_)
@@ -448,6 +450,12 @@ func _get_class_symbols(class_ : String) -> PackedStringArray:
 	
 	for func_ in ClassDB.class_get_method_list(class_, true):
 		symbols.append(func_.name)
+		
+		for x : String in setget:
+			var ns : String = func_.name.trim_prefix(x)
+			if ns != func_.name:
+				symbols.append(ns)
+				break
 	
 	return symbols
 
