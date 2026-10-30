@@ -335,6 +335,53 @@ class_name MyClass extends Node
 @export var _Jdwiq : String
 ```
 
+`##START|END_LOCK_SYMBOLS`: This work like LOCK_SYMBOLS as section. You define a section where its functionality begins and ends.
+```js
+func sweet_function(
+	_value: int
+) -> void:
+	var var_0 : bool = true
+	##START_LOCK_SYMBOLS
+	var var_1 : int = 123
+	var var_2 : String = "Godettes"
+	##END_LOCK_SYMBOLS
+	var var_3 : Object = null
+	_other_func("foo")
+````
+=>
+```js
+func __FmtRR(
+	__zoTIU:int
+):
+	var __lsyac=true
+	##START_LOCK_SYMBOLS
+	var var_1=123
+	var var_2="Godettes"
+	##END_LOCK_SYMBOLS
+	var __9LDyw=null
+	__iqfbg("foo")
+```
+
+`##START|END_OBFUSCATE_STRINGS`: This work like OBFUSCATE_STRINGS as section. You define a section where its functionality begins and ends.
+
+```js
+##START_OBFUSCATE_STRINGS
+var some_array_4 = [
+"hello world",
+"second string",
+##END_OBFUSCATE_STRINGS
+"third string"] 
+```
+=>
+```js
+##START_OBFUSCATE_STRINGS
+var __Wel6F=[
+"__UizZd",
+"__K2tQP",
+##END_OBFUSCATE_STRINGS
+"third string"]
+```
+
 __Feature filters__
 
 Feature filters provide a way to dynamically strip out code based on the export template feature tags set. There is currently only one preprocessor hint.
