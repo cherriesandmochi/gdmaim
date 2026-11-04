@@ -62,7 +62,7 @@ Source code(left), obfuscated code(right)
 
 ## Installation [↑](#table-of-contents)
 
-> Note: Requires Godot 4.0+. Developed and tested on Godot 4.2-stable.
+> Note: Requires Godot 4.5+. GDMaim is updated based on the latest versions of the Godot Engine, older Godot Engine versions might require an older version of GDMaim, but keep in mind that bug fixes are always included in the most recent versions.
 
 1. Download a [release build](https://github.com/cherriesandmochi/gdmaim/releases) or the latest [main branch](https://github.com/cherriesandmochi/gdmaim/archive/refs/heads/main.zip).
 2. Extract the zip file and copy `addons/gdmaim` to the project's `res://addons` directory.
@@ -567,7 +567,7 @@ In both cases you will need to block the obfuscation of the tokens (Your variabl
 
 ## Stability [↑](#table-of-contents)
 
-Developed using Godot 4.2-stable.
+Developed originaly using Godot 4.2-stable, It is currently updated for the latest stable versions of Godot.
 
 GDMaim manages to successfully export a multiplayer game I have been working on for quite some time now, which currently means ~450 scripts, containing ~43k lines of code.
 
