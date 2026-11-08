@@ -107,8 +107,10 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		cfg.load("res://project.godot")
 		for autoload : String in (cfg.get_section_keys("autoload") if cfg.has_section("autoload") else []):
 			_autoloads[cfg.get_value("autoload", autoload).replace("*", "")] = autoload
-			if !_inject_autoload and cfg.get_value("autoload", autoload).begins_with("*"):
+			if !_inject_autoload and cfg.get_value("autoload", autoload).begins_with("*") and cfg.get_value("autoload", autoload).ends_with(".gd"):
 				_inject_autoload = cfg.get_value("autoload", autoload).replace("*", "")
+				if _inject_autoload.begins_with("uid://"):
+					_inject_autoload = ResourceUID.uid_to_path(_inject_autoload)
 			_symbols.lock_symbol_name(autoload)
 		if !_inject_autoload:
 			push_warning("GDMaim - No valid autoload found! GDMaim will not be able to print the source map filename to the console on the exported build.")
