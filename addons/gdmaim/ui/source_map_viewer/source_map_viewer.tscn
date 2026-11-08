@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://dqknu058384tm"]
 
-[ext_resource type="Script" uid="uid://4sxv0r5vnnup" path="res://addons/gdmaim/ui/source_map_viewer/source_map_viewer.gd" id="1_xfxdk"]
+[ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer/source_map_viewer.gd" id="1_xfxdk"]
 [ext_resource type="PackedScene" uid="uid://crvfxjbaqfxn2" path="res://addons/gdmaim/ui/source_map_viewer/code_search.tscn" id="2_n0sd2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6bkrx"]

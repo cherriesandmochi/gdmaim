@@ -62,7 +62,7 @@ Source code(left), obfuscated code(right)
 
 ## Installation [↑](#table-of-contents)
 
-> Note: Requires Godot 4.0+. Developed and tested on Godot 4.2-stable.
+> Note: Requires Godot 4.5+. GDMaim is updated based on the latest versions of the Godot Engine, older Godot Engine versions might require an older version of GDMaim, but keep in mind that bug fixes are always included in the most recent versions.
 
 1. Download a [release build](https://github.com/cherriesandmochi/gdmaim/releases) or the latest [main branch](https://github.com/cherriesandmochi/gdmaim/archive/refs/heads/main.zip).
 2. Extract the zip file and copy `addons/gdmaim` to the project's `res://addons` directory.
@@ -335,6 +335,53 @@ class_name MyClass extends Node
 @export var _Jdwiq : String
 ```
 
+`##START|END_LOCK_SYMBOLS`: This work like LOCK_SYMBOLS as section. You define a section where its functionality begins and ends.
+```js
+func sweet_function(
+	_value: int
+) -> void:
+	var var_0 : bool = true
+	##START_LOCK_SYMBOLS
+	var var_1 : int = 123
+	var var_2 : String = "Godettes"
+	##END_LOCK_SYMBOLS
+	var var_3 : Object = null
+	_other_func("foo")
+````
+=>
+```js
+func __FmtRR(
+	__zoTIU:int
+):
+	var __lsyac=true
+	##START_LOCK_SYMBOLS
+	var var_1=123
+	var var_2="Godettes"
+	##END_LOCK_SYMBOLS
+	var __9LDyw=null
+	__iqfbg("foo")
+```
+
+`##START|END_OBFUSCATE_STRINGS`: This work like OBFUSCATE_STRINGS as section. You define a section where its functionality begins and ends.
+
+```js
+##START_OBFUSCATE_STRINGS
+var some_array_4 = [
+"hello world",
+"second string",
+##END_OBFUSCATE_STRINGS
+"third string"] 
+```
+=>
+```js
+##START_OBFUSCATE_STRINGS
+var __Wel6F=[
+"__UizZd",
+"__K2tQP",
+##END_OBFUSCATE_STRINGS
+"third string"]
+```
+
 __Feature filters__
 
 Feature filters provide a way to dynamically strip out code based on the export template feature tags set. There is currently only one preprocessor hint.
@@ -520,7 +567,7 @@ In both cases you will need to block the obfuscation of the tokens (Your variabl
 
 ## Stability [↑](#table-of-contents)
 
-Developed using Godot 4.2-stable.
+Developed originaly using Godot 4.2-stable, It is currently updated for the latest stable versions of Godot.
 
 GDMaim manages to successfully export a multiplayer game I have been working on for quite some time now, which currently means ~450 scripts, containing ~43k lines of code.
 
