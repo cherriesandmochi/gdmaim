@@ -60,7 +60,9 @@ func run(features : PackedStringArray) -> bool:
 	
 		if _str_processing or line.has_hint(PreprocessorHints.OBFUSCATE_STRINGS):
 			_string_obfuscation(token)
-		_string_param_obfuscation(token, next_token)
+			
+		else:
+			_string_param_obfuscation(token, next_token)
 		
 		if !_Settings.current.feature_filters:
 			continue
