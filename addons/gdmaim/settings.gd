@@ -29,6 +29,7 @@ var strip_extraneous_spacing : bool = true
 var strip_editor_annotations : bool = true
 var strip_static_typing : bool = false
 var strip_sequential_newlines : bool = true
+var strip_aot_references : bool = false
 var striped_static_typing_be_initialized : bool = true
 var feature_filters : bool = true
 var regex_filter_enabled : bool = true
@@ -112,6 +113,7 @@ func initialize_settings(make_as_global_settings : bool = false, force_load_conf
 	add_entry("strip_static_typing", "strip_static_typing", "Strip Static Typing", "If true, remove all static typing like [int, String, Objects, CustomObjects, ...] take in mind this can remove the performance benefit with the static typing practice.")
 	add_entry("strip_sequential_newlines", "strip_sequential_newlines", "Strip Sequential New Lines","Strip New Lines Whenever Possible On Sequential Syntax")
 	add_entry("striped_static_typing_be_initialized", "striped_static_typing_be_initialized", "Initialize stripped typed variables", "(This action is complement of: Strip Static Typing)\nIf true, uninitalized typed variables that typed have been removed will be initialized; this will be useful for developers who frequently perform operations with these uninitialized typed variables, avoiding type definition errors.")
+	add_entry("strip_aot_references", "strip_aot_references", "Strip AOT call references", "This strip/obfuscate internal AOT references call (AOT Only)\n\nThis can be override as enabled only if the thirdparty option is enabled too.")
 	
 	add_entry("regex_filter_enabled", "regex_filter_enabled", "Strip Lines Matching RegEx", "If true, any lines matching the regular expression will be removed from the obfuscated code.")
 	add_entry("regex_filter", "regex_filter", "", "Enter Regular Expression")

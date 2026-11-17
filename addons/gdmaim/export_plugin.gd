@@ -381,8 +381,9 @@ func _export_aot() -> void:
 	if !(strip is bool):
 		strip = false
 		
-	strip = false
-		
+	if false == strip:
+		strip = settings.strip_aot_references
+	
 	if _compress_mode == true:
 		compression = EditorExportPreset.ScriptExportMode.MODE_SCRIPT_BINARY_TOKENS_COMPRESSED
 	

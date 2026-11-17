@@ -216,6 +216,7 @@ Error GritProjectCompiler::gdm_compile(const String &p_output_directory, const A
 				function.script_path = GritPiper::get_path(function.script_path);
 				function.class_path = GritPiper::get_path(function.class_path);
 				function.signature = GritPiper::get_path(function.signature);
+				function.registry_key = GritPiper::get_path(function.registry_key);
 			}
 
 		if (p_strip) {
@@ -227,7 +228,7 @@ Error GritProjectCompiler::gdm_compile(const String &p_output_directory, const A
 				function.is_stripped = stripper.get_stripped().has(GritScriptStripper::function_id(function.class_path, function.name)) && !function.registry_key.contains(">");
 			}
 			r_report.stripped_function_count += stripper.get_stripped().size();
-			r_report.stripped_sources.insert(source.path, stripped);
+			r_report.stripped_sources.insert(GritPiper::get_path(source.path), stripped);
 		}
 
 		for (const GritFunction &function : functions) {
