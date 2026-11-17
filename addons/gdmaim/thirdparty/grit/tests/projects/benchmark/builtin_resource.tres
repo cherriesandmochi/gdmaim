@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[sub_resource type="GDScript" id="GDScript_amount"]
+script/source = "extends Resource
+
+@export var amount := 3
+
+
+func doubled() -> int:
+	return amount * 2
+"
+
+[resource]
+script = SubResource("GDScript_amount")
+amount = 5

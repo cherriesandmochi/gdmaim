@@ -126,3 +126,32 @@ func _on_options_button_item_selected(index : int) -> void:
 
 func _on_view_source_map_pressed() -> void:
 	source_map_viewer_requested.emit()
+
+func _on_aot_pressed() -> void:
+	var dialog : ConfirmationDialog = ConfirmationDialog.new()
+	
+	dialog.title = "Verify/Install AOT Process"
+	dialog.dialog_text = "[WARNING] This is a experimental feature!!\n\nAre you sure you want check/install AOT?\nThis will open the command console for you and it may take a long time.\n\nFor human testers, feel free to create issues in the official GDMaim repository."
+	dialog.ok_button_text = "Yes"
+	dialog.cancel_button_text = "No"
+	
+	dialog.confirmed.connect(
+		func() -> void:			
+			load("res://addons/gdmaim/util/aot.gd").new().wizard(
+					{
+					"debug" : false, 
+					"build_template" : true, 
+					"dummy_template" : true
+					}
+				)
+	)
+	
+	var pieceofcake : Callable = func() -> void:
+		if is_instance_valid(dialog) and !dialog.is_queued_for_deletion():
+			dialog.queue_free()
+	
+	dialog.canceled.connect(pieceofcake)
+	dialog.focus_exited.connect(pieceofcake)
+	
+	add_child(dialog)
+	dialog.popup_centered()

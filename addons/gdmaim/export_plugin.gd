@@ -32,9 +32,13 @@ var _inject_autoload : String
 var _exported_script_count : int
 var _rgx : RegEx
 var _godot_files : GodotFiles
-var _compiler
-var _compress_mode : int
+var _compiler : RefCounted
+var _compress_mode : bool = false
 var _binash : Binash
+var _aot : RefCounted = null
+var _is_aot : bool = false
+var _is_debug : bool = false
+var _export : Callable
 
 #region addon_path
 static var _addon_path : String = "res://addons/gdmaim/"
@@ -59,12 +63,37 @@ func _initialize_third_party() -> void:
 	if Engine.has_singleton(&"GDShedor"):
 		for _settings in Engine.get_main_loop().get_nodes_in_group(&"GDShedor"):
 			_settings.call(&"disable_export_check", true)
-
+			
+func initialize_compiler() -> void:
+	_is_aot = false
+	
+	# TODO: Future deprecation check this again.
+	if (settings.export_mode == settings.ExportMode.AOT or settings.export_mode == settings.ExportMode.AOT_COMPRESSED):
+		_is_aot = ClassDB.class_exists(&"GritPiper")
+		
+		if !_is_aot:
+			printerr("GDMaim - Editor not have AOT Compiler! Cannot compile scripts to AOT!")
+	
+	if (_is_aot or settings.export_mode == settings.ExportMode.BINARY or settings.export_mode == settings.ExportMode.COMPRESSED):
+		if  ClassDB.class_exists(&"BytecodeCompiler"):
+			_compiler = ClassDB.instantiate(&"BytecodeCompiler")
+		else:
+			printerr("GDMaim - Failed to locate GDBC! Cannot compile scripts to bytecode!")
+		
+	if settings.export_mode == settings.ExportMode.COMPRESSED or settings.export_mode == settings.ExportMode.AOT_COMPRESSED:
+		print("GDMaim - Exporting scripts as compressed binary tokens.")
+		_compress_mode = _compiler.COMPRESSED
+	else:
+		print("GDMaim - Exporting scripts as binary tokens.")
+		_compress_mode = _compiler.UNCOMPRESSED
+		
+			
 func _export_begin(features : PackedStringArray, is_debug : bool, path : String, flags : int) -> void:
 	_features = features
 	_export_path = path
 	_source_map_filename = _export_path.get_file().get_basename() + Time.get_datetime_string_from_system().replace(":", ".") + ".gd.map"
 	_exported_script_count = 0
+	_is_debug = is_debug
 	
 	if !is_instance_valid(settings):
 		push_error("Not settings defined!\nObfuscation not executed for [{0}]".format([_export_path]))
@@ -100,6 +129,7 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	_symbols = SymbolTable.new(settings)
 
 	_binash = Binash.new(path)
+	_export = _do_file
 	
 	_inject_autoload = ""
 	if settings.source_map_inject_name:
@@ -195,18 +225,10 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 		# JUMP 127
 	_symbols.obfuscate_symbols()
 	
-	# Initialize gdbc if necessary
-	if settings.export_mode != settings.ExportMode.TEXT and ClassDB.class_exists("BytecodeCompiler"):
-		_compiler = ClassDB.instantiate("BytecodeCompiler")
-		if settings.export_mode == settings.ExportMode.BINARY:
-			print("GDMaim - Exporting scripts as binary tokens.")
-			_compress_mode = _compiler.UNCOMPRESSED
-		else:
-			print("GDMaim - Exporting scripts as compressed binary tokens.")
-			_compress_mode = _compiler.COMPRESSED
-	else:
-		if settings.export_mode != settings.ExportMode.TEXT and !ClassDB.class_exists("BytecodeCompiler"):
-			printerr("GDMaim - Failed to locate GDBC! Cannot compile scripts to bytecode!")
+	# Initialize gdbc/aot if necessary
+	initialize_compiler()
+	
+	if !_compiler and !_is_aot:
 		print("GDMaim - Exporting scripts as plain text.")
 	
 	# Remove gdbc from extension list
@@ -233,6 +255,204 @@ func _export_begin(features : PackedStringArray, is_debug : bool, path : String,
 	
 	# Apply changes made to Godot's internal export files
 	_godot_files.flush()
+	
+		
+func _export_aot() -> void:
+	if !ClassDB.class_exists(&"GritPiper"):
+		printerr("[ERROR] This editor not have AOT, use custom Editor with AOT compiled for use AOT compilation!\nThis project can not be compile with AOT.")
+		return
+	
+	## USERS
+	const TMP : String = "res://addons/gdmaim/tmp/"
+	var DEBUG : bool = false
+	var files_selecteds : PackedStringArray = []
+	
+	if FileAccess.file_exists("res://addons/gdmaim/user/aot_files.txt"):
+		for f : String in FileAccess.get_file_as_string("res://addons/gdmaim/user/aot_files.txt").split("\n", true):
+			var _f : String = f.strip_edges()
+			if _f.is_empty():
+				continue
+			files_selecteds.append(TMP.path_join(_f.replace("res://", "")))
+	
+	_aot = load(get_script().resource_path.path_join("../util/aot.gd")).new()
+	
+	var args : Dictionary = {}
+	var build : String = ""
+	
+	var data : Array = []
+	for x : String in _src_obfuscators.keys():
+		var source : String = _obfuscate_script(x)
+		if source.is_empty():
+			continue
+			
+		data.append([x, source])
+		
+	const GD_4_5 : bool = true
+	
+	if GD_4_5:
+		if DirAccess.make_dir_recursive_absolute(TMP) != OK:
+			printerr("[AOT] Error on trying create temp file!")
+			return
+			
+		var rc : RegEx = RegEx.create_from_string(r"^[\s\n\t]*class_name[\s\n\t]+([a-zA-Z_][a-zA-Z0-9_]*)")
+		var re : RegEx = RegEx.create_from_string(r"^[\s\n\t]*extends[\s\n\t]+([a-zA-Z_][a-zA-Z0-9_./\"]+)")
+		
+		var tree : Dictionary = {}
+		var files : Dictionary = {}
+		
+		for arr : Array in data:
+			var p : String = arr[0]	
+			var s : String = arr[1]
+			
+			var crm : RegExMatch = rc.search(s)
+			if !crm:
+				continue
+				
+			var erm : RegExMatch = re.search(s)
+			
+			var c : String = crm.get_string(1)
+			var e : String = ""
+			var t : String = TMP.path_join(p.trim_prefix("res://"))
+			
+			if erm:
+				e = erm.get_string(1)
+			
+			if !c.is_empty():
+				if DirAccess.make_dir_recursive_absolute(t.get_base_dir()) == OK:
+					var fs : FileAccess = FileAccess.open(t,FileAccess.WRITE)
+					
+					if !fs:
+						printerr("[AOT] Error on compile whe trying handle {0} from {1}".format([c, t]))
+						return
+					
+					if !e.is_empty():
+						fs.store_string("class_name {0} extends {1}\npass".format([t, e]))
+					else:
+						fs.store_string("class_name {0}\npass".format([t]))
+						
+					fs.close()
+					files[c] = t
+					tree[c] = e
+				else:
+					printerr("[AOT] Error on create folder ", t.get_base_dir())
+					return
+					
+		var sort : PackedStringArray = _aot.call(&"sort", tree)
+		var rs : EditorFileSystem = EditorInterface.get_resource_filesystem()
+		
+		while rs.is_scanning():
+			continue
+			
+		if !rs.is_scanning():
+			rs.scan()
+		
+		for f : String in sort:
+			if files.has(f):
+				rs.update_file(files[f])
+			
+		for arr : Array in data:
+			var p : String = arr[0]	
+			var s : String = arr[1]
+			
+			var t : String = TMP.path_join(p.trim_prefix("res://"))
+			if DirAccess.make_dir_recursive_absolute(t.get_base_dir()) == OK:
+				var fs : FileAccess = FileAccess.open(t,FileAccess.WRITE)
+				fs.store_string(s)
+				fs.close()
+				
+				arr[0] = t
+				rs.update_file(t)
+						
+			else:
+				printerr("[AOT] Error on create folder ", t.get_base_dir())
+				return
+				
+				
+		while rs.is_scanning():
+			continue
+			
+		
+	var piper : RefCounted = ClassDB.instantiate(&"GritPiper")
+	
+	var ed : EditorExportPreset = get_export_preset()
+	var strip : Variant = get_option("grit/strip_scripts")
+	var compression : int = EditorExportPreset.ScriptExportMode.MODE_SCRIPT_BINARY_TOKENS
+	
+	if !(strip is bool):
+		strip = false
+		
+	strip = false
+		
+	if _compress_mode == true:
+		compression = EditorExportPreset.ScriptExportMode.MODE_SCRIPT_BINARY_TOKENS_COMPRESSED
+	
+	DirAccess.make_dir_recursive_absolute(_aot.get(&"_GEN"))
+		
+	piper.set_exporter(add_file)
+	
+	if files_selecteds.size() > 0:
+		var fltr : Array = []
+		
+		for d : Array in data:
+			if files_selecteds.has(d[0]):
+				fltr.append(d)
+	
+		piper.compile(_aot.get(&"_GEN"), fltr, compression, strip, _is_debug)
+	else:
+		piper.compile(_aot.get(&"_GEN"), data, compression, strip, _is_debug)
+	
+	for x : String in _src_obfuscators.keys():
+		var src : String = piper.get_source(x)
+		if src.is_empty():
+			continue
+		_src_obfuscators[x].generated_code = src
+	
+	_aot.call(&"wizard", {"debug" : DEBUG, "build_template" : true})
+	build = _aot.call(&"get_build")
+	
+	if build.is_empty() or !FileAccess.file_exists(build):
+		printerr("An error ocurred when trying compile with AOT, check errors!")
+		return
+		
+	var origin : String = ProjectSettings.globalize_path(_export_path)
+	
+	if _aot.call(&"is_equal", origin, build):
+		DirAccess.remove_absolute(origin)
+	
+	if DirAccess.copy_absolute(build, origin) != OK:
+		printerr("Error on trying move builded export!")
+		
+	var ext : String = "." + build.get_extension()
+	build = str(build.trim_suffix(ext), ".console", ext)
+	
+	if FileAccess.file_exists(ext):
+		origin = str(origin.trim_suffix(ext), ".console", ext)
+		if FileAccess.file_exists(origin):
+			DirAccess.remove_absolute(origin)
+		DirAccess.copy_absolute(build, origin)
+		
+	#_aot.call(&"clear_folder", TMP)
+	
+	var fs : EditorFileSystem = EditorInterface.get_resource_filesystem()
+	if is_instance_valid(fs):
+		while fs.is_scanning():
+			continue
+			
+		if !fs.is_scanning():
+			fs.scan()
+	
+	
+			
+func _do_file(path : String, type : String, features : PackedStringArray) -> void:
+	if !_enabled:
+		return
+	
+	if _is_aot:
+		_export_aot()
+		
+	_export = export_file
+	_export.call(path, type, features)
+	
 	
 func _export_end() -> void:
 	if !_enabled:
@@ -307,6 +527,7 @@ func _export_end() -> void:
 	_res_obfuscators.clear()
 	_Logger.clear_all()
 	_binash = null
+	_compiler = null
 	
 	if is_instance_valid(settings):
 		settings.custom_token_regex_buffer.clear()
@@ -314,6 +535,13 @@ func _export_end() -> void:
 	if !_export_path.is_empty():
 		Engine.get_main_loop().create_timer(3.0).timeout.connect(_clean_libs.bind(_export_path))
 
+	if is_instance_valid(_aot):
+		_aot.call(&"clear_folder", "res://addons/gdmaim/tmp/")
+		_aot = null
+		
+		var fs : EditorFileSystem = EditorInterface.get_resource_filesystem()
+		if is_instance_valid(fs) and !fs.is_scanning():
+			fs.scan()
 
 
 func _clean_libs(target_path : String) -> void:
@@ -357,6 +585,9 @@ func _clean_libs(target_path : String) -> void:
 
 
 func _export_file(path : String, type : String, features : PackedStringArray) -> void:
+	_export.call(path, type, features)
+
+func export_file(path : String, type : String, features : PackedStringArray) -> void:
 	if !_enabled:
 		return
 		
@@ -415,7 +646,10 @@ func _export_file(path : String, type : String, features : PackedStringArray) ->
 		var bytes : PackedByteArray
 		if _compiler:
 			path += "c" # convert .gd to .gdc
-			bytes = _compiler.compile_from_string(code, _compress_mode)
+			if _compress_mode:
+				bytes = _compiler.compile_from_string(code, _compiler.COMPRESSED)
+			else:
+				bytes = _compiler.compile_from_string(code, _compiler.UNCOMPRESSED)
 		else:
 			bytes = code.to_utf8_buffer()
 		skip()
@@ -546,6 +780,9 @@ func _parse_script(path : String) -> void:
 
 func _obfuscate_script(path : String) -> String:
 	var obfuscator : ScriptObfuscator = _src_obfuscators[path]
+	
+	if !obfuscator.generated_code.is_empty():
+		return obfuscator.generated_code
 	
 	_Logger.swap(obfuscator)
 	_Logger.write("\n---------- " + " Obfuscating script " + path + " ----------")

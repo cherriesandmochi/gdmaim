@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="GDScript" id="GDScript_checks"]
+script/source = "extends Node
+
+
+class Counter:
+	var value := 0
+
+	func add(amount: int) -> Counter:
+		value += amount
+		return self
+
+
+var label := \"builtin\"
+
+
+func run() -> Array:
+	var counter := Counter.new()
+	counter.add(2).add(3)
+	var doubled := [1, 2, 3].map(func(value: int) -> int: return value * 2)
+	var total := 0
+	for value in doubled:
+		total += value
+	return [label, counter.value, doubled, total, describe(4)]
+
+
+func describe(count: int) -> String:
+	return \"%s x%d\" % [label, count]
+"
+
+[node name="BuiltinChecks" type="Node"]
+script = SubResource("GDScript_checks")

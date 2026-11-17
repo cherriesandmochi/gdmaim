@@ -92,6 +92,8 @@ func _open_source_map_viewer() -> void:
 # Pre-validations
 func _setup() -> void:
 	var file : String = settings.custom_token_ignore_file_path
+	
+	DirAccess.make_dir_recursive_absolute("res://addons/gdmaim/tmp")
 		
 	if !file.is_empty():
 		var base : String = file.get_base_dir()

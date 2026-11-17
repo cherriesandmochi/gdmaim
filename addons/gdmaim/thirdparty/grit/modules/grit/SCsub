@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+import os
+import re
+
+from methods import print_error
+
+Import("env")
+Import("env_modules")
+
+env_grit = env_modules.Clone()
+
+
+def read_engine_file(name):
+    with open(env.File(f"#core/variant/{name}").abspath, encoding="utf-8") as file:
+        return file.read()
+
+
+def declares(header, name):
+    return re.search(rf"(?:class|struct) {name}\b|^\w+\({name},", header, re.MULTILINE) is not None
+
+
+def compact(name):
+    return re.sub(r"\s+", "", name)
+
+
+def unique(names):
+    return list(dict.fromkeys(names))
+
+
+def expand_registration_macros(source):
+    names = []
+    for macro, parameters, body in re.findall(r"#define (\w+)\(([^)]*)\)((?:.*\\\n)+.*)", source):
+        templates = re.findall(r"register_op<(\w+(?:<[^;]*?>)?)>\(", body)
+        parameters = [parameter.strip() for parameter in parameters.split(",")]
+        for arguments in re.findall(rf"^\s*{macro}\(([^;]*)\);", source, re.MULTILINE):
+            values = [argument.strip() for argument in arguments.split(",")]
+            for template in templates:
+                for parameter, value in zip(parameters, values):
+                    template = re.sub(rf"\b{parameter}\b", value, template)
+                names.append(template)
+    return names
+
+
+def inline_operators():
+    header = read_engine_file("variant_op.h")
+    source = read_engine_file("variant_op.cpp")
+    specialized = {compact(name) for name in re.findall(r"template <>\s*(?:class|struct) (\w+<[^{;]*?>)\s*[:{]", source)}
+    names = []
+    for name in unique(re.findall(r"register_op<(\w+(?:<[^;]*?>)?)>\(", source) + expand_registration_macros(source)):
+        if "m_" in name or compact(name) in specialized or not declares(header, name.split("<", 1)[0]):
+            continue
+        names.append(name)
+    return names
+
+
+def inline_members():
+    header = read_engine_file("variant_setget.h")
+    source = read_engine_file("variant_setget.cpp")
+    declared = set(re.findall(r"^SETGET_\w+\((\w+), [^,]+, (\w+)", header, re.MULTILINE))
+    registered = re.findall(r"REGISTER_MEMBER\((\w+), (\w+)\);", source)
+    return unique(f"VariantSetGet_{base}_{member}" for base, member in registered if (base, member) in declared)
+
+
+def inline_constructors():
+    header = read_engine_file("variant_construct.h")
+    source = read_engine_file("variant_construct.cpp")
+    names = re.findall(r"add_constructor<(\w+(?:<[^;]*?>)?)>\(", source)
+    return [name for name in unique(names) if declares(header, name.split("<", 1)[0])]
+
+
+def write_inline_catalog(path):
+    lines = ["static const OperatorEntry operator_entries[] = {"]
+    lines += [f'\t{{ &{name}::ptr_evaluate, "{name}" }},' for name in inline_operators()]
+    lines += ["};", "", "static const MemberEntry member_entries[] = {"]
+    lines += [f'\t{{ &{name}::ptr_get, &{name}::ptr_set, "{name}" }},' for name in inline_members()]
+    lines += ["};", "", "static const ConstructorEntry constructor_entries[] = {"]
+    lines += [f'\t{{ &{name}::ptr_construct, "{name}" }},' for name in inline_constructors()]
+    lines.append("};")
+    content = "\n".join(lines) + "\n"
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as file:
+            if file.read() == content:
+                return
+    with open(path, "w", encoding="utf-8", newline="\n") as file:
+        file.write(content)
+
+
+if env["grit_conformance"]:
+    env_grit.Append(CPPDEFINES=["GRIT_CONFORMANCE"])
+
+env_grit.add_source_files(env.modules_sources, "*.cpp")
+env_grit.add_source_files(env.modules_sources, "runtime/*.cpp")
+
+if env.editor_build:
+    write_inline_catalog(os.path.join(Dir(".").srcnode().abspath, "compiler", "grit_inline_catalog.gen.inc"))
+    env_grit.add_source_files(env.modules_sources, "compiler/*.cpp")
+    env_grit.add_source_files(env.modules_sources, "editor/*.cpp")
+
+generated_directory = env["grit_generated"]
+if generated_directory:
+    generated_directory = os.path.abspath(generated_directory)
+    if not os.path.isfile(os.path.join(generated_directory, "grit_registry.gen.cpp")):
+        print_error(f'Grit: "{generated_directory}" does not contain generated code. Export the project first.')
+        Exit(255)
+    env_grit.add_source_files(env.modules_sources, env_grit.Glob(os.path.join(generated_directory, "*.gen.cpp")))
+else:
+    env_grit.add_source_files(env.modules_sources, "fallback/*.cpp")

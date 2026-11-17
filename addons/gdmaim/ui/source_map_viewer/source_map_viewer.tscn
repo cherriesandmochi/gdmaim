@@ -1,7 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://dqknu058384tm"]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://addons/gdmaim/ui/source_map_viewer/source_map_viewer.gd" id="1_xfxdk"]
-[ext_resource type="PackedScene" uid="uid://crvfxjbaqfxn2" path="res://addons/gdmaim/ui/source_map_viewer/code_search.tscn" id="2_n0sd2"]
+[ext_resource type="PackedScene" path="res://gdmaim/ui/source_map_viewer/code_search.tscn" id="2_n0sd2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6bkrx"]
 bg_color = Color(0.113725, 0.298039, 0.333333, 1)
