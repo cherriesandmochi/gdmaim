@@ -1,0 +1,194 @@
+diff --git a/core/object/object.h b/core/object/object.h
+index 451680a32b..9a2e647b89 100644
+--- a/core/object/object.h
++++ b/core/object/object.h
+@@ -402,6 +402,7 @@ private:
+ 	friend struct _ObjectDebugLock;
+ #endif // DEBUG_ENABLED
+ 	friend struct ObjectSignalLock;
++	friend class GritRuntimeAccess;
+ 	friend bool predelete_handler(Object *);
+ 	friend void postinitialize_handler(Object *);
+ 
+diff --git a/modules/gdscript/gdscript.h b/modules/gdscript/gdscript.h
+index b88596b6fe..506065a994 100644
+--- a/modules/gdscript/gdscript.h
++++ b/modules/gdscript/gdscript.h
+@@ -88,6 +88,7 @@ class GDScript : public Script {
+ 	friend class GDScriptLambdaSelfCallable;
+ 	friend class GDScriptLanguage;
+ 	friend struct GDScriptUtilityFunctionsDefinitions;
++	friend class GritRuntimeAccess;
+ 
+ 	Ref<GDScriptNativeClass> native;
+ 	Ref<GDScript> base;
+@@ -352,6 +353,7 @@ class GDScriptInstance : public ScriptInstance {
+ 	friend class GDScriptCompiler;
+ 	friend class GDScriptCache;
+ 	friend struct GDScriptUtilityFunctionsDefinitions;
++	friend class GritRuntimeAccess;
+ 
+ 	ObjectID owner_id;
+ 	Object *owner = nullptr;
+@@ -448,6 +450,7 @@ class GDScriptLanguage : public ScriptLanguage {
+ 	String _get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path, bool *r_is_abstract, bool *r_is_tool, LocalVector<String> &r_visited) const;
+ 
+ 	friend class GDScriptInstance;
++	friend class GritRuntimeAccess;
+ 
+ 	Mutex mutex;
+ 
+diff --git a/modules/gdscript/gdscript_compiler.cpp b/modules/gdscript/gdscript_compiler.cpp
+index 563d1acc5c..fc3c42f1fa 100644
+--- a/modules/gdscript/gdscript_compiler.cpp
++++ b/modules/gdscript/gdscript_compiler.cpp
+@@ -2284,10 +2284,23 @@ Error GDScriptCompiler::_parse_block(CodeGen &codegen, const GDScriptParser::Sui
+ 	return OK;
+ }
+ 
++static GDScriptCompiler::CodeGeneratorFactory code_generator_factory = nullptr;
++
++void GDScriptCompiler::set_code_generator_factory(CodeGeneratorFactory p_factory) {
++	code_generator_factory = p_factory;
++}
++
++GDScriptCodeGenerator *GDScriptCompiler::_create_code_generator() {
++	if (code_generator_factory) {
++		return code_generator_factory();
++	}
++	return memnew(GDScriptByteCodeGenerator);
++}
++
+ GDScriptFunction *GDScriptCompiler::_parse_function(Error &r_error, GDScript *p_script, const GDScriptParser::ClassNode *p_class, const GDScriptParser::FunctionNode *p_func, bool p_for_ready, bool p_for_lambda) {
+ 	r_error = OK;
+ 	CodeGen codegen;
+-	codegen.generator = memnew(GDScriptByteCodeGenerator);
++	codegen.generator = _create_code_generator();
+ 
+ 	codegen.class_node = p_class;
+ 	codegen.script = p_script;
+@@ -2532,7 +2545,7 @@ GDScriptFunction *GDScriptCompiler::_parse_function(Error &r_error, GDScript *p_
+ GDScriptFunction *GDScriptCompiler::_make_static_initializer(Error &r_error, GDScript *p_script, const GDScriptParser::ClassNode *p_class) {
+ 	r_error = OK;
+ 	CodeGen codegen;
+-	codegen.generator = memnew(GDScriptByteCodeGenerator);
++	codegen.generator = _create_code_generator();
+ 
+ 	codegen.class_node = p_class;
+ 	codegen.script = p_script;
+diff --git a/modules/gdscript/gdscript_compiler.h b/modules/gdscript/gdscript_compiler.h
+index ce832f249d..6010b53735 100644
+--- a/modules/gdscript/gdscript_compiler.h
++++ b/modules/gdscript/gdscript_compiler.h
+@@ -173,7 +173,13 @@ class GDScriptCompiler {
+ 	GDScriptParser::ExpressionNode *awaited_node = nullptr;
+ 	bool has_static_data = false;
+ 
++	static GDScriptCodeGenerator *_create_code_generator();
++
+ public:
++	typedef GDScriptCodeGenerator *(*CodeGeneratorFactory)();
++
++	static void set_code_generator_factory(CodeGeneratorFactory p_factory);
++
+ 	static void convert_to_initializer_type(Variant &p_variant, const GDScriptParser::VariableNode *p_node);
+ 	static void make_scripts(GDScript *p_script, const GDScriptParser::ClassNode *p_class, bool p_keep_state);
+ 	Error compile(const GDScriptParser *p_parser, GDScript *p_script, bool p_keep_state = false);
+diff --git a/modules/gdscript/gdscript_editor.cpp b/modules/gdscript/gdscript_editor.cpp
+index b29b1cead2..bc74154463 100644
+--- a/modules/gdscript/gdscript_editor.cpp
++++ b/modules/gdscript/gdscript_editor.cpp
+@@ -336,6 +336,9 @@ void GDScriptLanguage::debug_get_stack_level_locals(int p_level, List<String> *p
+ 
+ 	CallLevel *cl = _get_stack_level(p_level);
+ 	GDScriptFunction *f = cl->function;
++	if (!cl->stack) {
++		return;
++	}
+ 
+ 	List<Pair<StringName, int>> locals;
+ 
+diff --git a/modules/gdscript/gdscript_function.h b/modules/gdscript/gdscript_function.h
+index 8171a0f125..453e6df1d5 100644
+--- a/modules/gdscript/gdscript_function.h
++++ b/modules/gdscript/gdscript_function.h
+@@ -149,6 +149,9 @@ public:
+ 
+ class GDScriptFunction {
+ public:
++	struct CallState;
++	typedef Variant (*NativeCall)(GDScriptFunction *p_function, GDScriptInstance *p_instance, const Variant **p_args, int p_argcount, Callable::CallError &r_err, CallState *p_state);
++
+ 	enum Opcode {
+ 		OPCODE_OPERATOR,
+ 		OPCODE_OPERATOR_VALIDATED,
+@@ -342,6 +345,7 @@ private:
+ 	friend class GDScriptCompiler;
+ 	friend class GDScriptByteCodeGenerator;
+ 	friend class GDScriptLanguage;
++	friend class GritRuntimeAccess;
+ 
+ 	StringName name;
+ 	StringName source;
+@@ -400,6 +404,10 @@ private:
+ 	int _methods_count = 0;
+ 	int _lambdas_count = 0;
+ 
++	NativeCall native_call = nullptr;
++	Vector<Variant> native_constants;
++	static thread_local int call_depth;
++
+ 	int *_code_ptr = nullptr;
+ 	const int *_default_arg_ptr = nullptr;
+ 	mutable Variant *_constants_ptr = nullptr;
+@@ -483,6 +491,8 @@ public:
+ 	_FORCE_INLINE_ int get_argument_count() const { return _argument_count; }
+ 	_FORCE_INLINE_ Variant get_rpc_config() const { return rpc_config; }
+ 	_FORCE_INLINE_ int get_max_stack_size() const { return _stack_size; }
++	_FORCE_INLINE_ NativeCall get_native_call() const { return native_call; }
++	_FORCE_INLINE_ void set_native_call(NativeCall p_native_call) { native_call = p_native_call; }
+ 
+ 	Variant get_constant(int p_idx) const;
+ 	StringName get_global_name(int p_idx) const;
+@@ -502,6 +512,7 @@ public:
+ class GDScriptFunctionState : public RefCounted {
+ 	GDCLASS(GDScriptFunctionState, RefCounted);
+ 	friend class GDScriptFunction;
++	friend class GritRuntimeAccess;
+ 	GDScriptFunction *function = nullptr;
+ 	GDScriptFunction::CallState state;
+ 	Variant _signal_callback(const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+diff --git a/modules/gdscript/gdscript_vm.cpp b/modules/gdscript/gdscript_vm.cpp
+index 601989768b..e1f7e97ec1 100644
+--- a/modules/gdscript/gdscript_vm.cpp
++++ b/modules/gdscript/gdscript_vm.cpp
+@@ -496,6 +496,8 @@ void (*type_init_function_table[])(Variant *) = {
+ #define METHOD_CALL_ON_NULL_VALUE_ERROR(method_pointer) "Cannot call method '" + (method_pointer)->get_name() + "' on a null value."
+ #define METHOD_CALL_ON_FREED_INSTANCE_ERROR(method_pointer) "Cannot call method '" + (method_pointer)->get_name() + "' on a previously freed instance."
+ 
++thread_local int GDScriptFunction::call_depth = 0;
++
+ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_args, int p_argcount, Callable::CallError &r_err, CallState *p_state) {
+ 	GodotProfileZoneScript(this, source, name, name, _initial_line);
+ 
+@@ -507,7 +509,6 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 
+ 	r_err.error = Callable::CallError::CALL_OK;
+ 
+-	static thread_local int call_depth = 0;
+ 	if (unlikely(++call_depth > MAX_CALL_DEPTH)) {
+ 		call_depth--;
+ #ifdef DEBUG_ENABLED
+@@ -532,6 +533,12 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 		return _get_default_variant_for_data_type(return_type);
+ 	}
+ 
++	if (native_call) {
++		Variant native_result = native_call(this, p_instance, p_args, p_argcount, r_err, p_state);
++		call_depth--;
++		return native_result;
++	}
++
+ 	Variant retvalue;
+ 	Variant *stack = nullptr;
+ 	Variant **instruction_args = nullptr;

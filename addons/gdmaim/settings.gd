@@ -8,6 +8,8 @@ enum ExportMode {
 	TEXT = 0,
 	BINARY,
 	COMPRESSED,
+	AOT,
+	AOT_COMPRESSED
 }
 
 var obfuscation_enabled : bool = true
@@ -27,6 +29,7 @@ var strip_extraneous_spacing : bool = true
 var strip_editor_annotations : bool = true
 var strip_static_typing : bool = false
 var strip_sequential_newlines : bool = true
+var strip_aot_references : bool = false
 var striped_static_typing_be_initialized : bool = true
 var feature_filters : bool = true
 var regex_filter_enabled : bool = true
@@ -92,12 +95,15 @@ func initialize_settings(make_as_global_settings : bool = false, force_load_conf
 	
 	set_category("obfuscator", "Obfuscation")
 	add_entry("obfuscation_enabled", "enabled", "Enable Obfuscation", "If false, skip obfuscation entirely, but still allow post-processing to take place.")
+	
+	
 	add_entry("obfuscate_export_vars", "export_vars", "Obfuscate Export Vars", "If true, obfuscate export variables.\nNote: Requires scenes and resources which modify custom export vars to be saved as '*.tscn' and '*.tres', respectively.")
 	#add_entry("obfuscate_signals", "signals", "Obfuscate Signals", "If true, obfuscate signals.")
 	add_entry("shuffle_top_level", "shuffle_top_level", "Shuffle Top-Level Declarations", "If true, shuffles all top-level declarations of variables, functions, signals, etc.")
 	add_entry("inline_constants", "inline_consts", "Inline Constants", "If true, replace constants with hardcoded values.\nNote: Only bool, int, float, Color, Vector(2/3/4)(i) and NodePath are supported.").disabled = true
 	add_entry("inline_enums", "inline_enums", "Inline Enums", "If true, replace enums with hardcoded values.").disabled = true
 	add_entry("preprocessor_prefix", "preprocessor_prefix", "Preprocessor Prefix", "Sets the prefix to use for preprocessor hints.")
+	add_entry("export_mode", "export_mode", "Export Mode", "Sets the exported script format.\nText: easier debugging\nBinary: faster loading\nCompressed: smaller files").set_custom_type(Entry.CustomType.OPTIONS, ["Text", "Binary", "Compressed", "AOT", "AOT | Compressed"])
 	
 	set_category("post_process", "Post Processing")
 	add_entry("strip_comments", "strip_comments", "Strip Comments", "If true, remove all comments.")
@@ -107,11 +113,11 @@ func initialize_settings(make_as_global_settings : bool = false, force_load_conf
 	add_entry("strip_static_typing", "strip_static_typing", "Strip Static Typing", "If true, remove all static typing like [int, String, Objects, CustomObjects, ...] take in mind this can remove the performance benefit with the static typing practice.")
 	add_entry("strip_sequential_newlines", "strip_sequential_newlines", "Strip Sequential New Lines","Strip New Lines Whenever Possible On Sequential Syntax")
 	add_entry("striped_static_typing_be_initialized", "striped_static_typing_be_initialized", "Initialize stripped typed variables", "(This action is complement of: Strip Static Typing)\nIf true, uninitalized typed variables that typed have been removed will be initialized; this will be useful for developers who frequently perform operations with these uninitialized typed variables, avoiding type definition errors.")
+	add_entry("strip_aot_references", "strip_aot_references", "Strip AOT call references", "This strip/obfuscate internal AOT references call (AOT Only)\n\nThis can be override as enabled only if the thirdparty option is enabled too.")
 	
 	add_entry("regex_filter_enabled", "regex_filter_enabled", "Strip Lines Matching RegEx", "If true, any lines matching the regular expression will be removed from the obfuscated code.")
 	add_entry("regex_filter", "regex_filter", "", "Enter Regular Expression")
 	add_entry("feature_filters", "feature_filters", "Process Feature Filters", "If true, export template feature tags may be used to filter code.")
-	add_entry("export_mode", "export_mode", "Export Mode", "Sets the exported script format.\nText: easier debugging\nBinary: faster loading\nCompressed: smaller files").set_custom_type(Entry.CustomType.OPTIONS, ["Text", "Binary", "Compressed"])
 	
 	set_category("id", "Name Generator")
 	add_entry("symbol_prefix", "prefix", "Prefix", "Sets the prefix to use for all generated names.")

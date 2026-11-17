@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://co43s08djflp5"]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://addons/gdmaim/ui/dock/dock.gd" id="1_se4hh"]
 
@@ -23,4 +23,9 @@ theme_override_constants/separation = 6
 layout_mode = 2
 text = "View Source Maps"
 
+[node name="AOT" type="Button" parent="ScrollContainer/VBoxContainer" unique_id=642409609]
+layout_mode = 2
+text = "Setup AOT"
+
 [connection signal="pressed" from="ScrollContainer/VBoxContainer/ViewSourceMap" to="." method="_on_view_source_map_pressed"]
+[connection signal="pressed" from="ScrollContainer/VBoxContainer/AOT" to="." method="_on_aot_pressed"]

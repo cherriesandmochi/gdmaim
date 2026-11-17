@@ -1,0 +1,43 @@
+name: CI (Windows)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    name: Windows build (MSVC)
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - name: Keep patches as LF
+        run: git config --global core.autocrlf false
+
+      - name: Checkout Grit
+        uses: actions/checkout@v4
+        with:
+          path: grit
+
+      - name: Install SCons
+        run: python -m pip install --upgrade "scons>=4.0"
+
+      - name: Cache SCons objects
+        uses: actions/cache@v4
+        with:
+          path: scons-cache
+          key: scons-windows-${{ github.sha }}
+          restore-keys: |
+            scons-windows-
+
+      - name: Check the environment
+        working-directory: grit
+        run: python tools/grit.py doctor
+
+      - name: Build the editor (MSVC compile check)
+        working-directory: grit
+        run: |
+          python tools/grit.py setup
+          python tools/grit.py build editor --jobs $env:NUMBER_OF_PROCESSORS accesskit=no d3d12=no optimize=none debug_symbols=no cache_path="${{ github.workspace }}/scons-cache"
