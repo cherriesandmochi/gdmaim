@@ -334,6 +334,8 @@ func _read_next_token() -> bool:
 		if !_is_stripped_typed(char) and !_is_continue_sequence_line(char, ",([{", "\n"):
 			# Punctuator
 			_add_punctuator(_stream.get_next())
+		# An operand follows an opening bracket, a comma or a colon: '%Name' there is a unique node
+		_can_be_nodepath = "([{,:;".contains(char)
 	elif _is_valid_identifier(char):
 		_read_identifier()
 	else:
