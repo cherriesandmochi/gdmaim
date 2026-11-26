@@ -30,6 +30,10 @@ var _strip_static_typing : bool = false
 var _strip_static_typing_initialized : bool = false
 
 func read(source_code : String) -> void:
+	# Godot accepts CRLF. Newlines are detected by looking for \n only, so a
+	# carriage return is reported as an invalid character and can glue the
+	# next statement onto the closing line of a multiline string.
+	source_code = source_code.replace("\r\n", "\n").replace("\r", "\n")
 	line_count = 1
 	_tokens.clear()
 	_idx = -1
